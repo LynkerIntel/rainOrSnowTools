@@ -1,0 +1,40 @@
+---
+title: "Accessing Meteorological Data"
+author: Keith Jennings
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{meteo-access}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(rainOrSnowTools)
+```
+
+# Get data from the HADS network
+
+```{r}
+met_network = "HADS"
+datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
+lon = -105
+lat = 40
+degree_filter = 1
+```
+
+```{r}
+meteo <- access_meteo(networks = met_network,
+                      datetime_utc_obs = datetime, 
+                      lon_obs = lon, 
+                      lat_obs = lat,
+                      deg_filter = degree_filter)
+print(head(meteo))
+```
