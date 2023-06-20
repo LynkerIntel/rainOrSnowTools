@@ -12,10 +12,12 @@ RoxygenNote: 7.2.1
 LazyData: True
 Imports: 
   tidyverse,
-  geosphere
+  tidyselect,
+  geosphere,
+  lutz
 Depends: 
     R (>= 2.10)
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
 VignetteBuilder: knitr
