@@ -1,5 +1,29 @@
 `%>%` <- dplyr::`%>%`
 
+#' Download and preprocess meteorological data from three station networks
+#'
+#' @param networks One of "ALL", "HADS", "LCD", or "WCC"
+#' @param datetime_utc_obs POSIX-formatted UTC datetime for which data should be gathered
+#' @param lon_obs Longitude in decimal degrees
+#' @param lat_obs Latitude in decimal degrees
+#' @param deg_filter Number of degrees surrounding the point location to which the station search should be limited
+#' @param time_thresh_s Time (in seconds) to be added to/subtracted from datetime_utc_obs, thus defining the time extent for the data search
+#' @param dist_thresh_m Distance (in meters) that a station must be within to be considered
+#'
+#' @return a dataframe of meteorological data
+#' @export
+#'
+#' @examples
+#' met_network = "HADS"
+#' datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
+#' lon = -105
+#' lat = 40
+#' degree_filter = 1
+#' meteo <- access_meteo(networks = met_network,
+#'                       datetime_utc_obs = datetime,
+#'                       lon_obs = lon,
+#'                       lat_obs = lat,
+#'                       deg_filter = degree_filter)
 access_meteo <-
   function(networks, datetime_utc_obs, lon_obs, lat_obs,
            deg_filter=2, time_thresh_s=3600, dist_thresh_m=100000){
@@ -44,8 +68,7 @@ access_meteo <-
     if("LCD" %in% networks){
       stations <- station_select(network = "LCD", lon_obs, lat_obs,
                                  deg_filter, dist_thresh_m)
-      tmp_met <- download_meteo_lcd(datetime_utc_start, datetime_utc_end, stations,
-                                    lon_obs, lat_obs)
+      tmp_met <- download_meteo_lcd(datetime_utc_start, datetime_utc_end, stations)
       tmp_met <- preprocess_meteo(network = "LCD", tmp_met)
       met_all <- dplyr::bind_rows(met_all, tmp_met)
     }
@@ -65,20 +88,28 @@ access_meteo <-
   }
 
 
+#' Gather the metadata for meteorological stations
+#'
+#' @param network network to gather stations from (HADS, LCD, or WCC)
+#' @param lon_obs Longitude in decimal degrees
+#' @param lat_obs Latitude in decimal degrees
+#' @param deg_filter Number of degrees surrounding the point location to which the station search should be limited
+#' @param dist_thresh_m Distance (in meters) that a station must be within to be considered
+#'
+#' @return Dataframe of station metadata
+#' @export
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' station_select(network = "HADS", lon, lat,
+#'                   deg_filter=2, dist_thresh_m=100000)
 station_select <- function(network, lon_obs, lat_obs,
                            deg_filter, dist_thresh_m){
-
-  # Station metadata added
-  # HADS
-    #Use the mros_hads_metadata_scrape.R script
-    # hads_meta <- read.csv("https://raw.githubusercontent.com/SnowHydrology/MountainRainOrSnow/main/data/metadata/hads_station_metadata_US.csv") %>%
-    # dplyr::filter(substr(iem_network, start = 4, stop = 6) == "DCP")
-    # usethis::use_data(hads_meta, internal = TRUE)
-  # LCD
-    # https://www.ncei.noaa.gov/maps/lcd/ (go to mapping tool, use polygon selector, drag over area of interest, and then click "Download Station List")
-    # Then use the mros_lcd_metadata_scrape.R script
-    # lcd_meta <- read.csv("https://raw.githubusercontent.com/SnowHydrology/MountainRainOrSnow/main/data/metadata/lcd_station_metadata_conus_withID.csv")
-    # usethis::use_data(hads_meta, lcd_meta, internal = TRUE, overwrite = TRUE)
+  # Station metadata provided in sysdata.R
+  # hads_meta = HADS metadata
+  # lcd_meta = LCD metadata
+  # wcc_meta = WCC metadata
 
   # Select stations from the HADS dataset
   if(network == "HADS"){
@@ -117,6 +148,22 @@ station_select <- function(network, lon_obs, lat_obs,
   stations_tmp
 }
 
+#' Download meteorological data from HADS
+#'
+#' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
+#' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
+#' @param stations dataframe of station metadata (from station_select)
+#'
+#' @return dataframe of meteorological data
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
+#' datetime_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
+#' hads_stations <- station_select(network = "HADS", lon, lat,
+#'                    deg_filter=2, dist_thresh_m=100000)
+#' download_meteo_hads(datetime_start, datetime_end, hads_stations)
 download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 
   # Specify chunks to download
@@ -227,8 +274,23 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
   met
 }
 
-download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations,
-                               lon_obs, lat_obs){
+#' Download meteorological data from LCD
+#'
+#' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
+#' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
+#' @param stations dataframe of station metadata (from station_select)
+#'
+#' @return dataframe of meteorological data
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
+#' datetime_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
+#' lcd_stations <- station_select(network = "LCD", lon, lat,
+#'                    deg_filter=2, dist_thresh_m=100000)
+#' download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
+download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 
   # Specify the vars
   # TODO: let user select vars
@@ -293,6 +355,22 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations,
 }
 
 
+#' Preprocess met data (add datetime, put in common format)
+#'
+#' @param network network of data to process (HADS, LCD, or WCC)
+#' @param tmp_met dataframe of meteorological data (from download_meteo_*)
+#'
+#' @return processed dataframe of met data
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
+#' datetime_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
+#' lcd_stations <- station_select(network = "LCD", lon, lat,
+#'                    deg_filter=2, dist_thresh_m=100000)
+#' lcd_met <- download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
+#' preprocess_meteo("LCD", lcd_met)
 preprocess_meteo <- function(network, tmp_met){
 
   # Process HADS data
