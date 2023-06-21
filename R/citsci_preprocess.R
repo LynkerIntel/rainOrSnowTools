@@ -11,6 +11,18 @@
 
 `%>%` <- dplyr::`%>%` # add dplyr pipe
 
+#' Get the time zone for an observation with a latitude and longitude
+#'
+#' @param lon_obs longitude of observation in decimal degrees (°)
+#' @param lat_obs latitude of observation in decimal degrees (°)
+#'
+#' @return the local standard time zone in the format "Etc/GMT+X"
+#' where X is the offset in hours from GMT
+#'
+#' @examples
+#' lon = -120
+#' lat = 40
+#' get_tz(lon, lat)
 get_tz <- function(lon_obs, lat_obs){
   # Make the timezone table
   tz_table <- make_tz_table()
@@ -29,6 +41,10 @@ get_tz <- function(lon_obs, lat_obs){
   tmp_tz$timezone_lst
 }
 
+#' Build a table of timezones and offsets when called from get_tz
+#'
+#' @return A table of PST, MST, CST, and EST timezones
+#'
 make_tz_table <- function(){
 
   # TODO: only support 4 time zones currently
