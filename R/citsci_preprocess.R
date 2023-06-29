@@ -56,6 +56,12 @@ make_tz_table <- function(){
     dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
 }
 
+get_elev <- function(lon_obs, lat_obs){
+  locs = cbind(lon_obs, lat_obs)
+  r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
+  terra::extract(r, locs)
+}
+
 # # Import the citizen science data
 # obs <- read.csv(raw.file,
 #                 stringsAsFactors = F) %>%

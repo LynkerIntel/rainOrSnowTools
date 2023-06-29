@@ -14,7 +14,8 @@ Imports:
   tidyverse,
   tidyselect,
   geosphere,
-  lutz
+  lutz,
+  terra
 Depends: 
     R (>= 2.10)
 Suggests: 
