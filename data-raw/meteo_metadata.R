@@ -56,6 +56,26 @@ hads_meta <- hads_meta %>%
   dplyr::filter(stid %in% hads_var_meta$nwsli) %>%
   dplyr::filter(!(stid %in% stations_remove))
 
+# Make a timezone table
+# TODO: this assumes CONUS and standard time only
+tz_table <- lutz::tz_list() %>%
+  dplyr::filter(zone %in% c("PST", "MST", "CST", "EST")) %>%
+  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
+
+# Add timezone info
+# Needed for local time to UTC conversions
+hads_meta <- hads_meta %>%
+  dplyr::mutate(timezone = lutz::tz_lookup_coords(lat = lat,
+                                                  lon = lon,
+                                                  method = "accurate"))
+
+# Join timezone info
+hads_meta <- dplyr::left_join(hads_meta,
+                             dplyr::select(tz_table,
+                                           timezone = tz_name,
+                                           timezone_lst),
+                             by = "timezone")
+
 ################################################################################
 # Script for processing LCD metadata
 ################################################################################
@@ -138,11 +158,6 @@ lcd_meta <- lcd_meta %>%
   dplyr::mutate(timezone = lutz::tz_lookup_coords(lat = LATITUDE,
                                                   lon = LONGITUDE,
                                                   method = "accurate"))
-# Make a timezone table
-# TODO: this assumes CONUS and standard time only
-tz_table <- lutz::tz_list() %>%
-  dplyr::filter(zone %in% c("PST", "MST", "CST", "EST")) %>%
-  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
 
 # Join timezone info
 lcd_meta <- dplyr::left_join(lcd_meta,
@@ -165,7 +180,37 @@ wcc_meta <- wcc_meta %>%
   dplyr::mutate(timezone_lst = paste0("Etc/GMT+", gmt_offset))
 
 ################################################################################
+# Collate the metadata into a single dataframe
+################################################################################
+all_meta <-
+  dplyr::bind_rows(
+    hads_meta %>%
+      dplyr::select(name = station_name,
+                    id = stid,
+                    lat, lon, elev,
+                    timezone_lst) %>%
+      dplyr::mutate(network = "hads"),
+    lcd_meta %>%
+      dplyr::select(name = STATION,
+                    id,
+                    lat = LATITUDE,
+                    lon = LONGITUDE,
+                    elev = ELEVATION_.M.,
+                    timezone_lst) %>%
+      dplyr::mutate(network = "lcd"),
+    wcc_meta %>%
+      dplyr::select(name = site_name,
+                    id = station.id,
+                    lat, lon, elev,
+                    timezone_lst,
+                    network) %>%
+      dplyr::mutate(id = as.character(id)),
+  )
+
+
+################################################################################
 # Add the metadata to sysdata for package
 ################################################################################
 
-usethis::use_data(hads_meta, lcd_meta, wcc_meta, internal = TRUE, overwrite = TRUE)
+usethis::use_data(hads_meta, lcd_meta, wcc_meta, all_meta,
+                  internal = TRUE, overwrite = TRUE)
