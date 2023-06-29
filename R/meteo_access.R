@@ -1,3 +1,6 @@
+# Functions for accessing, collating, and preprocessing meteorological data
+# from various station networks
+
 `%>%` <- dplyr::`%>%`
 
 #' Download and preprocess meteorological data from three station networks
