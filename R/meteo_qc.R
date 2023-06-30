@@ -22,25 +22,25 @@ qc_meteo <- function(df,
     var_qc = qc_var(df$temp_air,
                     limit_min = tair_limit_min, limit_max = tair_limit_max,
                     sd_threshold = sd_thresh)
-    df$temp_air_qc = var_qc
+    df$temp_air = var_qc
   }
   if("temp_wet" %in% cols){
     var_qc = qc_var(df$temp_wet,
                     limit_min = twet_limit_min, limit_max = twet_limit_max,
            sd_threshold = sd_thresh)
-    df$temp_wet_qc = var_qc
+    df$temp_wet = var_qc
   }
   if("temp_dew" %in% cols){
     var_qc = qc_var(df$temp_dew,
                     limit_min = tdew_limit_min, limit_max = tdew_limit_max,
            sd_threshold = sd_thresh)
-    df$temp_dew_qc = var_qc
+    df$temp_dew = var_qc
   }
   if("rh" %in% cols){
     var_qc = qc_var(df$rh,
                     limit_min = rh_limit_min, limit_max = rh_limit_max,
            sd_threshold = sd_thresh)
-    df$rh_qc = var_qc
+    df$rh = var_qc
   }
 
   # Return the data frame

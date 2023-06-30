@@ -444,6 +444,10 @@ preprocess_meteo <- function(network, tmp_met){
                     ppt = in_to_mm(ppt))
   }
 
+  # Convert all station ids to character
+  tmp_met <- tmp_met %>%
+    dplyr::mutate(id = as.character(id))
+
   # Return the data
   tmp_met
 }
