@@ -15,7 +15,10 @@ Imports:
   tidyselect,
   geosphere,
   lutz,
-  terra
+  terra,
+  humidity
+Remotes:
+  SnowHydrology/humidity
 Depends: 
     R (>= 2.10)
 Suggests: 
