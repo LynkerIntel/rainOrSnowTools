@@ -77,12 +77,20 @@ access_meteo <-
     }
 
     # Access WCC data
+    # Access WCC data
     if("WCC" %in% networks){
-      stations <- station_select(network = "WCC", lon_obs, lat_obs,
-                                 deg_filter, dist_thresh_m)
-      tmp_met <- download_meteo_wcc(datetime_utc_start, datetime_utc_end, stations)
-      tmp_met <- preprocess_meteo(network = "WCC", tmp_met)
-      met_all <- dplyr::bind_rows(met_all, tmp_met)
+      # Error handling when it comes to no stations reported in the timezones
+      tryCatch({
+        stations <- station_select(network = "WCC", lon_obs, lat_obs,
+                                   deg_filter, dist_thresh_m)
+        tmp_met <- download_meteo_wcc(datetime_utc_start, datetime_utc_end, stations)
+        tmp_met <- preprocess_meteo(network = "WCC", tmp_met)
+        met_all <- dplyr::bind_rows(met_all, tmp_met)
+      }, error = function(e){
+        message(paste0("No WCC stations found for obs: lat = ", lat_obs, ", lon = ", lon_obs))
+        return(NA)
+      }
+      )
     }
 
     # Return the met_all data frame
@@ -357,6 +365,165 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
   met
 }
 
+#' Download meteorological data from WCC
+#'
+#' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
+#' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
+#' @param stations dataframe of station metadata (from station_select)
+#'
+#' @return dataframe of meteorological data
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' datetime_utc_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
+#' datetime_utc_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
+#' wcc_stations <- station_select(network = "WCC", lon, lat,
+#'                    deg_filter=2, dist_thresh_m=100000)
+#' download_meteo_wcc(datetime_start, datetime_end, wcc_stations)
+download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
+
+  stations = stations %>%
+    dplyr::mutate(network.ab = dplyr::case_when(network == "snotel" ~ "sntl",
+                                                network == "snotelt" ~ "sntlt",
+                                                TRUE ~ network))
+
+  # Adjust timezones... all western SNOTEL stations give times in PST, but all other locations are local standard time
+  tzs = unique(stations$timezone_lst)
+  n_tz = length(tzs)
+
+  # Create a list of stations by timezone
+  stations_by_tz <- split(stations, stations$timezone_lst)
+
+  # Empty df to store data
+  met <- data.frame()
+
+  # Loop through stations by time zone and wyears
+  # Build URL and download data
+  for(i in 1:n_tz){
+
+    # Get start and end dates for tz
+    tmp_tz = stations_by_tz[[i]] %>%
+      dplyr::slice(1) %>%
+      dplyr::pull(timezone_lst)
+
+    datetime_lst_start = lubridate::with_tz(datetime_utc_start,
+                                            tzone = tmp_tz)
+    datetime_lst_end   = lubridate::with_tz(datetime_utc_end,
+                                            tzone = tmp_tz)
+
+    # Create chunks based on if start/end dates are the same day
+    if(lubridate::date(datetime_lst_start) == lubridate::date(datetime_lst_end)){
+
+      hrs <- c(seq(from = as.POSIXct(datetime_lst_start, format = "%Y-%m-%d %H:%M:%S"),
+                   to = as.POSIXct(datetime_lst_end, format = "%Y-%m-%d %H:%M:%S"),
+                   by = "hour")) %>%
+        format("%H") %>%
+        as.integer()
+
+      chunks = data.frame(
+        chunk = 1,
+        date1 = format(datetime_lst_start, "%Y-%m-%d"),
+        date2 = format(datetime_lst_end, "%Y-%m-%d"),
+        hours = paste("H%7C", hrs, sep = "", collapse = ",")
+      )
+      # If not, create 2 URL chunks to get hours parsed by:
+      # Start date H - H23
+      # End date H00 - end date H
+    }else{
+
+      hrs1 <- c(seq(from = as.POSIXct(datetime_lst_start, format = "%Y-%m-%d %H:%M:%S"),
+                    to = as.POSIXct(datetime_lst_start, format = "%Y-%m-%d %H:%M:%S") +
+                      # Very convoluted way
+                      lubridate::days(1) - lubridate::hours(format(datetime_lst_start, "%H")) - lubridate::seconds(1),
+                    by = "hour")) %>%
+        format("%H") %>%
+        as.integer()
+
+      hrs2 <- c(seq(from = as.POSIXct(as.Date(datetime_lst_end), tz = "UTC"),
+                    to = as.POSIXct(datetime_lst_end, format = "%Y-%m-%d %H:%M:%S"),
+                    by = "hour")) %>%
+        format("%H") %>%
+        as.integer()
+
+      chunks = data.frame(
+        chunk = c(1,2),
+        date1 = c(format(datetime_lst_start, "%Y-%m-%d"),
+                  format(datetime_lst_end, "%Y-%m-%d")),
+        date2 = c(format(datetime_lst_start, "%Y-%m-%d"),
+                  format(datetime_lst_end, "%Y-%m-%d")),
+        hours = c(paste("H%7C", hrs1, sep = "", collapse = ","),
+                  paste("H%7C", hrs2, sep = "", collapse = ","))
+      )
+    }
+
+    # Create list for collecting data for each station in each time zone
+    tmp.station <- list()
+
+    # Loop through the options and download WCC data
+    for(c in seq_along(chunks$chunk)){
+
+      # Build URLS
+      wcc_url01_str = "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultiTimeSeriesGroupByStationReport/hourly/start_of_period/"
+      wcc_url02_sta = paste(stations_by_tz[[i]]$`station.id`,":",stations_by_tz[[i]]$`state`,":",
+                            stations_by_tz[[i]]$`network.ab`, collapse = "%7C", sep = "")
+      wcc_url03_str = "%7Cid=%22%22%7Cname/"
+      wcc_url04_dat = chunks[c, "date1"]
+      wcc_url05_dat = chunks[c, "date2"]
+      wcc_url06_tim = chunks[c, "hours"]
+      wcc_url07_val = "stationId,TOBS::value,RHUM::value,DPTP::value" # Pick variables that we want in final dataframe
+      # (might need to change if we want end user to pick their own vars)
+
+      url_wcc = paste0(wcc_url01_str, wcc_url02_sta, wcc_url03_str, wcc_url04_dat, ",", wcc_url05_dat, ":",
+                       wcc_url06_tim, "/", wcc_url07_val)
+
+      # Download data
+      if (length(stations_by_tz[[i]]$`station.id`) == 1){
+        # Download data, apply col names, and store into list
+        tmp.station[[as.character(stations_by_tz[[i]]$`station.id`)]] <- read.delim(url_wcc, header = T, comment.char = '#', sep = "\t") %>%
+          tidyr::separate(colnames(.)[1], c("date", "tair", "rh", "tdew"), sep = ",")
+
+      } else{
+        n = length(stations_by_tz[[i]]$`station.id`)
+        id = stations_by_tz[[i]]$`station.id`
+        # Set col names
+        cols = c("tair", "rh", "tdew")
+        # Create the col names and id them with the station ID
+        # Ex) tair1100 (var + station ID)
+        colvars = as.vector(t(as.matrix(sapply(cols, paste, id, sep = ""))))
+
+        # Download data and apply col names
+        tmp <- read.delim(url_wcc, header = T, comment.char = '#', sep = "\t") %>%
+          tidyr::separate(colnames(.)[1], c("date", colvars), sep = ",") %>%
+          # This takes the data into long form, separates the var name station ID
+          tidyr::pivot_longer(
+            cols = !date,
+            names_to = c("var", "station"),
+            names_pattern = "([A-Za-z]+)(\\d+)",
+            values_to = "val") %>%
+          # Sets up the dataframe to standard format
+          tidyr::pivot_wider(., names_from = "var", values_from = "val")
+
+        # Store output into list
+        tmp.station <- lapply(split(tmp, tmp$station, drop = TRUE), subset, select = -station)
+      }
+
+
+      # Bind data from temporary list into a single data frame and format datetime
+      tmp.df <- plyr::ldply(tmp.station, dplyr::bind_rows) %>%
+        dplyr::mutate(datetime_lst = as.POSIXct(date,
+                                                format = "%Y-%m-%d %H:%M",
+                                                tz = tmp_tz),
+                      datetime = lubridate::with_tz(datetime_lst,
+                                                    tz = "UTC"))
+    }
+    met <- dplyr::bind_rows(met, tmp.df)
+
+  }
+  # Return the data
+  met
+
+}
 
 #' Preprocess met data (add datetime, put in common format)
 #'
@@ -442,6 +609,20 @@ preprocess_meteo <- function(network, tmp_met){
                     temp_dew = f_to_c(temp_dew),
                     temp_wet = f_to_c(temp_wet),
                     ppt = in_to_mm(ppt))
+  }
+
+  # Process WCC data
+  if(network == "WCC"){
+
+    tmp_met <- tmp_met %>%
+      dplyr::select(c(id = '.id', datetime,
+                      temp_air = tair,
+                      temp_dew = tdew,
+                      rh)) %>%
+      dplyr::mutate(dplyr::across(3:last_col(), as.numeric)) %>%
+      dplyr::mutate(temp_air = f_to_c(temp_air),
+                    temp_dew = f_to_c(temp_dew))
+
   }
 
   # Convert all station ids to character
