@@ -56,10 +56,38 @@ make_tz_table <- function(){
     dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
 }
 
+#' Get elevation based on lat/lon
+#'
+#' @return Elevation based on location
+#'
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
   terra::extract(r, locs) %>% as.numeric()
+}
+
+#' Geolocate location to assign state and ecoregion association
+#'
+#' @return State and ecoregion
+#'
+get_geoinfo <- function(lon_obs, lat_obs){
+
+  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
+                          coords = c("lon_obs", "lat_obs"), crs = 4326)
+
+ suppressMessages(suppressWarnings({
+
+   sf::sf_use_s2(FALSE)
+
+   sf::st_intersection(locs, ecoregions) %>%
+     dplyr::select("State" = STATE_NAME,
+                   "Ecoregion" = US_L3NAME) %>%
+     sf::st_drop_geometry() %>%
+     as.character()
+
+ }))
+
+
 }
 
 # # Import the citizen science data
