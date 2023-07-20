@@ -16,11 +16,11 @@
 #' datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 #' lon = -105
 #' lat = 40
-#' gpm <- get_imerg(datetime_utc = datetime,
+#' gpm <- get_imerg(datetime = datetime,
 #'                  lon = lon,
 #'                  lat = lat,
 #'                  obs = test)
-get_imerg <- function(datetime_utc,
+get_imerg <- function(datetime,
                       lon,
                       lat,
                       obs){
@@ -29,17 +29,14 @@ get_imerg <- function(datetime_utc,
     # Is this the right way to do it?
     pacman::p_load(hydrofabric, lubridate, plyr)
 
-    # # Account info for Earthdata : https://urs.earthdata.nasa.gov/
-    # climateR::writeNetrc(login = username, password = password, overwrite = TRUE)
-    # climateR::writeDodsrc(overwrite = TRUE)
-
     ## ASSIGN GPM variable
     var = 'probabilityLiquidPrecipitation'
 
     # If there is no data frame with obs provided, then need lat/lon pts
     if (!missing(obs))
       tmp.data = obs
-      else tmp.data = data.frame("longitude" = lon,
+      else tmp.data = data.frame("utc_datetime" = datetime,
+                                 "longitude" = lon,
                                  "latitude" = lat)
 
     # Observation data is converted into shapefile format
@@ -107,8 +104,7 @@ get_imerg <- function(datetime_utc,
     # Return the dataframe
     gpm_obs = gpm_obs %>%
       sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
-      dplyr::select(c('utc_datetime', 'probabilityLiquidPrecipitation')) %>%
-      left_join(., tmp.data, by = 'utc_datetime')
+      dplyr::select(c('utc_datetime', 'probabilityLiquidPrecipitation'))
 
     gpm_obs
 
