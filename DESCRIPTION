@@ -16,7 +16,10 @@ Imports:
   geosphere,
   lutz,
   terra,
-  humidity
+  humidity,
+  sf,
+  rmapshaper,
+  glue
 Remotes:
   SnowHydrology/humidity
 Depends: 

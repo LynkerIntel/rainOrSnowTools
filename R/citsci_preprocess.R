@@ -70,7 +70,7 @@ get_elev <- function(lon_obs, lat_obs){
 #'
 #' @return State and ecoregion
 #'
-get_geoinfo <- function(lon_obs, lat_obs){
+get_eco_level3 <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
                           coords = c("lon_obs", "lat_obs"), crs = 4326)
@@ -79,14 +79,49 @@ get_geoinfo <- function(lon_obs, lat_obs){
 
    sf::sf_use_s2(FALSE)
 
-   sf::st_intersection(locs, ecoregions) %>%
-     dplyr::select("State" = STATE_NAME,
-                   "Ecoregion" = US_L3NAME) %>%
+   sf::st_intersection(locs, ecoregions_states) %>%
+     dplyr::select("Ecoregion" = US_L3NAME) %>%
      sf::st_drop_geometry() %>%
      as.character()
 
  }))
 
+}
+
+get_eco_level4 <- function(lon_obs, lat_obs){
+
+  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
+                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+
+  suppressMessages(suppressWarnings({
+
+    sf::sf_use_s2(FALSE)
+
+    sf::st_intersection(locs, ecoregions_states) %>%
+      dplyr::select("Ecoregion" = US_L4NAME) %>%
+      sf::st_drop_geometry() %>%
+      as.character()
+
+  }))
+
+}
+
+get_state <- function(lon_obs, lat_obs){
+
+  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
+                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+
+  suppressMessages(suppressWarnings({
+
+    sf::sf_use_s2(FALSE)
+
+    sf::st_intersection(locs, ecoregions_states) %>%
+      dplyr::select("State" = STATE_NAME) %>%
+      sf::st_drop_geometry() %>%
+      as.character()
+
+
+  }))
 
 }
 
