@@ -125,6 +125,105 @@ get_state <- function(lon_obs, lat_obs){
 
 }
 
+#' Download GPM IMERG data
+#'
+#' @param datetime_utc Observation time
+#' @param lon_obs Longitude in decimal degrees
+#' @param lat_obs Latitude in decimal degrees
+#'
+#' @return a dataframe of GPM data for each observation
+#' @export
+#'
+#' @examples
+#' datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
+#' lon = -105
+#' lat = 40
+#' gpm <- get_imerg(datetime_utc,
+#'                  lon_obs = lon,
+#'                  lat_obs = lat)
+get_imerg <- function(datetime_utc,
+                      lon_obs,
+                      lat_obs){
+
+  # Package load
+  # Is this the right way to do it?
+  pacman::p_load(hydrofabric, lubridate, plyr)
+
+  ## ASSIGN GPM variable
+  var = 'probabilityLiquidPrecipitation'
+
+  # Observation data is converted into shapefile format
+  data = sf::st_as_sf(data.frame(datetime_utc, lon_obs, lat_obs),
+                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+
+  # URL structure
+  base         = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+  product      = '3B-HHR-L.MS.MRG.3IMERG'
+  url_pattern  = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06B.HDF5'
+  url_pattern2 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06C.HDF5'
+
+  l = list()
+
+  ## Build URLs
+  data = data %>%
+    dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+    dplyr::mutate(
+      julian  = format(dateTime, "%j"),
+      year    = format(dateTime, "%Y"),
+      month   = format(dateTime, "%m"),
+      day     = format(dateTime, "%d"),
+      hour    = sprintf("%02s", format(dateTime, "%H")),
+      minTime = sprintf("%02s", plyr::round_any(as.numeric(
+        format(dateTime, "%M")
+      ), 30, f = floor)),
+      origin_time  = as.POSIXct(paste0(format(
+        dateTime, "%Y-%m-%d"
+      ), "00:00"), tz = "UTC"),
+      rounded_time = as.POSIXct(paste0(
+        format(dateTime, "%Y-%m-%d"), hour, ":", minTime
+      ), tz = "UTC"),
+      nasa_time = rounded_time + (29 * 60) + 59,
+      nasa_time_minute = format(nasa_time, "%M"),
+      nasa_time_second = format(nasa_time, "%S"),
+      min = sprintf("%04s", difftime(rounded_time, origin_time,  units = 'min')),
+      url = glue::glue(url_pattern),
+      url2 = glue::glue(url_pattern2)
+    ) %>%
+    # !! ADD ANYTHING YOU WANT TO KEEP HERE !!
+    dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2')))
+
+
+  ## Get Data
+
+  for (x in 1:nrow(data)) {
+    l[[x]] = tryCatch({
+        dap(
+          URL = data$url[x],
+          varname = var,
+          AOI = data[x, ],
+          verbose = FALSE
+      )
+    }, error = function(e) {
+      dap(
+        URL = data$url2[x],
+        varname = var,
+        AOI = data[x, ],
+        verbose = FALSE
+      )
+    })
+  }
+
+  gpm_obs = cbind(data, dplyr::bind_rows(l))
+
+  # Return the dataframe
+  gpm_obs = gpm_obs %>%
+    sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
+    dplyr::select('probabilityLiquidPrecipitation')
+
+  gpm_obs
+
+}
+
 # # Import the citizen science data
 # obs <- read.csv(raw.file,
 #                 stringsAsFactors = F) %>%
