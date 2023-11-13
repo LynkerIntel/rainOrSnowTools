@@ -18,6 +18,8 @@
 #'
 #' @return the local standard time zone in the format "Etc/GMT+X"
 #' where X is the offset in hours from GMT
+#' @importFrom lutz tz_lookup_coords
+#' @importFrom dplyr left_join `%>%`
 #'
 #' @examples
 #' lon = -120
@@ -44,6 +46,8 @@ get_tz <- function(lon_obs, lat_obs){
 #' Build a table of timezones and offsets when called from get_tz
 #'
 #' @return A table of PST, MST, CST, and EST timezones
+#' @importFrom lutz tz_list
+#' @importFrom dplyr filter mutate `%>%`
 make_tz_table <- function(){
 
   # TODO: only support 4 time zones currently
@@ -58,6 +62,8 @@ make_tz_table <- function(){
 #' Get elevation based on lat/lon
 #'
 #' @return Elevation based on location
+#' @importFrom lutz tz_list
+#' @importFrom terra rast extract
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
@@ -67,7 +73,8 @@ get_elev <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 3 association
 #'
 #' @return Ecoregion level 3
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -93,7 +100,8 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 4 association
 #'
 #' @return Ecoregion level 4
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -119,7 +127,8 @@ get_eco_level4 <- function(lon_obs, lat_obs){
 #' Geolocate location to assign state association
 #'
 #' @return State
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -150,6 +159,12 @@ get_state <- function(lon_obs, lat_obs){
 #' @param lat_obs Latitude in decimal degrees
 #'
 #' @return a dataframe of GPM data for each observation
+#' @importFrom sf st_as_sf st_drop_geometry
+#' @importFrom dplyr mutate any_of select bind_rows select `%>%`
+#' @importFrom plyr round_any
+#' @importFrom pacman p_load
+#' @importFrom glue glue
+#' @importFrom climateR dap
 #' @export
 #'
 #' @examples
@@ -217,21 +232,21 @@ get_imerg <- function(datetime_utc,
   suppressMessages(
   for (x in 1:nrow(data)) {
     l[[x]] = tryCatch({
-        dap(
+      climateR::dap(
           URL = data$url[x],
           varname = var,
           AOI = data[x, ],
           verbose = FALSE
       )
     }, error = function(e) {
-      dap(
+      climateR::dap(
         URL = data$url2[x],
         varname = var,
         AOI = data[x, ],
         verbose = FALSE
       )
     }, error = function(e) {
-      dap(
+      climateR::dap(
         URL = data$url3[x],
         varname = var,
         AOI = data[x, ],

@@ -110,7 +110,7 @@ access_meteo <-
 #' @param dist_thresh_m Distance (in meters) that a station must be within to be considered
 #'
 #' @return Dataframe of station metadata
-#' @importFrom dplyr filter rowwise mutate ungroup
+#' @importFrom dplyr filter rowwise mutate ungroup `%>%`
 #' @importFrom geosphere distHaversine
 #' @export
 #'
@@ -169,7 +169,7 @@ station_select <- function(network, lon_obs, lat_obs,
 #' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
 #' @param stations dataframe of station metadata (from station_select)
 #' @return dataframe of meteorological data
-#' @importFrom dplyr filter rowwise mutate ungroup bind_rows
+#' @importFrom dplyr filter rowwise mutate ungroup bind_rows `%>%`
 #' @importFrom lubridate year month day minute hour
 #' @importFrom readr read_csv cols
 #' @examples
@@ -299,7 +299,7 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param stations dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
-#' @importFrom dplyr slice pull mutate between select
+#' @importFrom dplyr slice pull mutate between select `%>%`
 #' @importFrom lubridate with_tz year
 #' @examples
 #' lon = -105
@@ -425,7 +425,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param stations dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
-#' @importFrom dplyr case_when mutate slice pull bind_rows
+#' @importFrom dplyr case_when mutate slice pull bind_rows `%>%`
 #' @importFrom lubridate with_tz hours days seconds date
 #' @importFrom plyr ldply
 #' @importFrom tidyr pivot_longer pivot_wider separate
@@ -586,7 +586,7 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param tmp_met dataframe of meteorological data (from download_meteo_*)
 #'
 #' @return processed dataframe of met data
-#' @importFrom dplyr select filter mutate across case_when
+#' @importFrom dplyr select filter mutate across case_when `%>%`
 #' @importFrom lubridate with_tz hours days seconds date
 #' @examples
 #' lon = -105

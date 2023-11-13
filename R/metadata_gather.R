@@ -3,6 +3,7 @@
 #' @param stations Vector of station ids
 #'
 #' @return A dataframe of metadata filter to the station ids in 'stations'
+#' @importFrom dplyr filter
 #' @export
 #'
 #' @examples
