@@ -23,6 +23,7 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
 
   # We need distance between obs and stations
   df <- df %>%
+    dplyr::rowwise() %>%
     dplyr::mutate(dist = geosphere::distHaversine(c(lon_obs, lat_obs), c(lon, lat)))
 
   # We need elevation for obs and stations
@@ -125,8 +126,9 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
 
   # Compute temp_dew when rh and temp_air exist
   df <- df %>%
-    dplyr::mutate(temp_dew = dplyr::case_when(!is.na(temp_dew) ~ temp_dew,   # Use observed TDEW when it exists
-                                              TRUE ~ humidity::dewpoint(temp_air, rh)))
+    dplyr::mutate(temp_dew =ifelse(!is.na(temp_dew), temp_dew, humidity::dewpoint(temp_air, rh)))
+    # dplyr::mutate(temp_dew = dplyr::case_when(!is.na(temp_dew) ~ temp_dew,   # Use observed TDEW when it exists
+    #                                           TRUE ~ humidity::dewpoint(temp_air, rh)))
 
   # Filter to just data with valid dew point temperature obs
   df_tmp <- df %>%

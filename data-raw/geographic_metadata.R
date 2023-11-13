@@ -1,3 +1,5 @@
+## code to prepare the metadata for the geographical data goes here
+
 # Get the pipe
 `%>%` <- dplyr::`%>%` # add dplyr pipe
 
@@ -31,9 +33,12 @@ get_ecoregion = function(level = level){
 # Just use this because also provides ecoregion information for all levels
 ecoregions_states = get_ecoregion(4)
 
-################################################################################
-# Add the metadata to sysdata for package
-################################################################################
+# ################################################################################
+# # Add the metadata to sysdata for package
+# ################################################################################
+#
+# usethis::use_data(ecoregions_states,
+#                   internal = TRUE)
 
-usethis::use_data(ecoregions_states,
-                  internal = TRUE, overwrite = TRUE)
+sysdata <- load("R/sysdata.rda")
+save(list = c(sysdata, "ecoregions_states"), file = "R/sysdata.rda")

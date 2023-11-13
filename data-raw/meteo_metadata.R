@@ -214,3 +214,5 @@ all_meta <-
 
 usethis::use_data(hads_meta, lcd_meta, wcc_meta, all_meta,
                   internal = TRUE, overwrite = TRUE)
+
+# ?? do we add overwrite = TRUE? then wouldn't it remove geographic metadata?

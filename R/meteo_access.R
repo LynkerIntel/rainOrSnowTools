@@ -60,20 +60,26 @@ access_meteo <-
 
     # Access HADS data
     if("HADS" %in% networks){
+      # Error handling when it comes to no stations reported in the timezones
+      tryCatch({
       stations <- station_select(network = "HADS", lon_obs, lat_obs,
                                  deg_filter, dist_thresh_m)
       tmp_met <- download_meteo_hads(datetime_utc_start, datetime_utc_end, stations)
       tmp_met <- preprocess_meteo(network = "HADS", tmp_met)
       met_all <- dplyr::bind_rows(met_all, tmp_met)
+      }, error = function(e){})
     }
 
     # Access LCD data
     if("LCD" %in% networks){
+      # Error handling when it comes to no stations reported in the timezones
+      tryCatch({
       stations <- station_select(network = "LCD", lon_obs, lat_obs,
                                  deg_filter, dist_thresh_m)
       tmp_met <- download_meteo_lcd(datetime_utc_start, datetime_utc_end, stations)
       tmp_met <- preprocess_meteo(network = "LCD", tmp_met)
       met_all <- dplyr::bind_rows(met_all, tmp_met)
+    }, error = function(e){})
     }
 
     # Access WCC data
@@ -86,11 +92,7 @@ access_meteo <-
         tmp_met <- download_meteo_wcc(datetime_utc_start, datetime_utc_end, stations)
         tmp_met <- preprocess_meteo(network = "WCC", tmp_met)
         met_all <- dplyr::bind_rows(met_all, tmp_met)
-      }, error = function(e){
-        message(paste0("No WCC stations found for obs: lat = ", lat_obs, ", lon = ", lon_obs))
-        return(NA)
-      }
-      )
+      }, error = function(e){})
     }
 
     # Return the met_all data frame
@@ -349,6 +351,51 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
     # Download data
     tmp_df <- read.csv(url_lcd)
 
+    # if nrows(tmp_df) = 0, then go to the other URL
+    if (nrow(tmp_df) == 0){
+
+      # Redefine the start and ends
+      # Hack way to make sure we can go to 12/25 if the date is 12/31
+      # TODO: Make this more efficient
+      time_thresh_s2 = 518400 # +/- 6 days
+      datetime_utc_start2 = datetime_utc_obs - time_thresh_s2
+      datetime_utc_end2 = datetime_utc_obs + time_thresh_s2
+      datetime_lst_start2 = lubridate::with_tz(datetime_utc_start2,
+                                               tzone = tmp_tz)
+      datetime_lst_end2 = lubridate::with_tz(datetime_utc_end2,
+                                               tzone = tmp_tz)
+
+      if (lubridate::year(datetime_lst_end2) == lubridate::year(datetime_lst_start2)){
+
+        datetime_lst_end2 = datetime_lst_end2
+
+      } else {
+
+        datetime_lst_end2 = datetime_lst_end
+
+      }
+
+      lcd_url04_dat2 = format(datetime_lst_start2, "%Y-%m-%dT%H:%M:%S")
+      lcd_url06_dat2 = format(datetime_lst_end2, "%Y-%m-%dT%H:%M:%S")
+      url_lcd2 = paste0(lcd_url01_str, lcd_url02_sta, lcd_url03_str, lcd_url04_dat2,
+                        lcd_url05_str, lcd_url06_dat2, lcd_url07_str, lcd_url08_var)
+
+      # Download data
+      tmp_df <- read.csv(url_lcd2) %>%
+        dplyr::mutate(datetime_lst = as.POSIXct(DATE,
+                                  format = "%Y-%m-%dT%H:%M:%S",
+                                  tz = tmp_tz)) %>%
+        # Filter the data to the original dates
+        dplyr::filter(dplyr::between(datetime_lst, datetime_lst_start, datetime_lst_end)) %>%
+        dplyr::select(-c(datetime_lst))
+
+    } else{
+
+      # If not, just use the existing dataframe
+      tmp_df
+
+    }
+
     # Format datetime
     tmp_df <- tmp_df %>%
       dplyr::mutate(datetime_lst = as.POSIXct(DATE,
@@ -547,7 +594,8 @@ preprocess_meteo <- function(network, tmp_met){
   if(network == "HADS"){
 
     # Identify columns and new names
-    lookup <- c(temp_air = "TAIRGZZ", temp_dew = "TDIRGZZ", rh = "XRIRGZZ")
+    lookup <- c(temp_air = "TAIRGZ", temp_dew = "TDIRGZ", rh = "XRIRGZ",
+                temp_air = "TAIRGZZ", temp_dew = "TDIRGZZ", rh = "XRIRGZZ")
 
     # Down-select columns and rename
     tmp_met <- tmp_met %>%

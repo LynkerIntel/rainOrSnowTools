@@ -44,7 +44,6 @@ get_tz <- function(lon_obs, lat_obs){
 #' Build a table of timezones and offsets when called from get_tz
 #'
 #' @return A table of PST, MST, CST, and EST timezones
-#'
 make_tz_table <- function(){
 
   # TODO: only support 4 time zones currently
@@ -59,17 +58,20 @@ make_tz_table <- function(){
 #' Get elevation based on lat/lon
 #'
 #' @return Elevation based on location
-#'
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
   terra::extract(r, locs) %>% as.numeric()
 }
 
-#' Geolocate location to assign state and ecoregion association
+#' Geolocate location to assign ecoregion 3 association
 #'
-#' @return State and ecoregion
+#' @return Ecoregion level 3
 #'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' ecoregion3 <- get_eco_level3(lon, lat)
 get_eco_level3 <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -88,6 +90,14 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 
 }
 
+#' Geolocate location to assign ecoregion 4 association
+#'
+#' @return Ecoregion level 4
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' ecoregion4 <- get_eco_level4(lon, lat)
 get_eco_level4 <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -106,6 +116,14 @@ get_eco_level4 <- function(lon_obs, lat_obs){
 
 }
 
+#' Geolocate location to assign state association
+#'
+#' @return State
+#'
+#' @examples
+#' lon = -105
+#' lat = 40
+#' state <- get_state(lon, lat)
 get_state <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -161,6 +179,7 @@ get_imerg <- function(datetime_utc,
   product      = '3B-HHR-L.MS.MRG.3IMERG'
   url_pattern  = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06B.HDF5'
   url_pattern2 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06C.HDF5'
+  url_pattern3 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06D.HDF5'
 
   l = list()
 
@@ -187,14 +206,15 @@ get_imerg <- function(datetime_utc,
       nasa_time_second = format(nasa_time, "%S"),
       min = sprintf("%04s", difftime(rounded_time, origin_time,  units = 'min')),
       url = glue::glue(url_pattern),
-      url2 = glue::glue(url_pattern2)
+      url2 = glue::glue(url_pattern2),
+      url3 = glue::glue(url_pattern3)
     ) %>%
     # !! ADD ANYTHING YOU WANT TO KEEP HERE !!
-    dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2')))
+    dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2', 'url3')))
 
 
   ## Get Data
-
+  suppressMessages(
   for (x in 1:nrow(data)) {
     l[[x]] = tryCatch({
         dap(
@@ -210,8 +230,16 @@ get_imerg <- function(datetime_utc,
         AOI = data[x, ],
         verbose = FALSE
       )
-    })
+    }, error = function(e) {
+      dap(
+        URL = data$url3[x],
+        varname = var,
+        AOI = data[x, ],
+        verbose = FALSE
+      )
+      })
   }
+  )
 
   gpm_obs = cbind(data, dplyr::bind_rows(l))
 

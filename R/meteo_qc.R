@@ -14,7 +14,7 @@ qc_meteo <- function(df,
   # Check for column names
   if(("temp_air" %in% cols | "temp_wet" %in% cols | "temp_dew" %in% cols |
       "rh" %in% cols) == FALSE) {
-    stop("missing a valid column (temp_air, temp_wet, temp_dew, or rh")
+    warning("missing a valid column (temp_air, temp_wet, temp_dew, or rh)")
   }
 
   # Call the qc functions if the column is present
