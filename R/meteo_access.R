@@ -110,6 +110,8 @@ access_meteo <-
 #' @param dist_thresh_m Distance (in meters) that a station must be within to be considered
 #'
 #' @return Dataframe of station metadata
+#' @importFrom dplyr filter rowwise mutate ungroup
+#' @importFrom geosphere distHaversine
 #' @export
 #'
 #' @examples
@@ -166,9 +168,10 @@ station_select <- function(network, lon_obs, lat_obs,
 #' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
 #' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
 #' @param stations dataframe of station metadata (from station_select)
-#'
 #' @return dataframe of meteorological data
-#'
+#' @importFrom dplyr filter rowwise mutate ungroup bind_rows
+#' @importFrom lubridate year month day minute hour
+#' @importFrom readr read_csv cols
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -279,7 +282,9 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
                         hads_url21_mi2)
 
       # Download data
-      tmp.met <- met.link %>% readr::read_csv(col_types = readr::cols(.default = "c"))
+      tmp.met <-
+        met.link %>%
+        readr::read_csv(col_types = readr::cols(.default = "c"))
 
       # Bind data
       met <- dplyr::bind_rows(met, tmp.met)
@@ -294,7 +299,8 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param stations dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
-#'
+#' @importFrom dplyr slice pull mutate between select
+#' @importFrom lubridate with_tz year
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -419,7 +425,10 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param stations dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
-#'
+#' @importFrom dplyr case_when mutate slice pull bind_rows
+#' @importFrom lubridate with_tz hours days seconds date
+#' @importFrom plyr ldply
+#' @importFrom tidyr pivot_longer pivot_wider separate
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -555,7 +564,6 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
         tmp.station <- lapply(split(tmp, tmp$station, drop = TRUE), subset, select = -station)
       }
 
-
       # Bind data from temporary list into a single data frame and format datetime
       tmp.df <- plyr::ldply(tmp.station, dplyr::bind_rows) %>%
         dplyr::mutate(datetime_lst = as.POSIXct(date,
@@ -578,7 +586,8 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @param tmp_met dataframe of meteorological data (from download_meteo_*)
 #'
 #' @return processed dataframe of met data
-#'
+#' @importFrom dplyr select filter mutate across case_when
+#' @importFrom lubridate with_tz hours days seconds date
 #' @examples
 #' lon = -105
 #' lat = 40
@@ -609,7 +618,7 @@ preprocess_meteo <- function(network, tmp_met){
     # Compute number of columns and transform char data to numeric
     n_cols = length(tmp_met)
     tmp_met <- tmp_met %>%
-      dplyr::mutate(across(3:n_cols, as.numeric))
+      dplyr::mutate(dplyr::across(3:n_cols, as.numeric))
 
     # Convert UTC time string to POSIX UTC
     tmp_met$datetime <- as.POSIXct(tmp_met$datetime,
