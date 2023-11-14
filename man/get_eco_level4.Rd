@@ -13,7 +13,9 @@ Ecoregion level 4
 Geolocate location to assign ecoregion 4 association
 }
 \examples{
+\dontrun{
 lon = -105
 lat = 40
 ecoregion4 <- get_eco_level4(lon, lat)
+}
 }

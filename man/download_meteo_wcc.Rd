@@ -19,14 +19,3 @@ dataframe of meteorological data
 \description{
 Download meteorological data from WCC
 }
-\examples{
-\dontrun{
-lon = -105
-lat = 40
-datetime_utc_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
-datetime_utc_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
-wcc_stations <- station_select(network = "WCC", lon, lat,
-                   deg_filter=2, dist_thresh_m=100000)
-download_meteo_wcc(datetime_start, datetime_end, wcc_stations)
-}
-}

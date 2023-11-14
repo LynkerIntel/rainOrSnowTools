@@ -13,7 +13,9 @@ State
 Geolocate location to assign state association
 }
 \examples{
+\dontrun{
 lon = -105
 lat = 40
 state <- get_state(lon, lat)
+}
 }

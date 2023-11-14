@@ -9,8 +9,6 @@
 # library(raster)
 # library(lutz) # time zone calculations
 
-`%>%` <- dplyr::`%>%` # add dplyr pipe
-
 #' Get the time zone for an observation with a latitude and longitude
 #'
 #' @param lon_obs longitude of observation in decimal degrees (°)
@@ -22,9 +20,11 @@
 #' @importFrom dplyr left_join `%>%`
 #'
 #' @examples
+#' \dontrun{
 #' lon = -120
 #' lat = 40
 #' get_tz(lon, lat)
+#' }
 get_tz <- function(lon_obs, lat_obs){
   # Make the timezone table
   tz_table <- make_tz_table()
@@ -48,6 +48,7 @@ get_tz <- function(lon_obs, lat_obs){
 #' @return A table of PST, MST, CST, and EST timezones
 #' @importFrom lutz tz_list
 #' @importFrom dplyr filter mutate `%>%`
+#' @export
 make_tz_table <- function(){
 
   # TODO: only support 4 time zones currently
@@ -64,6 +65,7 @@ make_tz_table <- function(){
 #' @return Elevation based on location
 #' @importFrom lutz tz_list
 #' @importFrom terra rast extract
+#' @export
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
@@ -76,9 +78,11 @@ get_elev <- function(lon_obs, lat_obs){
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' ecoregion3 <- get_eco_level3(lon, lat)
+#' }
 get_eco_level3 <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -103,10 +107,12 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' ecoregion4 <- get_eco_level4(lon, lat)
-get_eco_level4 <- function(lon_obs, lat_obs){
+#' }
+get_eco_level4 <- function(lon_obs, lat_obs) {
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
                       coords = c("lon_obs", "lat_obs"), crs = 4326)
@@ -130,9 +136,11 @@ get_eco_level4 <- function(lon_obs, lat_obs){
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' state <- get_state(lon, lat)
+#' }
 get_state <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -168,12 +176,12 @@ get_state <- function(lon_obs, lat_obs){
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 #' lon = -105
 #' lat = 40
-#' gpm <- get_imerg(datetime_utc,
-#'                  lon_obs = lon,
-#'                  lat_obs = lat)
+#' gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
+#' }
 get_imerg <- function(datetime_utc,
                       lon_obs,
                       lat_obs){
@@ -263,7 +271,7 @@ get_imerg <- function(datetime_utc,
     sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
     dplyr::select('probabilityLiquidPrecipitation')
 
-  gpm_obs
+  return(gpm_obs)
 
 }
 

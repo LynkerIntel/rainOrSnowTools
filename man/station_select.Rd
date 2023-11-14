@@ -23,11 +23,3 @@ Dataframe of station metadata
 \description{
 Gather the metadata for meteorological stations
 }
-\examples{
-\dontrun {
-lon = -105
-lat = 40
-station_select(network = "HADS", lon, lat,
-                  deg_filter=2, dist_thresh_m=100000)
-}
-}

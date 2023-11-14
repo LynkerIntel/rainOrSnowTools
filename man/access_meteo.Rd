@@ -35,17 +35,3 @@ a dataframe of meteorological data
 \description{
 Download and preprocess meteorological data from three station networks
 }
-\examples{
-\dontrun{
-met_network = "HADS"
-datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
-lon = -105
-lat = 40
-degree_filter = 1
-meteo <- access_meteo(networks = met_network,
-                      datetime_utc_obs = datetime,
-                      lon_obs = lon,
-                      lat_obs = lat,
-                      deg_filter = degree_filter)
-}
-}

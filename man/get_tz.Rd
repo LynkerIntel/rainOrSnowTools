@@ -19,7 +19,9 @@ where X is the offset in hours from GMT
 Get the time zone for an observation with a latitude and longitude
 }
 \examples{
+\dontrun{
 lon = -120
 lat = 40
 get_tz(lon, lat)
+}
 }

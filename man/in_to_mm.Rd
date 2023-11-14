@@ -16,5 +16,7 @@ Output precipitation (or other depth quantity) in millimeters
 Function to convert inches to millimeters
 }
 \examples{
+\dontrun{
 ppt_mm <- in_to_mm(ppt_in = 0.5)
+}
 }

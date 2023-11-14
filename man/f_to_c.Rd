@@ -16,5 +16,7 @@ The temperature in degrees Celsius
 Function to convert temperature in Fahrenheit to Celsius
 }
 \examples{
-tair_c <- f_to_c(temp_F = 32);
+\dontrun{
+tair_c <- f_to_c(temp_F = 32)
+}
 }

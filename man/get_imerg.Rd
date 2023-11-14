@@ -20,10 +20,10 @@ a dataframe of GPM data for each observation
 Download GPM IMERG data
 }
 \examples{
+\dontrun{
 datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 lon = -105
 lat = 40
-gpm <- get_imerg(datetime_utc,
-                 lon_obs = lon,
-                 lat_obs = lat)
+gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
+}
 }
