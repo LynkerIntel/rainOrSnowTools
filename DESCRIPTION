@@ -11,14 +11,19 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 LazyData: True
 Imports: 
-  tidyverse,
   tidyselect,
   geosphere,
   lutz,
   terra,
   humidity,
   sf,
-  rmapshaper,
+  dplyr,
+  lubridate,
+  pacman,
+  plyr,
+  tidyr,
+  climateR,
+  readr,
   glue
 Remotes:
   SnowHydrology/humidity

@@ -17,6 +17,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' met_network = "HADS"
 #' datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 #' lon = -105
@@ -27,9 +28,16 @@
 #'                       lon_obs = lon,
 #'                       lat_obs = lat,
 #'                       deg_filter = degree_filter)
-access_meteo <-
-  function(networks, datetime_utc_obs, lon_obs, lat_obs,
-           deg_filter=2, time_thresh_s=3600, dist_thresh_m=100000){
+#' }
+access_meteo <- function(
+    networks,
+    datetime_utc_obs,
+    lon_obs,
+    lat_obs,
+    deg_filter=2,
+    time_thresh_s=3600,
+    dist_thresh_m=100000
+    ){
 
     # TODO: add function argument that lets user set what variables they want
     # e.g. vars="TA"
@@ -115,10 +123,12 @@ access_meteo <-
 #' @export
 #'
 #' @examples
+#' \dontrun {
 #' lon = -105
 #' lat = 40
 #' station_select(network = "HADS", lon, lat,
 #'                   deg_filter=2, dist_thresh_m=100000)
+#' }
 station_select <- function(network, lon_obs, lat_obs,
                            deg_filter, dist_thresh_m){
   # Station metadata provided in sysdata.R
@@ -173,6 +183,7 @@ station_select <- function(network, lon_obs, lat_obs,
 #' @importFrom lubridate year month day minute hour
 #' @importFrom readr read_csv cols
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -180,6 +191,7 @@ station_select <- function(network, lon_obs, lat_obs,
 #' hads_stations <- station_select(network = "HADS", lon, lat,
 #'                    deg_filter=2, dist_thresh_m=100000)
 #' download_meteo_hads(datetime_start, datetime_end, hads_stations)
+#' }
 download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 
   # Specify chunks to download
@@ -302,6 +314,7 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @importFrom dplyr slice pull mutate between select `%>%`
 #' @importFrom lubridate with_tz year
 #' @examples
+#' \dontrun {
 #' lon = -105
 #' lat = 40
 #' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -309,6 +322,7 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 #' lcd_stations <- station_select(network = "LCD", lon, lat,
 #'                    deg_filter=2, dist_thresh_m=100000)
 #' download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
+#' }
 download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 
   # Specify the vars
@@ -430,6 +444,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @importFrom plyr ldply
 #' @importFrom tidyr pivot_longer pivot_wider separate
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' datetime_utc_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -437,6 +452,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' wcc_stations <- station_select(network = "WCC", lon, lat,
 #'                    deg_filter=2, dist_thresh_m=100000)
 #' download_meteo_wcc(datetime_start, datetime_end, wcc_stations)
+#' }
 download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 
   stations = stations %>%
@@ -589,6 +605,7 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @importFrom dplyr select filter mutate across case_when `%>%`
 #' @importFrom lubridate with_tz hours days seconds date
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -597,6 +614,7 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 #'                    deg_filter=2, dist_thresh_m=100000)
 #' lcd_met <- download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
 #' preprocess_meteo("LCD", lcd_met)
+#' }
 preprocess_meteo <- function(network, tmp_met){
 
   # Process HADS data

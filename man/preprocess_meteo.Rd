@@ -18,6 +18,7 @@ processed dataframe of met data
 Preprocess met data (add datetime, put in common format)
 }
 \examples{
+\dontrun{
 lon = -105
 lat = 40
 datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -26,4 +27,5 @@ lcd_stations <- station_select(network = "LCD", lon, lat,
                    deg_filter=2, dist_thresh_m=100000)
 lcd_met <- download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
 preprocess_meteo("LCD", lcd_met)
+}
 }

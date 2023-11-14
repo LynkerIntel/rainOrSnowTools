@@ -20,6 +20,7 @@ dataframe of meteorological data
 Download meteorological data from HADS
 }
 \examples{
+\dontrun{
 lon = -105
 lat = 40
 datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
@@ -27,4 +28,5 @@ datetime_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
 hads_stations <- station_select(network = "HADS", lon, lat,
                    deg_filter=2, dist_thresh_m=100000)
 download_meteo_hads(datetime_start, datetime_end, hads_stations)
+}
 }
