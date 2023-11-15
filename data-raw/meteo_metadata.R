@@ -207,12 +207,9 @@ all_meta <-
       dplyr::mutate(id = as.character(id)),
   )
 
-
 ################################################################################
 # Add the metadata to sysdata for package
 ################################################################################
 
 usethis::use_data(hads_meta, lcd_meta, wcc_meta, all_meta,
                   internal = TRUE, overwrite = TRUE)
-
-# ?? do we add overwrite = TRUE? then wouldn't it remove geographic metadata?
