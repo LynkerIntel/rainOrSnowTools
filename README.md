@@ -41,7 +41,7 @@ with:
 # install.packages("devtools")
 # Install location is here for now...
 devtools::install_github("SnowHydrology/rainOrSnowTools",
-                         ref = "r_packaging")
+                         ref = "add_meteo_gpm")
 
 # ...but eventually it will be here:
 devtools::install_github("SnowHydrology/rainOrSnowTools")
