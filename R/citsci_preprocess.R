@@ -9,8 +9,6 @@
 # library(raster)
 # library(lutz) # time zone calculations
 
-`%>%` <- dplyr::`%>%` # add dplyr pipe
-
 #' Get the time zone for an observation with a latitude and longitude
 #'
 #' @param lon_obs longitude of observation in decimal degrees (°)
@@ -18,11 +16,15 @@
 #'
 #' @return the local standard time zone in the format "Etc/GMT+X"
 #' where X is the offset in hours from GMT
+#' @importFrom lutz tz_lookup_coords
+#' @importFrom dplyr left_join `%>%`
 #'
 #' @examples
+#' \dontrun{
 #' lon = -120
 #' lat = 40
 #' get_tz(lon, lat)
+#' }
 get_tz <- function(lon_obs, lat_obs){
   # Make the timezone table
   tz_table <- make_tz_table()
@@ -44,6 +46,9 @@ get_tz <- function(lon_obs, lat_obs){
 #' Build a table of timezones and offsets when called from get_tz
 #'
 #' @return A table of PST, MST, CST, and EST timezones
+#' @importFrom lutz tz_list
+#' @importFrom dplyr filter mutate `%>%`
+#' @export
 make_tz_table <- function(){
 
   # TODO: only support 4 time zones currently
@@ -58,6 +63,9 @@ make_tz_table <- function(){
 #' Get elevation based on lat/lon
 #'
 #' @return Elevation based on location
+#' @importFrom lutz tz_list
+#' @importFrom terra rast extract
+#' @export
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
@@ -67,11 +75,14 @@ get_elev <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 3 association
 #'
 #' @return Ecoregion level 3
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' ecoregion3 <- get_eco_level3(lon, lat)
+#' }
 get_eco_level3 <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -93,12 +104,15 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 4 association
 #'
 #' @return Ecoregion level 4
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' ecoregion4 <- get_eco_level4(lon, lat)
-get_eco_level4 <- function(lon_obs, lat_obs){
+#' }
+get_eco_level4 <- function(lon_obs, lat_obs) {
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
                       coords = c("lon_obs", "lat_obs"), crs = 4326)
@@ -119,11 +133,14 @@ get_eco_level4 <- function(lon_obs, lat_obs){
 #' Geolocate location to assign state association
 #'
 #' @return State
-#'
+#' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
+#' @importFrom dplyr select `%>%`
 #' @examples
+#' \dontrun{
 #' lon = -105
 #' lat = 40
 #' state <- get_state(lon, lat)
+#' }
 get_state <- function(lon_obs, lat_obs){
 
   locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
@@ -150,15 +167,21 @@ get_state <- function(lon_obs, lat_obs){
 #' @param lat_obs Latitude in decimal degrees
 #'
 #' @return a dataframe of GPM data for each observation
+#' @importFrom sf st_as_sf st_drop_geometry
+#' @importFrom dplyr mutate any_of select bind_rows select `%>%`
+#' @importFrom plyr round_any
+#' @importFrom pacman p_load
+#' @importFrom glue glue
+#' @importFrom climateR dap
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 #' lon = -105
 #' lat = 40
-#' gpm <- get_imerg(datetime_utc,
-#'                  lon_obs = lon,
-#'                  lat_obs = lat)
+#' gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
+#' }
 get_imerg <- function(datetime_utc,
                       lon_obs,
                       lat_obs){
@@ -217,21 +240,21 @@ get_imerg <- function(datetime_utc,
   suppressMessages(
   for (x in 1:nrow(data)) {
     l[[x]] = tryCatch({
-        dap(
+      climateR::dap(
           URL = data$url[x],
           varname = var,
           AOI = data[x, ],
           verbose = FALSE
       )
     }, error = function(e) {
-      dap(
+      climateR::dap(
         URL = data$url2[x],
         varname = var,
         AOI = data[x, ],
         verbose = FALSE
       )
     }, error = function(e) {
-      dap(
+      climateR::dap(
         URL = data$url3[x],
         varname = var,
         AOI = data[x, ],
@@ -248,7 +271,7 @@ get_imerg <- function(datetime_utc,
     sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
     dplyr::select('probabilityLiquidPrecipitation')
 
-  gpm_obs
+  return(gpm_obs)
 
 }
 

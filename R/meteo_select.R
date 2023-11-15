@@ -1,9 +1,17 @@
-# Function to pare down meteorological data to those closest in time
+# # Function to pare down meteorological data to those closest in time
+#
+# # Get the pipe
+# `%>%` <- dplyr::`%>%` # add dplyr pipe
+#
 
-# Get the pipe
-`%>%` <- dplyr::`%>%` # add dplyr pipe
-
-
+#' Function to pare down meteorological data to those closest in time
+#'
+#' @param df data.frame
+#' @param datetime_obs Date or character
+#'
+#' @return data.frame
+#' @importFrom dplyr filter mutate group_by summarise `%>%`
+#' @importFrom tidyr pivot_longer pivot_wider
 select_meteo <- function(df, datetime_obs){
 
   # Identify the column names
