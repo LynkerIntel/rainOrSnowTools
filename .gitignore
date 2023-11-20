@@ -6,3 +6,35 @@ TEST_TMP.R
 .RData
 .Ruserdata
 **/.DS_Store
+
+# terraform folder ignore
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+.terraform.lock.hcl
+.terraform/
+tfplan
+
+# # Ignore all .tf files
+*.tfvars
+**/.terraform/
+
+# # Except for main.tf: !main.tf
+
+# # main.tf *.tf
+# variables.tf
+
+# # infra/main.tf
+infra/variables.tf
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars
+infra/.terraform.lock.hcl
+infra/tfplan
+
+# infra/.terraform/
+
+# infra/
+# Ignore all files in the 'infra' directory
+# infra/*
+# !infra/main.tf
