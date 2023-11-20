@@ -36,5 +36,5 @@ infra/tfplan
 
 # infra/
 # Ignore all files in the 'infra' directory
-# infra/*
-# !infra/main.tf
+infra/*
+!infra/main.tf
