@@ -1,3 +1,8 @@
 .Rproj.user
 inst/doc
 TEST_TMP.R
+
+.Rhistory
+.RData
+.Ruserdata
+**/.DS_Store
