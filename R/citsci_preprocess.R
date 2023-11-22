@@ -186,11 +186,7 @@ get_imerg <- function(datetime_utc,
                       lon_obs,
                       lat_obs){
 
-  # Package load
-  # Is this the right way to do it?
-  pacman::p_load(hydrofabric, lubridate, plyr)
-
-  ## ASSIGN GPM variable
+  # Assign GPM variable
   var = 'probabilityLiquidPrecipitation'
 
   # Observation data is converted into shapefile format
