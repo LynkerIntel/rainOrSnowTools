@@ -44,3 +44,7 @@ R/scrap.R
 .netrc
 .dodsrc
 .urs_cookies
+
+# # ignore all hidden files/directories starting with "."
+# .*
+# !/.gitignore

@@ -4,3 +4,9 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^\.github$
+^Dockerfile$
+^infra/.*$
+^\\.urs_cookies$
+^\\.dodsrc$
+^[.].*$
+^.*/[.].*$

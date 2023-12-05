@@ -1,5 +1,11 @@
 # Functions for processing raw Mountain Rain or Snow citizen science observations
 
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c("US_L3NAME", "US_L4NAME", "dateTime", "minTime", "rounded_time", "nasa_time", "origin_time",
+    "STATE_NAME", "zone", "utc_offset_h")
+)
+
 # # Load packages
 # library(tidyverse)
 # library(lubridate)
@@ -40,7 +46,8 @@ get_tz <- function(lon_obs, lat_obs){
                             by = "tz_name")
 
   # Output the timezone
-  tmp_tz$timezone_lst
+  return(tmp_tz$timezone_lst)
+  # tmp_tz$timezone_lst
 }
 
 #' Build a table of timezones and offsets when called from get_tz
@@ -61,7 +68,8 @@ make_tz_table <- function(){
 }
 
 #' Get elevation based on lat/lon
-#'
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @return Elevation based on location
 #' @importFrom lutz tz_list
 #' @importFrom terra rast extract
@@ -83,6 +91,8 @@ get_elev <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 3 association
 #'
 #' @return Ecoregion level 3
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @examples
@@ -93,15 +103,22 @@ get_elev <- function(lon_obs, lat_obs){
 #' }
 get_eco_level3 <- function(lon_obs, lat_obs){
 
-  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
-                          coords = c("lon_obs", "lat_obs"), crs = 4326)
+  # get ecoregions_states data from R/sysdata.rda
+  ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
+
+  # sf dataframe of locations
+  locs = sf::st_as_sf(
+              data.frame(lon_obs, lat_obs),
+              coords = c("lon_obs", "lat_obs"),
+              crs    = 4326
+              )
 
  suppressMessages(suppressWarnings({
 
    sf::sf_use_s2(FALSE)
 
-   # sf::st_intersection(locs, ecoregions_states) %>%
-   sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
+   sf::st_intersection(locs, ecoregions_states) %>%
+   # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
      dplyr::select("Ecoregion" = US_L3NAME) %>%
      sf::st_drop_geometry() %>%
      as.character()
@@ -113,6 +130,8 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 4 association
 #'
 #' @return Ecoregion level 4
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @examples
@@ -123,14 +142,22 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' }
 get_eco_level4 <- function(lon_obs, lat_obs) {
 
-  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
-                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+  # get ecoregions_states data from R/sysdata.rda
+  ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
+
+  # sf dataframe of locations
+  locs = sf::st_as_sf(
+              data.frame(lon_obs, lat_obs),
+              coords = c("lon_obs", "lat_obs"),
+              crs = 4326
+              )
 
   suppressMessages(suppressWarnings({
 
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
+    sf::st_intersection(locs, ecoregions_states) %>%
+    # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
       dplyr::select("Ecoregion" = US_L4NAME) %>%
       sf::st_drop_geometry() %>%
       as.character()
@@ -140,7 +167,8 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 }
 
 #' Geolocate location to assign state association
-#'
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @return State
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
@@ -152,14 +180,22 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 #' }
 get_state <- function(lon_obs, lat_obs){
 
-  locs = sf::st_as_sf(data.frame(lon_obs, lat_obs),
-                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+  # get ecoregions_states data from R/sysdata.rda
+  ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
+
+  # sf dataframe of locations
+  locs = sf::st_as_sf(
+              data.frame(lon_obs, lat_obs),
+              coords = c("lon_obs", "lat_obs"),
+              crs = 4326
+              )
 
   suppressMessages(suppressWarnings({
 
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
+    sf::st_intersection(locs, ecoregions_states) %>%
+    # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
       dplyr::select("State" = STATE_NAME) %>%
       sf::st_drop_geometry() %>%
       as.character()
@@ -220,10 +256,10 @@ get_imerg <- function(
 
   # Observation data is converted into shapefile format
   data = sf::st_as_sf(
-            data.frame(datetime_utc, lon_obs, lat_obs),
-            coords = c("lon_obs", "lat_obs"),
-            crs    = 4326
-            )
+              data.frame(datetime_utc, lon_obs, lat_obs),
+              coords = c("lon_obs", "lat_obs"),
+              crs    = 4326
+              )
 
   # URL structure
   base         = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'

@@ -1,7 +1,38 @@
 # Functions for accessing, collating, and preprocessing meteorological data
 # from various station networks
 
-`%>%` <- dplyr::`%>%`
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c(".", "DATE", "datetime", "dateTime", "datetime_lst", "datetime_utc_obs", "dist", "timezone_lst",
+    "elev", "HourlyDewPointTemperature", "HourlyDryBulbTemperature", "HourlyPrecipitation",
+    "HourlyRelativeHumidity", "HourlyWetBulbTemperature", "id", "last_col", "lat", "LATITUDE",
+    "lon", "LONGITUDE", "minTime", "name", "nasa_time", "origin_time", "ppt", "ppt2",
+    "REPORT_TYPE", "rh", "rh2", "rounded_time", "STATE_NAME", "station", "STATION", "tair",
+    "tair2", "tdew", "tdew2", "temp_air", "temp_dew", "temp_wet", "time_gap", "twet2", "utc_valid"
+  )
+)
+
+# # Declare global variables to pass R-CMD-check
+# utils::globalVariables(
+#               c(
+#               ".", "DATE", "datetime", "dateTime", "datetime_lst",
+#               "datetime_utc_obs", "dist",  "elev",
+#               "HourlyDewPointTemperature", "HourlyDryBulbTemperature", "HourlyPrecipitation",
+#               "HourlyRelativeHumidity", "HourlyWetBulbTemperature",
+#               "id", "last_col", "lat",
+#               "LATITUDE", "lon", "LONGITUDE", "minTime",
+#               "name", "nasa_time", "origin_time",
+#               "ppt", "ppt2", "REPORT_TYPE", "rh", "rh2",
+#               "rounded_time", "STATE_NAME", "station", "STATION",
+#               "tair", "tair2", "tdew", "tdew2",
+#               "temp_air", "temp_dew", "temp_wet",
+#               "time_gap", "timezone_lst", "twet2",
+#               "US_L3NAME", "US_L4NAME", "utc_offset_h",
+#               "utc_valid", "value", "weight_raw", "zone"
+#               )
+#             )
+
+# `%>%` <- dplyr::`%>%`
 
 #' Download and preprocess meteorological data from three station networks
 #'
@@ -23,7 +54,7 @@ access_meteo <- function(
     deg_filter=2,
     time_thresh_s=3600,
     dist_thresh_m=100000
-    ){
+    ) {
 
     # # EXAMPLE CODE:
     # met_network = "HADS"
@@ -102,7 +133,7 @@ access_meteo <- function(
     }
 
     # Return the met_all data frame
-    met_all
+    return(met_all)
 
   }
 
@@ -294,7 +325,9 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
       # Bind data
       met <- dplyr::bind_rows(met, tmp.met)
   }
-  met
+
+  return(met)
+
 }
 
 #' Download meteorological data from LCD
@@ -422,7 +455,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
   }
 
   # Return the data
-  met
+  return(met)
 }
 
 #' Download meteorological data from WCC
@@ -584,8 +617,9 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
     met <- dplyr::bind_rows(met, tmp.df)
 
   }
+
   # Return the data
-  met
+  return(met)
 
 }
 

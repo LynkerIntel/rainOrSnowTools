@@ -1,5 +1,10 @@
 # # Function to pare down meteorological data to those closest in time
-#
+
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c("id", "datetime", "value", "name", "time_gap", ".", "REPORT_TYPE", "STATION")
+)
+
 # # Get the pipe
 # `%>%` <- dplyr::`%>%` # add dplyr pipe
 #

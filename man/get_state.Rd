@@ -6,6 +6,11 @@
 \usage{
 get_state(lon_obs, lat_obs)
 }
+\arguments{
+\item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
+
+\item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
+}
 \value{
 State
 }

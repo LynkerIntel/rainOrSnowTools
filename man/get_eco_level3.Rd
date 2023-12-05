@@ -6,6 +6,11 @@
 \usage{
 get_eco_level3(lon_obs, lat_obs)
 }
+\arguments{
+\item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
+
+\item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
+}
 \value{
 Ecoregion level 3
 }

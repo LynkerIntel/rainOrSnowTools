@@ -1,3 +1,8 @@
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c("dist", "elev", "lat", "lon", "temp_air", "temp_dew", "rh", "weight_raw")
+)
+
 # # Get the pipe
 # `%>%` <- dplyr::`%>%` # add dplyr pipe
 

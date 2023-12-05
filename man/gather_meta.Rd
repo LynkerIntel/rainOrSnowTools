@@ -16,6 +16,7 @@ A dataframe of metadata filter to the station ids in 'stations'
 Function to gather metadata from meta_all using a vector of station ids
 }
 \examples{
-stations = c('RRMI4', 'INLO2', 'JVDU1', '72526604751', 'RDKC2', 'TABC1', 'LSUA2', 'BAFO3', 'SOAC1', 'BNTC1')
+stations = c('RRMI4', 'INLO2', 'JVDU1', '72526604751',
+           'RDKC2', 'TABC1', 'LSUA2', 'BAFO3', 'SOAC1', 'BNTC1')
 gather_meta(stations)
 }
