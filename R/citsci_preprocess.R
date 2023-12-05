@@ -69,7 +69,15 @@ make_tz_table <- function(){
 get_elev <- function(lon_obs, lat_obs){
   locs = cbind(lon_obs, lat_obs)
   r = terra::rast("/vsicurl/https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/USGS_Seamless_DEM_13.vrt")
-  terra::extract(r, locs) %>% as.numeric()
+
+  # TODO: this currently returns a vector of length 2. with the ID of the point first, and the elevation second.
+  # TODO: It may make more sense to either ONLY return the elevation for the point(s) as a single vector
+  # TODO: OR to just return a dataframe with 2 columns, the ID and the elevation value....
+  return(
+    as.numeric(
+      terra::extract(r, locs)
+      )
+    )
 }
 
 #' Geolocate location to assign ecoregion 3 association
@@ -92,7 +100,8 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 
    sf::sf_use_s2(FALSE)
 
-   sf::st_intersection(locs, ecoregions_states) %>%
+   # sf::st_intersection(locs, ecoregions_states) %>%
+   sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
      dplyr::select("Ecoregion" = US_L3NAME) %>%
      sf::st_drop_geometry() %>%
      as.character()
@@ -121,7 +130,7 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, ecoregions_states) %>%
+    sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
       dplyr::select("Ecoregion" = US_L4NAME) %>%
       sf::st_drop_geometry() %>%
       as.character()
@@ -150,7 +159,7 @@ get_state <- function(lon_obs, lat_obs){
 
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, ecoregions_states) %>%
+    sf::st_intersection(locs, rainOrSnowTools:::ecoregions_states) %>%
       dplyr::select("State" = STATE_NAME) %>%
       sf::st_drop_geometry() %>%
       as.character()
@@ -162,10 +171,9 @@ get_state <- function(lon_obs, lat_obs){
 
 #' Download GPM IMERG data
 #'
-#' @param datetime_utc Observation time
-#' @param lon_obs Longitude in decimal degrees
-#' @param lat_obs Latitude in decimal degrees
-#'
+#' @param datetime_utc Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @return a dataframe of GPM data for each observation
 #' @importFrom sf st_as_sf st_drop_geometry
 #' @importFrom dplyr mutate any_of select bind_rows select `%>%`
@@ -182,20 +190,40 @@ get_state <- function(lon_obs, lat_obs){
 #' lat = 40
 #' gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
 #' }
-get_imerg <- function(datetime_utc,
-                      lon_obs,
-                      lat_obs){
+get_imerg <- function(
+    datetime_utc = NULL,
+    lon_obs      = NULL,
+    lat_obs      = NULL
+    ) {
 
-  # Package load
-  # Is this the right way to do it?
-  pacman::p_load(hydrofabric, lubridate, plyr)
+  # check for valid inputs
+  if(is.null(datetime_utc)) {
+    stop("Missing 'datetime_utc' argument input, 'datetime_utc' must be in format: YYYY-MM-DD HH:MM:SS")
+  }
+
+  # check for valid lon_obs input
+  if(is.null(lon_obs)) {
+    stop("Missing 'lon_obs' argument input, 'lon_obs' must be a numeric LONGITUDE value in CRS 4326")
+  }
+
+  # check for valid lat_obs input
+  if(is.null(lat_obs)) {
+    stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
+  }
+
+  # # Package load
+  # # Is this the right way to do it?
+  # pacman::p_load(hydrofabric, lubridate, plyr)
 
   ## ASSIGN GPM variable
   var = 'probabilityLiquidPrecipitation'
 
   # Observation data is converted into shapefile format
-  data = sf::st_as_sf(data.frame(datetime_utc, lon_obs, lat_obs),
-                      coords = c("lon_obs", "lat_obs"), crs = 4326)
+  data = sf::st_as_sf(
+            data.frame(datetime_utc, lon_obs, lat_obs),
+            coords = c("lon_obs", "lat_obs"),
+            crs    = 4326
+            )
 
   # URL structure
   base         = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
@@ -204,10 +232,15 @@ get_imerg <- function(datetime_utc,
   url_pattern2 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06C.HDF5'
   url_pattern3 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06D.HDF5'
 
+  # ^^^^ The above resources (".V06B.HDF5", ".V06C.HDF5", ".V06D.HDF5"), do NOT exist ^^^^
+  # this URL is the one that actually has an existing resource "V06E".
+  url_pattern4 = '{base}/{year}/{julian}/{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.V06E.HDF5'
+
   l = list()
 
   ## Build URLs
-  data = data %>%
+  data =
+    data %>%
     dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
     dplyr::mutate(
       julian  = format(dateTime, "%j"),
@@ -215,25 +248,33 @@ get_imerg <- function(datetime_utc,
       month   = format(dateTime, "%m"),
       day     = format(dateTime, "%d"),
       hour    = sprintf("%02s", format(dateTime, "%H")),
-      minTime = sprintf("%02s", plyr::round_any(as.numeric(
-        format(dateTime, "%M")
-      ), 30, f = floor)),
-      origin_time  = as.POSIXct(paste0(format(
-        dateTime, "%Y-%m-%d"
-      ), "00:00"), tz = "UTC"),
-      rounded_time = as.POSIXct(paste0(
-        format(dateTime, "%Y-%m-%d"), hour, ":", minTime
-      ), tz = "UTC"),
-      nasa_time = rounded_time + (29 * 60) + 59,
+      minTime = sprintf("%02s",
+                          plyr::round_any(as.numeric(
+                            format(dateTime, "%M")
+                            ), 30,
+                            f = floor)
+                          ),
+      origin_time      = as.POSIXct(paste0(
+                                      format(dateTime, "%Y-%m-%d"),
+                                      "00:00"),
+                                    tz = "UTC"
+                                    ),
+      rounded_time     = as.POSIXct(paste0(
+                                  format(dateTime, "%Y-%m-%d"), hour, ":", minTime
+                                ),
+                                tz = "UTC"
+                                ),
+      nasa_time        = rounded_time + (29 * 60) + 59,
       nasa_time_minute = format(nasa_time, "%M"),
       nasa_time_second = format(nasa_time, "%S"),
-      min = sprintf("%04s", difftime(rounded_time, origin_time,  units = 'min')),
-      url = glue::glue(url_pattern),
-      url2 = glue::glue(url_pattern2),
-      url3 = glue::glue(url_pattern3)
+      min              = sprintf("%04s", difftime(rounded_time, origin_time,  units = 'min')),
+      url              = glue::glue(url_pattern),
+      url2             = glue::glue(url_pattern2),
+      url3             = glue::glue(url_pattern3),
+      url4             = glue::glue(url_pattern4)
     ) %>%
     # !! ADD ANYTHING YOU WANT TO KEEP HERE !!
-    dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2', 'url3')))
+    dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2', 'url3', 'url4')))
 
 
   ## Get Data
@@ -241,10 +282,17 @@ get_imerg <- function(datetime_utc,
   for (x in 1:nrow(data)) {
     l[[x]] = tryCatch({
       climateR::dap(
-          URL = data$url[x],
+          URL = data$url4[x],
           varname = var,
           AOI = data[x, ],
           verbose = FALSE
+      )
+    }, error = function(e) {
+      climateR::dap(
+        URL = data$url[x],
+        varname = var,
+        AOI = data[x, ],
+        verbose = FALSE
       )
     }, error = function(e) {
       climateR::dap(
@@ -259,12 +307,14 @@ get_imerg <- function(datetime_utc,
         varname = var,
         AOI = data[x, ],
         verbose = FALSE
-      )
+        )
       })
-  }
+    }
   )
 
+  # Join data back together
   gpm_obs = cbind(data, dplyr::bind_rows(l))
+  # gpm_obs = dplyr::bind_cols(data, dplyr::bind_rows(l))
 
   # Return the dataframe
   gpm_obs = gpm_obs %>%

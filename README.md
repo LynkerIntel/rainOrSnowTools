@@ -4,6 +4,8 @@
 # rainOrSnowTools
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/SnowHydrology/rainOrSnowTools/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SnowHydrology/rainOrSnowTools/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 <img src="https://www.dri.edu/wp-content/uploads/badge.png" align="right" width="150"/>

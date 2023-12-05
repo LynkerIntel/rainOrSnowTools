@@ -38,3 +38,9 @@ infra/tfplan
 # Ignore all files in the 'infra' directory
 infra/*
 !infra/main.tf
+
+R/scrap.R
+
+.netrc
+.dodsrc
+.urs_cookies
