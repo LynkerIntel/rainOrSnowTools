@@ -26,7 +26,8 @@ Imports:
   readr,
   glue
 Remotes:
-  SnowHydrology/humidity
+  SnowHydrology/humidity,
+  mikejohnson51/climateR
 Depends: 
     R (>= 2.10)
 Suggests: 

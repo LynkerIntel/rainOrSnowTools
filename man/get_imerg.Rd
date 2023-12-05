@@ -4,14 +4,14 @@
 \alias{get_imerg}
 \title{Download GPM IMERG data}
 \usage{
-get_imerg(datetime_utc, lon_obs, lat_obs)
+get_imerg(datetime_utc = NULL, lon_obs = NULL, lat_obs = NULL)
 }
 \arguments{
-\item{datetime_utc}{Observation time}
+\item{datetime_utc}{Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.}
 
-\item{lon_obs}{Longitude in decimal degrees}
+\item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
 
-\item{lat_obs}{Latitude in decimal degrees}
+\item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
 }
 \value{
 a dataframe of GPM data for each observation
