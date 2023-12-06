@@ -38,6 +38,7 @@ infra/tfplan
 # Ignore all files in the 'infra' directory
 infra/*
 !infra/main.tf
+!infra/add_met_data.R
 
 R/scrap.R
 
