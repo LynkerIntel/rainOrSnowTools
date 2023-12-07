@@ -16,7 +16,7 @@ qaqc_obs = function(data = data){
       dupe_flag = dplyr::case_when(observer_count > 1 ~ "Dupe",
                             TRUE ~ "Pass"),
       observer_count = NULL) %>%
-    ungroup()
+    ungroup() %>%
     dplyr::mutate(
       # Checks for if the observation is within CONUS (study boundary)
       CONUS = dplyr::case_when(
