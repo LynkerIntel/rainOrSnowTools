@@ -15,13 +15,14 @@ qaqc_obs = function(data = data){
       observer_count = dplyr::n(),
       dupe_flag = dplyr::case_when(observer_count > 1 ~ "Dupe",
                             TRUE ~ "Pass"),
-      observer_count = NULL,
+      observer_count = NULL) %>%
+    ungroup()
+    dplyr::mutate(
       # Checks for if the observation is within CONUS (study boundary)
       CONUS = dplyr::case_when(
         state == "Alaska" ~ "NoCONUS",
         state == "character(0)" ~ "NoData",
-        TRUE ~ "Pass"))  %>%
-    ungroup()
+        TRUE ~ "Pass"))
 
 }
 
@@ -32,19 +33,42 @@ qaqc_obs = function(data = data){
 #' @importFrom dplyr mutate case_when any_vars filter_all `%>%`
 #' @examples
 #' \dontrun{
-#' data_qaqc2 = qaqc_processed(data)
+#' data = data_processed # the processed data
+#' snow_max_tair = 10, # max tair in °C for snow
+#' rain_max_tair = -5, # min tair in °C for rain
+#' rh_min = 30, # min for RH %
+#' max_avgdist_station = 2e5, # maximum average distance (m)
+#' max_closest_station = 3e4, # maximum nearest station distance (m)
+#' min_n_station = 5, # min number of stations within search radius
+#' pval_max = 0.05 # maximum pval for lapse rate calc
+#' data_qaqc2 = qaqc_processed(data = data,
+#'                            snow_max_tair = snow_max_tair,
+#'                            rain_max_tair = rain_max_tair,
+#'                            rh_min = rh_min,
+#'                            max_avgdist_station = max_avgdist_station,
+#'                            max_closest_station = max_closest_station,
+#'                            min_n_station = min_n_station,
+#'                            pval_max = pval_max)
 #' }
 
-qaqc_processed = function(data = data){
+qaqc_processed = function(data = data,
+                          snow_max_tair = 10,
+                          rain_max_tair = -5,
+                          rh_min = 30,
+                          max_avgdist_station = 2e5,
+                          max_closest_station = 3e4,
+                          min_n_station = 5,
+                          pval_max = 0.05
+                          ){
 
   # Add data flags
-  temp_air_snow_max = 10 # max tair in °C for snow
-  temp_air_rain_min = -5 # min tair in °C for rain
-  rh_thresh = 30
-  avgdist_thresh = 2e5 # maximum average distance (200 km)
-  closest_thresh = 3e4 # maximum nearest station distance (30 km)
-  nstation_thresh = 5 # min number of stations within search radius
-  pval_thresh = 0.05 # maximum pval for lapse rate calc
+  temp_air_snow_max = snow_max_tair # max tair in °C for snow
+  temp_air_rain_min = rain_max_tair # min tair in °C for rain
+  rh_thresh = rh_min # min for RH %
+  avgdist_thresh = max_avgdist_station # maximum average distance
+  closest_thresh = max_closest_station # maximum nearest station distance
+  nstation_thresh = min_n_station # min number of stations within search radius
+  pval_thresh = pval_max # maximum pval for lapse rate calc
 
   qaqc <- data %>%
     dplyr::mutate(

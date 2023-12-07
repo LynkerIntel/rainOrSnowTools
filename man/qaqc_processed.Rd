@@ -4,7 +4,16 @@
 \alias{qaqc_processed}
 \title{QAQC processed data}
 \usage{
-qaqc_processed(data = data)
+qaqc_processed(
+  data = data,
+  snow_max_tair = 10,
+  rain_max_tair = -5,
+  rh_min = 30,
+  max_avgdist_station = 2e+05,
+  max_closest_station = 30000,
+  min_n_station = 5,
+  pval_max = 0.05
+)
 }
 \value{
 list with 2 dataframes, 1: all flags; 2: filtered to the not complete data
@@ -14,6 +23,21 @@ QAQC processed data
 }
 \examples{
 \dontrun{
-data_qaqc2 = qaqc_processed(data)
+data = data_processed # the processed data
+snow_max_tair = 10, # max tair in °C for snow
+rain_max_tair = -5, # min tair in °C for rain
+rh_min = 30, # min for RH \%
+max_avgdist_station = 2e5, # maximum average distance (m)
+max_closest_station = 3e4, # maximum nearest station distance (m)
+min_n_station = 5, # min number of stations within search radius
+pval_max = 0.05 # maximum pval for lapse rate calc
+data_qaqc2 = qaqc_processed(data = data,
+                           snow_max_tair = snow_max_tair,
+                           rain_max_tair = rain_max_tair,
+                           rh_min = rh_min,
+                           max_avgdist_station = max_avgdist_station,
+                           max_closest_station = max_closest_station,
+                           min_n_station = min_n_station,
+                           pval_max = pval_max)
 }
 }
