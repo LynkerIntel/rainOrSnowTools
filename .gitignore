@@ -49,3 +49,7 @@ R/scrap.R
 # # ignore all hidden files/directories starting with "."
 # .*
 # !/.gitignore
+
+.env
+
+deploy/

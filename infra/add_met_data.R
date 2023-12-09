@@ -10,17 +10,157 @@
 # # have this script in the package folder
 # devtools::load_all()
 
-# library(dplyr) 
-# library(sf)
+library(dplyr) 
+library(sf)
 
-# # install with the below code
-# devtools::install_github("SnowHydrology/rainOrSnowTools",
-#                          ref = "cicd_pipeline")
+# install with the below code
+# # devtools::install_github("SnowHydrology/rainOrSnowTools",
+# #                        ref = "cicd_pipeline")
 
-# library(rainOrSnowTools)
+library(rainOrSnowTools)
+library(paws)
 # -----------------------------------------
 # --- ENRICH MRoS AIRTABLE OBSERVATION ----
 # -----------------------------------------
+# install.packages("paws")
+
+# paws::sqs
+
+# # example JSON string
+event = '{"id": "rec7vrLUoLMeZqfvr",
+    "createdtime": "2023-11-21 23:27:55 UTC",
+    "name": "Rain",
+    "longitude": -79.91447, 
+    "user": "Wi1uG9H7Wp",
+    "latitude": 39.77836,
+    "submitted_time": "23:27:54",
+    "local_time": "18:27:54",
+    "submitted_date": "11/21/23",
+    "local_date": "11/21/23",
+    "comment": "NA",
+    "time": "2023-11-21 23:27:55 UTC"}'
+
+# Take in the above Event, this is approximately what i can expect a single row from 
+# the S3 CSV to look like when it enters this lambda function code
+add_met_to_obs <- function(event) {
+    
+    # Connect to AWS SQS queue client 
+    sqs = paws::sqs(region = AWS_REGION, endpoint = SQS_QUEUE_URL)
+
+    # Receive message from SQS queue
+    msg = sqs$receive_message(
+        QueueUrl            = sqs$get_queue_url(QueueName = SQS_QUEUE_NAME),
+        MaxNumberOfMessages = 1
+    )
+
+    # Extract message body
+    msg_body = msg$Messages[[1]]$Body
+
+    # Convert message body JSON string to list
+    data <- jsonlite::fromJSON(msg_body)
+    
+    # # Convert JSON string to list
+    # data <- jsonlite::fromJSON(event)
+    
+    # static inputs
+    met_networks  = "ALL"
+    degree_filter = 1
+
+    # extract observation data from JSON event 
+    lon_obs  = as.numeric(data$longitude)
+    lat_obs  = as.numeric(data$latitude)
+    datetime = as.POSIXct(as.character(data$time), tz = "UTC")
+    id       = as.character(data$id)
+
+    # STEP 1: GET ELEVATION
+    elev = rainOrSnowTools::get_elev(lon_obs, lat_obs)
+
+    # STEP 2: GET ECO LEVEL 3
+    eco_level3 = rainOrSnowTools:::get_eco_level3(lon_obs, lat_obs)
+
+    # STEP 3: GET ECO LEVEL 4
+    eco_level4 = rainOrSnowTools:::get_eco_level4(lon_obs, lat_obs)
+
+    # STEP 4: GET STATE
+    state = rainOrSnowTools:::get_state(lon_obs, lat_obs)
+
+    # STEP 5: GET GPM PLP
+    plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
+
+    # STEP 6: get meteo data
+    # get_met_stations + get_met_data 
+    meteo <- rainOrSnowTools::access_meteo(
+        networks         = met_networks,
+        datetime_utc_obs = datetime,
+        lon_obs          = lon_obs,
+        lat_obs          = lat_obs,
+        deg_filter       = degree_filter
+        )
+
+    # STEP 7: Process and QA/QC meteo data
+    # process_met_data 
+
+    # quality control meteo data
+    meteo_qc <- rainOrSnowTools::qc_meteo(meteo)
+
+    # subset meteo data to date ...? 
+    meteo_subset <- rainOrSnowTools:::select_meteo(meteo_qc, datetime)
+
+    # get unique station IDs from "meteo_qc" dataframe
+    stations_to_gather <- unique(meteo_qc$id)
+
+    # get metadata for each station ID
+    metadata <- rainOrSnowTools::gather_meta(stations_to_gather)
+
+    # taily up number of statons in each network...? and then put into matrix
+    station_counts <- cbind(
+        "hads_counts" = 
+            metadata %>%
+            dplyr::filter(network == "hads") %>%
+            dplyr::tally() %>%
+            as.numeric(),
+        "lcd_counts" = 
+            metadata %>%
+            dplyr::filter(network == "lcd") %>%
+            dplyr::tally() %>% 
+            as.numeric(),
+        "wcc_counts" =
+            metadata %>%
+            dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
+            dplyr::tally() %>% 
+            as.numeric()
+        )
+
+    # STEP 8: Model meteo data and store with station counts
+    # model_met_data ----
+    # model meteo data and then put into a dataframe with the station counts for the modeled data
+    processed = cbind(
+                    rainOrSnowTools::model_meteo(
+                        id           = id,
+                        lon_obs      = lon_obs,
+                        lat_obs      = lat_obs,
+                        elevation    = elev,
+                        datetime_utc = datetime,
+                        meteo_df     = meteo_subset,
+                        meta_df      = metadata
+                    ),
+                    station_counts
+                    )
+                    
+    # convert processed data to JSON
+    output_json = jsonlite::toJSON(
+                    c(data,
+                    as.list(dplyr::select(processed, -id))
+                    )
+                  )
+                  
+   return(output_json)
+}
+
+# ---------------------------------------------------------
+# --- ENRICH MRoS AIRTABLE OBSERVATION from JSON EVENT ----
+# ---------------------------------------------------------
+
 # example JSON string
 event = '{"id": "rec7vrLUoLMeZqfvr",
     "createdtime": "2023-11-21 23:27:55 UTC",
