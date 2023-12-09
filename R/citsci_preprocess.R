@@ -312,9 +312,15 @@ get_imerg <- function(
     # !! ADD ANYTHING YOU WANT TO KEEP HERE !!
     dplyr::select(dplyr::any_of(c('datetime_utc', 'phase', 'url', 'url2', 'url3', 'url4')))
 
+  message("Downloading GPM data...")
 
+  message(paste0("data$url4: ", data$url4[1]))
+  message(paste0("data$url: ", data$url[1]))
+  message(paste0("data$url2: ", data$url2[1]))
+  message(paste0("data$url3: ", data$url3[1]))
+  
   ## Get Data
-  suppressMessages(
+  # suppressMessages(
   for (x in 1:nrow(data)) {
     l[[x]] = tryCatch({
       climateR::dap(
@@ -346,7 +352,7 @@ get_imerg <- function(
         )
       })
     }
-  )
+  # )
 
   # Join data back together
   gpm_obs = cbind(data, dplyr::bind_rows(l))
