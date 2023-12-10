@@ -284,7 +284,7 @@ get_imerg <- function(
       month   = format(dateTime, "%m"),
       day     = format(dateTime, "%d"),
       hour    = sprintf("%02s", format(dateTime, "%H")),
-      minTime = sprintf("%02s",
+      minTime = sprintf("%02d",
                           plyr::round_any(as.numeric(
                             format(dateTime, "%M")
                             ), 30,
@@ -303,7 +303,7 @@ get_imerg <- function(
       nasa_time        = rounded_time + (29 * 60) + 59,
       nasa_time_minute = format(nasa_time, "%M"),
       nasa_time_second = format(nasa_time, "%S"),
-      min              = sprintf("%04s", difftime(rounded_time, origin_time,  units = 'min')),
+      min              = sprintf("%04d", difftime(rounded_time, origin_time,  units = 'min')),
       url              = glue::glue(url_pattern),
       url2             = glue::glue(url_pattern2),
       url3             = glue::glue(url_pattern3),
