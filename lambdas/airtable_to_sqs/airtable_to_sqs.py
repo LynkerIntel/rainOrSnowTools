@@ -137,8 +137,8 @@ def airtable_to_sqs(event, context):
     print(f"df.shape: {df.shape}")
 
     # Loop through the dataframe and send each record to SQS
-    for i in range(0, 20):
-    # for i in range(0, len(df)):
+    # for i in range(0, 20):
+    for i in range(0, len(df)):
         
         print(f"Adding record {i} to SQS queue")
 
@@ -160,11 +160,23 @@ def airtable_to_sqs(event, context):
             # Add other fields as needed
         }
 
-        # Send the message to SQS
-        sqs.send_message(
-            QueueUrl    = SQS_QUEUE_URL,
-            MessageBody = json.dumps(message_body)
-        )
+        print(f"message_body: {message_body}")
+
+        # try to send the message to SQS
+        try:
+            # Send the message to SQS
+            sqs.send_message(
+                QueueUrl    = SQS_QUEUE_URL,
+                MessageBody = json.dumps(message_body)
+            )
+        except Exception as e:
+            print(f"Exception raised from row i {i}\n: {e}")
+
+        # # Send the message to SQS
+        # sqs.send_message(
+        #     QueueUrl    = SQS_QUEUE_URL,
+        #     MessageBody = json.dumps(message_body)
+        # )
 
         print(f"=====================")
 

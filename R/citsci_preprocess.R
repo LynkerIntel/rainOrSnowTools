@@ -322,6 +322,7 @@ get_imerg <- function(
   ## Get Data
   # suppressMessages(
   for (x in 1:nrow(data)) {
+    message(paste0("x: ", x))
     l[[x]] = tryCatch({
       climateR::dap(
           URL = data$url4[x],
@@ -353,6 +354,11 @@ get_imerg <- function(
       })
     }
   # )
+  
+  # give "l" list names that match the data dataframe row numbers
+  names(l) <- as.character(1:nrow(data))
+
+  message("names(l): ", names(l))
 
   # Join data back together
   gpm_obs = cbind(data, dplyr::bind_rows(l))

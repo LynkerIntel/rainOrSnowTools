@@ -6,8 +6,9 @@
 import os
 import re
 from datetime import datetime
-import requests
 import json
+import uuid 
+import time
 
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
@@ -22,70 +23,400 @@ import s3fs
 # import lambdas.stage_s3_to_prod_s3.config
 # from .config import Config
 
-# environemnt variables
+# Environment variables
 
-# Full bucket URIs
-S3_BUCKET = os.environ.get('S3_BUCKET')
-S3_STAGING_BUCKET = os.environ.get('S3_STAGING_BUCKET')
-S3_PROD_BUCKET = os.environ.get('S3_PROD_BUCKET')
+# # Full bucket URIs
+# S3_BUCKET = os.environ.get('S3_BUCKET')
+# S3_STAGING_BUCKET = os.environ.get('S3_STAGING_BUCKET')
+# S3_PROD_BUCKET = os.environ.get('S3_PROD_BUCKET')
 
-# Bucket names
-S3_STAGING_BUCKET_NAME = os.environ.get('S3_STAGING_BUCKET_NAME')
-S3_PROD_BUCKET_NAME = os.environ.get('S3_PROD_BUCKET_NAME')
+# # Bucket names
+# S3_STAGING_BUCKET_NAME = os.environ.get('S3_STAGING_BUCKET_NAME')
+# S3_PROD_BUCKET_NAME = os.environ.get('S3_PROD_BUCKET_NAME')
+
+# Environment variables
+S3_STAGE_BUCKET     = os.environ.get('S3_STAGE_BUCKET')
+S3_PROD_BUCKET      = os.environ.get('S3_PROD_BUCKET')
+S3_STAGE_BUCKET_URI = os.environ.get('S3_STAGE_BUCKET_URI')
+S3_PROD_BUCKET_URI  = os.environ.get('S3_PROD_BUCKET_URI')
 
 # S3 client
 s3 = boto3.client('s3')
+
+# lambda handler function
+def process_stage_messages(message):
+
+    print(f"=====================")
+    print(f"---->\n Value of message: {message}")
+    print(f"=====================")
+    print(f"value of type(message): {type(message)}")
+
+    # Get the SQS event message ID
+    message_id   = message["messageId"]
+
+    # Get the SQS event message body
+    message_body = message["body"]
+
+    print(f'---->\n Value of message_id: {message_id}')
+    print(f'---->\n Value of message_body: {message_body}')
+    print(f'---->\n Value of type(message_body): {type(message_body)}')
+
+    print(f"Converting message_body to python dict via json.loads()...")
+
+    # Try and convert the message_body string to a Python dictionary
+    try:
+        message_body = json.loads(message_body)
+    except Exception as e:
+        print(f"Error in json.loads() of message_body: {e}")
+        raise
+
+    print(f'---->\n Value of message_body: {message_body}')
+    print(f'---->\n Value of type(message_body): {type(message_body)}')
+
+    # #################################
+    # # Example values from message_body (message_body is an S3 event message)
+    # EVENT_TIME = "2019-09-03T19:37:27.192Z"
+    # INPUT_S3_BUCKET = "test-staging-bucket-mros"
+    # INPUT_OBJECT_KEY = "mros_staging_rec4pVBLnNgxeT1Nj_12_01_23.json"
+    # #################################
+
+    # # get the bucket name and object key from the event
+    INPUT_S3_BUCKET  = message_body['Records'][0]['s3']['bucket']['name']
+    INPUT_OBJECT_KEY = message_body['Records'][0]['s3']['object']['key']
     
+    print(f"- INPUT_S3_BUCKET: {INPUT_S3_BUCKET}")
+    print(f"- INPUT_OBJECT_KEY: {INPUT_OBJECT_KEY}")
+
+    # try to get the eventTime from the message_body
+    try:
+        # get the eventTime from the message_body
+        EVENT_TIME = message_body.get('Records', [])[0].get('eventTime')
+        # EVENT_TIME       = message_body['Records'][0]['eventTime']
+        if not EVENT_TIME:
+            print(f"No eventTime found in message_body, defaulting to current time")
+
+        # Use the current date and time as the default if EVENT_TIME is None
+        EVENT_TIME = EVENT_TIME or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    except Exception as e:
+        print(f"Error accessing 'eventTime' field: {e}")
+        raise
+
+    print(f"- EVENT_TIME: {EVENT_TIME}")
+
+    # Parse the eventTime string into a datetime object
+    parsed_event_time = datetime.strptime(EVENT_TIME, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+    # Extract month, day, and year
+    month = parsed_event_time.strftime("%m")
+    day   = parsed_event_time.strftime("%d")
+    year  = parsed_event_time.year
+
+    # create a date_key string
+    date_key = f"{year}_{month}_{day}"
+
+    print(f"data_key: {date_key}")
+    print(f"Month: {month}, Day: {day}, Year: {year}")
+
+    # # download the json input file from S3
+    try:
+        s3_obj = s3.get_object(Bucket=INPUT_S3_BUCKET, Key=INPUT_OBJECT_KEY)
+    except Exception as e:
+        print(f"Error retrieving S3 object: {e}")
+        print(f"- Problem INPUT_S3_BUCKET: {INPUT_S3_BUCKET}")
+        print(f"- Problem INPUT_OBJECT_KEY: {INPUT_OBJECT_KEY}")
+        raise
+
+    # get the contents of the file
+    obj_content = json.load(s3_obj['Body'])
+
+    # extract the JSON data from obj_content
+    json_data = json.loads(obj_content[0])[0]
+
+    # add the date_key to the json_data
+    json_data["date_key"] = date_key
+
+    print(f"json_data: {json_data}")
+    print(f"===" * 5)
+
+    return json_data
+
+# Give a dataframe with a "date_key" column, and split the dataframe into groups based on this columnd,
+# then upload each of the grouped dataframes to S3
+def upload_dataframes_by_date_key(df):
+    # # Convert the list of JSON objects to a Pandas DataFrame
+    # df = pd.DataFrame(json_list)
+
+    # Group by the 'date_key' column
+    grouped_df = df.groupby('date_key')
+
+    # Create a dictionary of DataFrames for each group
+    df_map = {date_key: group_df for date_key, group_df in grouped_df}
+    print(f"Number of DataFrames in df_map: {len(df_map)}")
+    print(f'Keys in df_map: {", ".join(list(df_map.keys()))}')
+
+    # Iterate through the dictionary of DataFrames
+    for date_key, group_df in df_map.items():
+        print(f"Processing dataframes with date_key: '{date_key}'")
+
+        # Extract year, month, and day from date_key
+        DF_YEAR, DF_MONTH, DF_DAY = date_key.split("_")
+        
+        print(f"DF_YEAR: {DF_YEAR}\nDF_MONTH: {DF_MONTH}\nDF_DAY: {DF_DAY}")
+        # print(f"DF_YEAR: {DF_YEAR}, DF_MONTH: {DF_MONTH}, DF_DAY: {DF_DAY}")
+        print(f"Shape of '{date_key}' df: {group_df.shape}")
+        print(f"Number ROWS in '{date_key}' df: {len(group_df)}")
+        print(f"Number COLUMNS in '{date_key}' df: {len(group_df.columns)}")
+
+        # Generate a unique CSV filename
+        unique_id = f"{uuid.uuid4().hex}"
+        print(f"Unique ID of CSV: '{unique_id}'")
+
+        # Generate a timestamp to add to the OUTPUT_S3_OBJECT_NAME
+        timestamp = int(time.time())
+        print(f"Timestamp of CSV: {timestamp}")
+        
+        # Use uuid.uuid4() and current timestamp to create a unique filename
+        csv_filename = f"{unique_id}_{timestamp}.csv"
+        print(f"Unique CSV filename: '{csv_filename}'")
+
+        # Create the S3 URI for the output CSV file
+        S3_OUTPUT_OBJECT_KEY = f"s3://{S3_PROD_BUCKET}/{DF_YEAR}/{DF_MONTH}/{DF_DAY}/{csv_filename}"
+
+        print(f"S3_OUTPUT_OBJECT_KEY: {S3_OUTPUT_OBJECT_KEY}")
+        print(f"Saving dataframe to:\n - '{S3_OUTPUT_OBJECT_KEY}'")
+        
+        try:
+            group_df.to_csv(S3_OUTPUT_OBJECT_KEY, index=False)
+        except Exception as e:
+            print(f"Error saving dataframe to S3: {e}")
+            print(f"Problem S3_OUTPUT_OBJECT_KEY: {S3_OUTPUT_OBJECT_KEY}")
+            print(f"Problem 'date_key': {date_key}")
+
+        # # Save the DataFrame as CSV to S3
+        # group_df.to_csv(S3_OUTPUT_OBJECT_KEY, index=False)
+
+        print(f"===" * 5)
+
+    return
+
 # lambda handler function
 def stage_s3_to_prod_s3(event, context):
 
-    # print(f"event: {event}")
-    print(f"- S3_BUCKET: {S3_BUCKET}")
-    print(f"- S3_STAGING_BUCKET: {S3_STAGING_BUCKET}")
+    print(f"=====================")
+    print(f'---->\n Value of event: {event}')
+    print(f"=====================")
+
+    # S3_STAGE_BUCKET = "test-staging-bucket-mros"
+    # S3_STAGE_BUCKET_URI = "s3://test-staging-bucket-mros"
+    # S3_PROD_BUCKET = "tester-prod-bucket-mros"
+    # S3_PROD_BUCKET_URI = "s3://tester-prod-bucket-mros"
+
+    print(f"- S3_STAGE_BUCKET: {S3_STAGE_BUCKET}")
     print(f"- S3_PROD_BUCKET: {S3_PROD_BUCKET}")
+    print(f"- S3_STAGE_BUCKET_URI: {S3_STAGE_BUCKET_URI}")
+    print(f"- S3_PROD_BUCKET_URI: {S3_PROD_BUCKET_URI}")
 
-    # get a list of objects in the staging bucket
-    response = s3.list_objects(Bucket=S3_STAGING_BUCKET_NAME)
-
-    # get a list of JSON (".json") files in the staging bucket
-    json_files = [obj['Key'] for obj in response.get('Contents', []) if obj['Key'].lower().endswith('.json')]
-
+    message_count = 0
+    
+    batch_item_failures = []
+    sqs_batch_response = {}
 
     json_list = []
 
-    # iterate through the list of JSON files
-    for json_file in json_files:
-        print(f"json_file: {json_file}")
+    for message in event['Records']:
+    # for message in range(0, 3):
 
-        # json_content = read_json_from_s3(bucket_name, json_file)
+        message_count += 1
+        # print(f"PROCESSING MESSAGE: {message_count}")
+        print(f"PROCESSING MESSAGE: {message_count} / {len(event['Records'])}")
+        try:
+            stage_json = process_stage_messages(message)
+            json_list.append(stage_json)
+        except Exception as e:
+            print(f"Exception raised from messageId {message['messageId']}\n: {e}")
+            batch_item_failures.append({"itemIdentifier": message['messageId']})
+        
+    print(f"Number of JSONs in batch: {len(json_list)}")
+    print(f"Converting batch of {len(json_list)} JSONs to Pandas DataFrame...")
 
-        # get the object from S3
-        json_data = s3.get_object(Bucket=S3_STAGING_BUCKET_NAME, Key=json_file)
+    # Try to convert the list of JSON objects (dictionaries) to a Pandas DataFrame
+    try:
+        df = pd.DataFrame(json_list)
+    except Exception as e:
+        # if an error occurs, print the error and add all messages to batch_item_failures,
+        # and then return sqs_batch_response
+        print(f"---> ERROR converting JSON list to DataFrame: {e}")
+        print(f"-----> Adding all messages to batch_item_failures to send back to SQS queue...")
 
-        # get the contents of the file
-        obj_content = json.load(json_data['Body'])
+        # loop through event['Records'] and add each message to batch_item_failures
+        batch_item_failures = [{"itemIdentifier": message['messageId']} for message in event['Records']]
+        sqs_batch_response["batchItemFailures"] = batch_item_failures
 
-        json_list.append(json.loads(obj_content[0])[0])
+        print(f"Returning ALL messages to SQS queue early...")
 
-        print(f"==================")
+        print(f"---> sqs_batch_response: {sqs_batch_response}")
 
-    # convert the list of JSON objects (dictionaries) to a Pandas DataFrame
-    df = pd.DataFrame(json_list)
+        return sqs_batch_response
 
-    # clean day date to use in the filename
-    clean_date = df.submitted_date.values[0].replace("/", "_")
+    print(f"Succesfully converted JSON list to DataFrame!")
+    print(f"Uploading dataframe in groups by 'date_key' to S3...")
 
-    # Save the dataframe to a parquet/CSV file in S3
-    s3_object = f"{S3_PROD_BUCKET}/daily/mros_observations_{clean_date}.csv"
-    # local_object = f"/Users/anguswatters/Desktop/mros_airtable_{clean_date}.csv"
-    # s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.parquet"
+    # upload the dataframes to S3 by date_key column (year_month_day, e.g. 2021_01_01)
+    upload_dataframes_by_date_key(df)
 
-    print(f"s3_object: {s3_object}")
+    sqs_batch_response["batchItemFailures"] = batch_item_failures
+    print(f"sqs_batch_response: {sqs_batch_response}")
 
-    print(f"Saving dataframe to {s3_object}")
-    print(f"df.shape: {df.shape}")
+    return sqs_batch_response
 
-    # # save the dataframe as a parquet to S3
-    df.to_csv(s3_object)
+# # lambda handler function
+# def stage_s3_to_prod_s32(event, context):
 
-    return
+#     print(f"=====================")
+#     print(f'---->\n Value of event: {event}')
+#     print(f"=====================")
+
+#     S3_STAGE_BUCKET = "test-staging-bucket-mros"
+#     S3_STAGE_BUCKET_URI = "s3://test-staging-bucket-mros"
+#     S3_PROD_BUCKET = "tester-prod-bucket-mros"
+#     S3_PROD_BUCKET_URI = "s3://tester-prod-bucket-mros"
+
+#     print(f"- S3_STAGE_BUCKET: {S3_STAGE_BUCKET}")
+#     print(f"- S3_PROD_BUCKET: {S3_PROD_BUCKET}")
+#     print(f"- S3_STAGE_BUCKET_URI: {S3_STAGE_BUCKET_URI}")
+#     print(f"- S3_PROD_BUCKET_URI: {S3_PROD_BUCKET_URI}")
+
+#     message_count = 0
+    
+#     batch_item_failures = []
+#     sqs_batch_response = {}
+
+#     json_list = []
+
+#     # for message in event['Records']:
+#     for message in range(0, 3):
+
+#         message_count += 1
+#         print(f"PROCESSING MESSAGE: {message_count}")
+#         # print(f"PROCESSING MESSAGE: {message_count} / {len(event['Records'])}")
+#         try:
+#             stage_json = process_stage_messages(message)
+#             json_list.append(stage_json)
+#         except Exception as e:
+#             print(f"Exception raised from messageId {message['messageId']}\n: {e}")
+#             batch_item_failures.append({"itemIdentifier": message['messageId']})
+        
+#     print(f"Number of JSONs in batch: {len(json_list)}")
+    
+#     print(f"Converting batch of {len(json_list)} JSONs to Pandas DataFrame...")
+
+#     # convert the list of JSON objects (dictionaries) to a Pandas DataFrame
+#     df = pd.DataFrame(json_list)
+
+#     # Group by the 'Group' column
+#     df = df.groupby('date_key')
+#     # df_by_date = df.groupby('date_key')
+
+#     # Create separate DataFrames for each group
+#     df_map = {date_key: group_df for date_key, group_df in df}
+#     # df_map = {date_key: group_df for date_key, group_df in df_by_date}
+#     print(f"Number of DataFrames in df_map: {len(df_map)}")
+#     print(f'Keys in df_map: {", ".join(list(df_map.keys()))}')
+
+#     # Iterate through the dictionary of DataFrames
+#     for date_key, group_df in df_map.items():
+
+#         print(f"Processing dataframes with date_key: '{date_key}'")
+
+#         # Extract the year, month, and day from the date_key
+#         DF_YEAR, DF_MONTH, DF_DAY = date_key.split("_")
+
+#         print(f"DF_YEAR: {DF_YEAR}\nDF_MONTH: {DF_MONTH}\nDF_DAY: {DF_DAY}")
+#         # print(f"DF_YEAR: {DF_YEAR}, DF_MONTH: {DF_MONTH}, DF_DAY: {DF_DAY}")
+#         print(f"Shape of '{date_key}' df: {group_df.shape}")
+#         print(f"Number ROWS in '{date_key}' df: {len(group_df)}")
+#         print(f"Number COLUMNS in '{date_key}' df: {len(group_df.columns)}")
+
+#         # generate a random UUID to add to the OUTPUT_S3_OBJECT_NAME
+#         unique_id = f"{uuid.uuid4().hex}"
+#         print(f"Unique ID of CSV: '{unique_id}'")
+
+#         # generate a timestamp to add to the OUTPUT_S3_OBJECT_NAME
+#         timestamp = int(time.time())
+#         print(f"Timestamp of CSV: {timestamp}")
+
+#         # Use uuid.uuid4() and current timestamp to create a unique filename
+#         csv_filename = f"{unique_id}_{timestamp}.csv"
+#         print(f"Unique CSV filename: '{csv_filename}'")
+
+#         # Create the S3 URI for the output CSV file
+#         S3_OUTPUT_OBJECT_KEY = f"s3://{S3_PROD_BUCKET}/{DF_YEAR}/{DF_MONTH}/{DF_DAY}/{csv_filename}"
+#         # S3_OUTPUT_OBJECT_KEY = f"{S3_PROD_BUCKET_URI}/{DF_YEAR}/{DF_MONTH}/{DF_DAY}/{csv_filename}"
+
+#         print(f"S3_OUTPUT_OBJECT_KEY: {S3_OUTPUT_OBJECT_KEY}")
+#         print(f"Saving dataframe to:\n - '{S3_OUTPUT_OBJECT_KEY}'")
+
+#         # # save the dataframe as CSV to S3
+#         group_df.to_csv(S3_OUTPUT_OBJECT_KEY, index=False)
+
+#         print(f"=====================")
+        
+#     sqs_batch_response["batchItemFailures"] = batch_item_failures
+
+#     print(f"sqs_batch_response: {sqs_batch_response}")
+
+#     return sqs_batch_response
+
+# # lambda handler function
+# def stage_s3_to_prod_s3(event, context):
+
+#     # print(f"event: {event}")
+#     print(f"- S3_BUCKET: {S3_BUCKET}")
+#     print(f"- S3_STAGING_BUCKET: {S3_STAGING_BUCKET}")
+#     print(f"- S3_PROD_BUCKET: {S3_PROD_BUCKET}")
+
+#     # get a list of objects in the staging bucket
+#     response = s3.list_objects(Bucket=S3_STAGING_BUCKET_NAME)
+
+#     # get a list of JSON (".json") files in the staging bucket
+#     json_files = [obj['Key'] for obj in response.get('Contents', []) if obj['Key'].lower().endswith('.json')]
+
+#     json_list = []
+
+#     # iterate through the list of JSON files
+#     for json_file in json_files:
+#         print(f"json_file: {json_file}")
+
+#         # json_content = read_json_from_s3(bucket_name, json_file)
+
+#         # get the object from S3
+#         json_data = s3.get_object(Bucket=S3_STAGING_BUCKET_NAME, Key=json_file)
+
+#         # get the contents of the file
+#         obj_content = json.load(json_data['Body'])
+
+#         json_list.append(json.loads(obj_content[0])[0])
+
+#         print(f"==================")
+
+#     # convert the list of JSON objects (dictionaries) to a Pandas DataFrame
+#     df = pd.DataFrame(json_list)
+
+#     # clean day date to use in the filename
+#     clean_date = df.submitted_date.values[0].replace("/", "_")
+
+#     # Save the dataframe to a parquet/CSV file in S3
+#     s3_object = f"{S3_PROD_BUCKET}/daily/mros_observations_{clean_date}.csv"
+#     # local_object = f"/Users/anguswatters/Desktop/mros_airtable_{clean_date}.csv"
+#     # s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.parquet"
+
+#     print(f"s3_object: {s3_object}")
+
+#     print(f"Saving dataframe to {s3_object}")
+#     print(f"df.shape: {df.shape}")
+
+#     # # save the dataframe as a parquet to S3
+#     df.to_csv(s3_object)
+
+#     return

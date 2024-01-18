@@ -5,7 +5,7 @@
 # terraform tries to use the Docker Image to create the Lambda function.
 
 # Provide AWS Account Number as first argument
-# Example: source sh/build_static_resources.sh 123456789
+# Example: source sh/build_static_resources.sh 123456789 aws-profile tfstate-s3-bucket-name
 
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
@@ -13,13 +13,19 @@ AWS_ACCOUNT_NUMBER=$1
 # AWS Profile
 AWS_PROFILE=$2
 
+# # Terraform state S3 bucket name
+# TF_STATE_S3_BUCKET_NAME=$3
+
 # S3 bucket
-BUCKET_NAME=$3
+BUCKET_NAME=$4
 BUCKET_NAME="mros-output-bucket"
 
 # S3 object key and CSV file content
 S3_OBJECT_KEY="mros_output.csv"
-CSV_CONTENT="date,id,value,lat,lng"
+
+# CSV headers for mros_output.csv
+CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,temp_wet,hads_counts,lcd_counts,wcc_counts,date_key"
+# CSV_CONTENT="date,id,value,lat,lng"
 
 # ECR repo names
 ECR_REPO_NAME="mros-sqs-consumer-lambda-ecr"
@@ -32,13 +38,35 @@ LOCATION_CONSTRAINT="us-west-1"
 export TF_VAR_output_s3_bucket_name="$BUCKET_NAME"
 export TF_VAR_output_s3_object_key="$S3_OBJECT_KEY"
 export TF_VAR_sqs_consumer_ecr_repo_name="$ECR_REPO_NAME"
+# export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
+
+# # check if Terraform state S3 bucket ALREADY EXISTS
+# if ! aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
+#     # Create the Terraform state S3 bucket if it DOESN'T exist
+#     aws s3api create-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --create-bucket-configuration LocationConstraint="$LOCATION_CONSTRAINT"
+    
+#     echo "S3 bucket $TF_STATE_S3_BUCKET_NAME created."
+
+#     # Enable versioning on the bucket
+#     aws s3api put-bucket-versioning --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --versioning-configuration Status=Enabled
+
+# else
+#     echo "Bucket $TF_STATE_S3_BUCKET_NAME already exists."
+# fi
 
 # check if the output bucket ALREADY EXISTS
 if ! aws s3api head-bucket --bucket "$BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
     # Create the output bucket if it DOESN'T exist
     aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --create-bucket-configuration LocationConstraint="$LOCATION_CONSTRAINT"
+    
+    echo "S3 bucket $BUCKET_NAME created."
+
+    # Enable versioning on the bucket
+    aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --versioning-configuration Status=Enabled
+
+    echo "Versioning enabled on S3 bucket $BUCKET_NAME."
 else
-    echo "Bucket $BUCKET_NAME already exists."
+    echo "Bucket $BUCKET_NAME already exists with versioning enabled."
 fi
 
 # Upload empty CSV file if it does NOT already exist

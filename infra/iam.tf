@@ -421,6 +421,7 @@ data "aws_iam_policy_document" "sqs_consumer_lambda_policy_doc" {
 
     resources = [
       aws_sqs_queue.mros_sqs_queue.arn,
+      aws_sqs_queue.sqs_stage_queue.arn,
       aws_sqs_queue.sqs_prod_to_output_queue.arn
       ]
 

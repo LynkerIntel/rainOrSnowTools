@@ -156,10 +156,26 @@ sqs_consumer <- function(Records) {
     message(paste0("Message Body:\n", msg_body))
 
     message("Parsing SQS trigger event JSON")
+    
+    # msg_body = '{
+    #     "id": "rectFNQPJyLyga6Iq",
+    #     "timestamp": "1705589683.0",
+    #     "createdtime": "2024-01-18T14:54:43.000Z",
+    #     "name": "Snow",
+    #     "latitude": "39.64079975903475",
+    #     "user": "mehubZKIjJ",
+    #     "longitude": "-106.53732056267381",
+    #     "submitted_time": "14:54:42",
+    #     "local_time": "07:54:42",
+    #     "submitted_date": "01/18/24",
+    #     "local_date": "1/18/24",
+    #     "comment": "nan",
+    #     "time": "2024-01-18T14:54:43.000Z"
+    # }'
 
     # Convert message body JSON string to list
     data <- jsonlite::fromJSON(msg_body)
-    
+
     # # Convert JSON string to list
     # data <- jsonlite::fromJSON(event)
 

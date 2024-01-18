@@ -36,14 +36,23 @@ def mros_append_daily_data(event, context):
     print(f"- OUTPUT_S3_BUCKET: {OUTPUT_S3_BUCKET}")
     print(f"- OUTPUT_OBJECT_KEY: {OUTPUT_OBJECT_KEY}")
 
-    # download the input file from S3
-    s3.download_file(INPUT_S3_BUCKET, INPUT_OBJECT_KEY, f'/tmp/{INPUT_OBJECT_KEY}')
+    # download the INPUT file from S3
+    try:
+        s3.download_file(INPUT_S3_BUCKET, INPUT_OBJECT_KEY, f'/tmp/{INPUT_OBJECT_KEY}')
+    except Exception as e:
+        print(f"Exception downloading INPUT file from S3: {e}")
+        print(f"- Problem INPUT_OBJECT_KEY: {INPUT_OBJECT_KEY}")
 
-    # download the output file from S3
-    s3.download_file(OUTPUT_S3_BUCKET, OUTPUT_OBJECT_KEY, f'/tmp/{OUTPUT_OBJECT_KEY}')
+    # download the OUTPUT file from S3
+    try:
+        s3.download_file(OUTPUT_S3_BUCKET, OUTPUT_OBJECT_KEY, f'/tmp/{OUTPUT_OBJECT_KEY}')
+    except Exception as e:
+        print(f"Exception downloading OUTPUT file from S3: {e}")
+        print(f"- Problem OUTPUT_OBJECT_KEY: {OUTPUT_OBJECT_KEY}")
 
+    # read the input and output files into dataframes
     output_df = pd.read_csv(f'/tmp/{OUTPUT_OBJECT_KEY}')
-    input_df = pd.read_csv(f'/tmp/{INPUT_OBJECT_KEY}')
+    input_df  = pd.read_csv(f'/tmp/{INPUT_OBJECT_KEY}')
 
     print(f"output_df.shape: {output_df.shape}")
     print(f"len(output_df): {len(output_df)}")
@@ -52,19 +61,27 @@ def mros_append_daily_data(event, context):
 
     print(f"Concatenating dataframes...")
 
-    # append the input file to the output file
+    # Concatenate the input file to the output file
     output_df = pd.concat([output_df, input_df])
 
-    updated_s3_object = f"{OUTPUT_S3_BUCKET}/{OUTPUT_OBJECT_KEY}"
+    # Create the S3 URI for the output CSV file
+    UPDATED_S3_OBJECT_KEY = f"s3://{OUTPUT_S3_BUCKET}/{OUTPUT_OBJECT_KEY}"
 
-    print(f"updated_s3_object: {updated_s3_object}")
-    print(f"Saving dataframe to {updated_s3_object}")
+    print(f"UPDATED_S3_OBJECT_KEY: {UPDATED_S3_OBJECT_KEY}")
+    print(f"Saving dataframe to {UPDATED_S3_OBJECT_KEY}")
     print(f"FINAL output_df.shape: {output_df.shape}")
     print(f"FINAL len(output_df): {len(output_df)}")
     # output_df.to_csv(f'/tmp/{OUTPUT_OBJECT_KEY}', index=False)
     
-    # # save the dataframe as a parquet to S3
-    output_df.to_csv(updated_s3_object)
+    try:
+        # # save the dataframe as a parquet to S3
+        output_df.to_csv(UPDATED_S3_OBJECT_KEY)
+    except Exception as e:
+        print(f"Exception saving dataframe to S3: {e}")
+        print(f"- Problem INPUT_OBJECT_KEY: {INPUT_OBJECT_KEY}")
+        print(f"- Problem UPDATED_S3_OBJECT_KEY: {UPDATED_S3_OBJECT_KEY}")
+        print(f"-----> RAISING EXCEPTION ON UPLOAD TO S3 <-----")
+        raise
 
     print(f"===" * 5)
     # # append the input file to the output file

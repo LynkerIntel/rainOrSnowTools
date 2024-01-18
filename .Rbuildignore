@@ -11,3 +11,10 @@
 ^[.].*$
 ^.*/[.].*$
 ^\\lambdas$
+^\\lambda_containers$
+^\\deploy$
+^\\sh$
+^lambdas/.*$
+^lambda_containers/.*$
+^deploy/.*$
+^sh/.*$

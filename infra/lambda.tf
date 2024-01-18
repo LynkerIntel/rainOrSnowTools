@@ -82,8 +82,10 @@ resource "aws_lambda_function" "staging_lambda_function" {
   source_code_hash = var.stage_s3_to_prod_s3_lambda_zip_file_name
   function_name    = var.stage_s3_to_prod_s3_lambda_function_name
   handler          = "stage_s3_to_prod_s3.stage_s3_to_prod_s3.stage_s3_to_prod_s3"
-  # handler          = "function.name/handler.process_csv_lambda"
-  role             = aws_iam_role.lambda_role.arn
+  
+  # Lambda role (with permissions for SQS)   
+  role             = aws_iam_role.sqs_consumer_lambda_role.arn
+  #   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.11"
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
@@ -92,11 +94,16 @@ resource "aws_lambda_function" "staging_lambda_function" {
   environment {
     variables = {
         CW_LOG_GROUP = aws_cloudwatch_log_group.staging_lambda_log_group.name,
-        S3_BUCKET = "s3://${aws_s3_bucket.staging_s3_bucket.bucket}",
-        S3_STAGING_BUCKET = "s3://${aws_s3_bucket.staging_s3_bucket.bucket}",
-        S3_PROD_BUCKET = "s3://${aws_s3_bucket.prod_s3_bucket.bucket}",
-        S3_STAGING_BUCKET_NAME = aws_s3_bucket.staging_s3_bucket.bucket,
-        S3_PROD_BUCKET_NAME = aws_s3_bucket.prod_s3_bucket.bucket
+        # S3_BUCKET = "s3://${aws_s3_bucket.staging_s3_bucket.bucket}",
+        # S3_STAGING_BUCKET = "s3://${aws_s3_bucket.staging_s3_bucket.bucket}",
+        # S3_PROD_BUCKET = "s3://${aws_s3_bucket.prod_s3_bucket.bucket}",
+        # S3_STAGING_BUCKET_NAME = aws_s3_bucket.staging_s3_bucket.bucket,
+        # S3_PROD_BUCKET_NAME = aws_s3_bucket.prod_s3_bucket.bucket
+        S3_STAGE_BUCKET = aws_s3_bucket.staging_s3_bucket.bucket,
+        S3_PROD_BUCKET = aws_s3_bucket.prod_s3_bucket.bucket,
+        S3_STAGE_BUCKET_URI = "s3://${aws_s3_bucket.staging_s3_bucket.bucket}",
+        S3_PROD_BUCKET_URI = "s3://${aws_s3_bucket.prod_s3_bucket.bucket}"
+
         # DYNAMODB_TABLE = aws_dynamodb_table.airtable_dynamodb_table.name,
         # SQS_QUEUE_URL = aws_sqs_queue.mros_sqs_queue.url
     }
@@ -126,6 +133,32 @@ resource "aws_lambda_function" "staging_lambda_function" {
 #   principal     = "s3.amazonaws.com"
 #   source_arn    = aws_s3_bucket.airtable_s3_bucket.arn
 # }
+
+################################################
+# Lambda (sqs_consumer) SQS Event Source Mapping
+################################################
+
+# Lambda SQS Event Source Mapping
+resource "aws_lambda_event_source_mapping" "sqs_stage_lambda_event_source_mapping" {
+  event_source_arn = aws_sqs_queue.sqs_stage_queue.arn
+  function_name    = aws_lambda_function.staging_lambda_function.function_name
+  batch_size       = 40
+  maximum_batching_window_in_seconds = 20      # (max time to wait for batch to fill up)
+  function_response_types = ["ReportBatchItemFailures"]
+  depends_on = [
+    aws_lambda_function.staging_lambda_function,
+    aws_sqs_queue.sqs_stage_queue,
+  ]
+}
+
+# Allow the staging SQS queue to invoke the staging_lambda_function Lambda function
+resource "aws_lambda_permission" "allow_sqs_invoke_stage_to_prod_lambda" {
+  statement_id  = "AllowSQSInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.staging_lambda_function.arn}"
+  principal = "sqs.amazonaws.com"
+  source_arn = "${aws_sqs_queue.sqs_stage_queue.arn}"
+}
 
 ################################
 # Lambda SQS consumer R function
