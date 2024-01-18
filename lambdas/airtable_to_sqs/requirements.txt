@@ -1,0 +1,5 @@
+python-dotenv==1.0.0
+requests==2.31.0 
+pandas==2.0.3 
+boto3==1.28.42 
+s3fs==2023.10.0

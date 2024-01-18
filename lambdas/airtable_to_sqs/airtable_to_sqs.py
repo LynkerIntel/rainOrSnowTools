@@ -1,5 +1,5 @@
 # Description: This script will pull data from Airtable and save it to S3 as a parquet file
-# Usage: python process_airtable.py
+# Usage: python airtable_to_sqs.py
 # Author: Angus Watters
 
 # general utility libraries
@@ -20,7 +20,7 @@ import boto3
 import s3fs
 
 # import the environment variables from the config.py file
-# import lambdas.process_airtable.config
+# import lambdas.airtable_to_sqs.config
 # from config import Config
 
 # environemnt variables
@@ -38,12 +38,13 @@ SQS_QUEUE_URL = os.environ.get('SQS_QUEUE_URL')
 
 # SQS client
 sqs = boto3.client('sqs')
-    
+
 # lambda handler function
-def process_airtable(event, context):
+def airtable_to_sqs(event, context):
 
     curr_time = event['time']
     # curr_time = "2023-11-21T00:00:00Z"
+    # curr_time = "2023-12-01T00:00:00Z"
 
     # 2018-09-19 17:47:12
     print(f"curr_time: {curr_time}")
@@ -133,9 +134,14 @@ def process_airtable(event, context):
         
     #     print(f"=====================")
 
+    print(f"df.shape: {df.shape}")
+
     # Loop through the dataframe and send each record to SQS
-    for i in range(0, len(df)):
+    for i in range(0, 20):
+    # for i in range(0, len(df)):
         
+        print(f"Adding record {i} to SQS queue")
+
         # Construct the message body
         message_body = {
             'id': str(df["id"].iloc[i]),
@@ -160,18 +166,20 @@ def process_airtable(event, context):
             MessageBody = json.dumps(message_body)
         )
 
-    # Save the dataframe to a parquet/CSV file in S3
-    s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.csv"
-    # local_object = f"/Users/anguswatters/Desktop/mros_airtable_{clean_date}.csv"
-    # s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.parquet"
+        print(f"=====================")
 
-    print(f"s3_object: {s3_object}")
+    # # Save the dataframe to a parquet/CSV file in S3
+    # s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.csv"
+    # # local_object = f"/Users/anguswatters/Desktop/mros_airtable_{clean_date}.csv"
+    # # s3_object = f"{S3_BUCKET}/raw/mros_airtable_{clean_date}.parquet"
 
-    print(f"Saving dataframe to {s3_object}")
-    print(f"df.shape: {df.shape}")
+    # print(f"s3_object: {s3_object}")
 
-    # # save the dataframe as a parquet to S3
-    df.to_csv(s3_object)
+    # print(f"Saving dataframe to {s3_object}")
+    # print(f"df.shape: {df.shape}")
+
+    # # # save the dataframe as a parquet to S3
+    # df.to_csv(s3_object)
 
     # wr.s3.to_parquet(df, s3_object)
     # df.to_parquet(s3_object)

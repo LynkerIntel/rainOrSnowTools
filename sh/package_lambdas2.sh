@@ -20,19 +20,8 @@
 #       lambda3.py
 #       requirements.txt
 
-# # Base project directory
-# BASE_DIR=${1:-"/Users/anguswatters/Desktop/github/rainOrSnowTools"}
-
-# Check if the BASE_DIR is provided as a command-line argument, if so, use it, otherwise use the current directory
-if [ -z "$1" ] || [ "$1" == "." ]; then
-    BASE_DIR=$(pwd)  # Use the current directory if no argument is provided
-    echo "BASE_DIR not provided, using current directory: $BASE_DIR"
-    echo "pwd: $(pwd)"
-else
-    BASE_DIR=$1
-fi
-
-echo "BASE_DIR: $BASE_DIR"
+# Base project directory
+BASE_DIR=${1:-"/Users/anguswatters/Desktop/github/rainOrSnowTools"}
 
 # Set the deploy directory
 DEPLOY_DIR="$BASE_DIR/deploy"
@@ -57,9 +46,9 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
         TARGET_DIR="$SUBDIR/package"
         ZIP_FILE="$DEPLOY_DIR/$DIR_NAME.zip"
 
-        echo "--------------------------------------------------------------"
-        echo "---- Creating lambda package: '$DIR_NAME' ----"
-        echo "--------------------------------------------------------------"
+        echo "------------------------------------------------"
+        echo "---- Creating lambda package for $DIR_NAME  ----"
+        echo "------------------------------------------------"
 
         echo "- SUBDIR: $SUBDIR"
         echo "- DIR_NAME: $DIR_NAME"
@@ -82,43 +71,26 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
             --python-version 3.11 \
             --only-binary=:all: --upgrade \
             -r "$SUBDIR/requirements.txt"
-
-
-        echo "Removing 'tests', 'examples', and '__pycache__' files from package directory"
-
-        # # # Remove unwanted directories (tests/, docs/, examples/, __pycache__/)
-        find "$PKG_DIR" -type d -name "tests" -exec rm -rf {} +
-        # find "$PKG_DIR" -type d -name "docs" -exec rm -rf {} +
-        find "$PKG_DIR" -type d -name "examples" -exec rm -rf {} +
-        find "$PKG_DIR" -type d -name "__pycache__" -exec rm -rf {} +
-
-
+        
         # Go into the PKG_DIR directory
         cd "$PKG_DIR" 
 
-        echo "------------------------------------------------"
         echo "Zipping 'PKG_DIR' contents into 'ZIP_FILE'..."
 
-        # echo -e "PKG_DIR: $PKG_DIR\n---> ZIP_FILE:\n --> $ZIP_FILE"
-        echo "Sending PKG_DIR contents to ZIP_FILE:"
-        echo -e " PKG_DIR: '$PKG_DIR' \n   --------> \n ZIP_FILE: '$ZIP_FILE'"
-        echo "------------------------------------------------"
-
+        echo "PKG_DIR: $PKG_DIR\n---> ZIP_FILE:\n --> $ZIP_FILE"
+        
         # Create the initial ZIP file with the Python packages
         zip -r9 "$ZIP_FILE" .
 
         # Go back to the original directory
         cd "$BASE_DIR/$APP_DIR/"
 
-        echo "Updated ZIP_FILE with DIR_NAME contents"
-        # echo "Updated '$ZIP_FILE' with '$DIR_NAME' contents"
-
-        # For all directories except "app", add the contents of the given lambdas/ subdirectory (DIR_NAME) 
-        # to the ZIP file EXCLUDING the "config.py" file
-        echo -e "Adding '$DIR_NAME' contents to:\n '$ZIP_FILE'\n(EXCLUDING 'config.py' file)"
-        # Add the contents of the given lambdas/ subdirectory (DIR_NAME) to the ZIP file, (EXCLUDE the "config.py" file)
+        echo "Updated $ZIP_FILE with $DIR_NAME contents"
+        
+        # Add the contents of the given lambdas/ subdirectory (DIR_NAME) to the ZIP file
+        # zip -g "$ZIP_FILE" -r "$DIR_NAME"
         zip -g "$ZIP_FILE" -r "$DIR_NAME" -x "$DIR_NAME/config.py"
-       
+
         echo "Removing $PKG_DIR"
 
         # remove the PKG_DIR directory

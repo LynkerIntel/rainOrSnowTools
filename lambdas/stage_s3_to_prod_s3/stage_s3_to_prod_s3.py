@@ -1,5 +1,5 @@
 # Description: This script will pull data from Airtable and save it to S3 as a parquet file
-# Usage: python process_airtable.py
+# Usage: python airtable_to_sqs.py
 # Author: Angus Watters
 
 # general utility libraries
@@ -19,7 +19,7 @@ import boto3
 import s3fs
 
 # import the environment variables from the config.py file
-import lambdas.process_staging_bucket.config
+# import lambdas.stage_s3_to_prod_s3.config
 # from .config import Config
 
 # environemnt variables
@@ -37,7 +37,7 @@ S3_PROD_BUCKET_NAME = os.environ.get('S3_PROD_BUCKET_NAME')
 s3 = boto3.client('s3')
     
 # lambda handler function
-def process_staging_bucket(event, context):
+def stage_s3_to_prod_s3(event, context):
 
     # print(f"event: {event}")
     print(f"- S3_BUCKET: {S3_BUCKET}")

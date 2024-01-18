@@ -40,6 +40,17 @@ infra/*
 !infra/main.tf
 !infra/add_met_data.R
 
+!s3.tf
+!sqs.tf
+!dynamodb.tf
+!s3_events.tf
+!sqs.tf
+!iam.tf
+!lambda.tf
+!ecr.tf
+!cloudwatch.tf
+!eventbridge.tf
+!secrets_manager.tf
 R/scrap.R
 
 .netrc
