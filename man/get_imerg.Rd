@@ -4,14 +4,16 @@
 \alias{get_imerg}
 \title{Download GPM IMERG data}
 \usage{
-get_imerg(datetime_utc, lon_obs, lat_obs)
+get_imerg(datetime_utc, lon_obs, lat_obs, version = 6)
 }
 \arguments{
-\item{datetime_utc}{Observation time}
+\item{datetime_utc}{observation time}
 
-\item{lon_obs}{Longitude in decimal degrees}
+\item{lon_obs}{longitude of observation in decimal degrees (°)}
 
-\item{lat_obs}{Latitude in decimal degrees}
+\item{lat_obs}{latitude of observation in decimal degrees (°)}
+
+\item{version}{IMERG versions: 6 = late run v6 and 7 = final run v7}
 }
 \value{
 a dataframe of GPM data for each observation
@@ -24,6 +26,6 @@ Download GPM IMERG data
 datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
 lon = -105
 lat = 40
-gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
+gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat, version = 6)
 }
 }

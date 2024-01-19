@@ -6,8 +6,11 @@
 \usage{
 qaqc_obs(data = data)
 }
+\arguments{
+\item{data}{Dataframe of observation data}
+}
 \value{
-dataframe with dupe (Dupe/Pass) and CONUS (NoCONUS, NoData, Pass) flags
+Dataframe with dupe (Dupe/Pass) and CONUS (NoCONUS, NoData, Pass) flags
 }
 \description{
 QAQC observation data

@@ -6,6 +6,11 @@
 \usage{
 get_elev(lon_obs, lat_obs)
 }
+\arguments{
+\item{lon_obs}{Longitude of observation in decimal degrees (°)}
+
+\item{lat_obs}{Latitude of observation in decimal degrees (°)}
+}
 \value{
 Elevation based on location
 }

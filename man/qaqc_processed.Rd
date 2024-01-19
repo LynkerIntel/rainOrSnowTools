@@ -15,22 +15,39 @@ qaqc_processed(
   pval_max = 0.05
 )
 }
+\arguments{
+\item{data}{Dataframe of processed observation data}
+
+\item{snow_max_tair}{Max tair in °C for snow}
+
+\item{rain_max_tair}{Min tair in °C for rain}
+
+\item{rh_min}{Min for RH \%}
+
+\item{max_avgdist_station}{Max average distance (m)}
+
+\item{max_closest_station}{Max nearest station distance (m)}
+
+\item{min_n_station}{Min number of stations within search radius}
+
+\item{pval_max}{Max p-value for the lapse rate calc}
+}
 \value{
-list with 2 dataframes, 1: all flags; 2: filtered to the not complete data
+List with 2 dataframes, 1: All flags; 2: Filtered to just incomplete data
 }
 \description{
 QAQC processed data
 }
 \examples{
 \dontrun{
-data = data_processed # the processed data
-snow_max_tair = 10, # max tair in °C for snow
-rain_max_tair = -5, # min tair in °C for rain
-rh_min = 30, # min for RH \%
-max_avgdist_station = 2e5, # maximum average distance (m)
-max_closest_station = 3e4, # maximum nearest station distance (m)
-min_n_station = 5, # min number of stations within search radius
-pval_max = 0.05 # maximum pval for lapse rate calc
+data = data_processed
+snow_max_tair = 10,
+rain_max_tair = -5,
+rh_min = 30,
+max_avgdist_station = 2e5,
+max_closest_station = 3e4,
+min_n_station = 5,
+pval_max = 0.05
 data_qaqc2 = qaqc_processed(data = data,
                            snow_max_tair = snow_max_tair,
                            rain_max_tair = rain_max_tair,

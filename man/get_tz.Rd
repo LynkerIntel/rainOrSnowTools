@@ -7,13 +7,13 @@
 get_tz(lon_obs, lat_obs)
 }
 \arguments{
-\item{lon_obs}{longitude of observation in decimal degrees (°)}
+\item{lon_obs}{Longitude of observation in decimal degrees (°)}
 
-\item{lat_obs}{latitude of observation in decimal degrees (°)}
+\item{lat_obs}{Latitude of observation in decimal degrees (°)}
 }
 \value{
-the local standard time zone in the format "Etc/GMT+X"
-where X is the offset in hours from GMT
+The local standard time zone in the format "Etc/GMT+X"
+Where X is the offset in hours from GMT
 }
 \description{
 Get the time zone for an observation with a latitude and longitude

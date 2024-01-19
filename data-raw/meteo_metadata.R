@@ -172,12 +172,13 @@ lcd_meta <- dplyr::left_join(lcd_meta,
 
 # You can access current station info at
 # https://wcc.sc.egov.usda.gov/nwcc/inventory
-# But it's a GUI, so I've downloaded it already
+
 wcc_meta <- read.csv("data-raw/nwcc_inventory.csv")
 
 # Add a timezone column
 wcc_meta <- wcc_meta %>%
-  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", gmt_offset))
+  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", gmt_offset),
+                elev_m = elev*0.3048)
 
 ################################################################################
 # Collate the metadata into a single dataframe
@@ -201,7 +202,8 @@ all_meta <-
     wcc_meta %>%
       dplyr::select(name = site_name,
                     id = station.id,
-                    lat, lon, elev,
+                    lat, lon,
+                    elev = elev_m,
                     timezone_lst,
                     network) %>%
       dplyr::mutate(id = as.character(id)),

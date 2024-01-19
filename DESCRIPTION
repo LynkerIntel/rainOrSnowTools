@@ -24,7 +24,8 @@ Imports:
   tidyr,
   climateR,
   readr,
-  glue
+  glue,
+  xml2
 Remotes:
   SnowHydrology/humidity
 Depends: 

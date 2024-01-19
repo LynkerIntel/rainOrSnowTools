@@ -15,6 +15,9 @@ get_ecoregion = function(level = level){
 
   URL_conus = glue::glue("https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l{level}_state_boundaries.zip")
 
+  # Increase timeout
+  options(timeout = 100)
+
   download.file(URL_conus, temp)
 
   # Unzip the contents of the temp and save unzipped contents in 'eco'
