@@ -232,6 +232,21 @@ get_imerg <- function(
     lat_obs      = NULL
     ) {
 
+  # #############################
+
+  # # Example inputs
+  # library(climateR)
+  # library(dplyr)
+  # library(plyr)
+  # library(glue)
+  # library(sf)
+
+  # datetime_utc = "2024-01-18 UTC"
+  # lon_obs =-106.5373
+  # lat_obs= 39.6408
+
+  # #############################
+
   # check for valid inputs
   if(is.null(datetime_utc)) {
     stop("Missing 'datetime_utc' argument input, 'datetime_utc' must be in format: YYYY-MM-DD HH:MM:SS")
@@ -318,7 +333,7 @@ get_imerg <- function(
   message(paste0("data$url: ", data$url[1]))
   message(paste0("data$url2: ", data$url2[1]))
   message(paste0("data$url3: ", data$url3[1]))
-  
+
   ## Get Data
   # suppressMessages(
   for (x in 1:nrow(data)) {
@@ -371,6 +386,208 @@ get_imerg <- function(
 
   return(gpm_obs)
 
+}
+
+#' Download GPM IMERG data (version 2) 
+#' This version should end up being the final version. More reliable than the original version.
+#' @param datetime_utc Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.
+#' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
+#' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @return a dataframe of GPM data for each observation
+#' @importFrom sf st_as_sf st_drop_geometry
+#' @importFrom dplyr mutate any_of select bind_rows select `%>%`
+#' @importFrom plyr round_any
+#' @importFrom pacman p_load
+#' @importFrom glue glue
+#' @importFrom climateR dap
+#' @importFrom xml2 read_xml xml_find_all xml_attrs
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' datetime_utc = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
+#' lon = -105
+#' lat = 40
+#' gpm <- get_imerg_v2(datetime_utc, lon_obs = lon, lat_obs = lat)
+#' }
+get_imerg_v2 <- function(datetime_utc,
+                        lon_obs,
+                        lat_obs,
+                        version = 6) {
+
+  #############################
+
+  # # Example inputs
+  # library(climateR)
+  # library(dplyr)
+  # library(plyr)
+  # library(glue)
+  # library(sf)
+
+  # # datetime_utc = "2024-01-18 UTC"
+  # datetime_utc = "2023-11-21 UTC"
+  # lon_obs =-79.91447
+  # lat_obs= 39.77836
+  # version = 6
+
+  #############################
+
+  # check for valid inputs
+  if(is.null(datetime_utc)) {
+    stop("Missing 'datetime_utc' argument input, 'datetime_utc' must be in format: YYYY-MM-DD HH:MM:SS")
+  }
+
+  # check for valid lon_obs input
+  if(is.null(lon_obs)) {
+    stop("Missing 'lon_obs' argument input, 'lon_obs' must be a numeric LONGITUDE value in CRS 4326")
+  }
+
+  # check for valid lat_obs input
+  if(is.null(lat_obs)) {
+    stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
+  }
+  # Assign GPM variable
+  var = 'probabilityLiquidPrecipitation'
+
+  # Observation data is converted into shapefile format
+  data = sf::st_as_sf(
+    data.frame(datetime_utc, lon_obs, lat_obs),
+    coords = c("lon_obs", "lat_obs"),
+    crs  = 4326
+  )
+
+  tryCatch({
+    if (version == 6) {
+
+      # URL structure
+      base = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+      product = '3B-HHR-L.MS.MRG.3IMERG'
+      url_trim = '{base}/{year}/{julian}/'
+      product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.'
+
+      ## Build URLs
+      data = 
+        data %>%
+        dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+        dplyr::mutate(
+          julian  = format(dateTime, "%j"),
+          year    = format(dateTime, "%Y"),
+          month   = format(dateTime, "%m"),
+          day     = format(dateTime, "%d"),
+          hour    = sprintf("%02s", format(dateTime, "%H")),
+          minTime = sprintf("%02s", plyr::round_any(as.numeric(
+            format(dateTime, "%M")
+          ), 30, f = floor)),
+          origin_time  = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), "00:00"
+          ), tz = "UTC"),
+          rounded_time = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), hour, ":", minTime
+          ), tz = "UTC"),
+          nasa_time = rounded_time + (29 * 60) + 59,
+          nasa_time_minute = format(nasa_time, "%M"),
+          nasa_time_second = format(nasa_time, "%S"),
+          min = sprintf(
+            "%04s",
+            difftime(rounded_time, origin_time,  units = 'min')
+          ),
+          url_0 = glue::glue(url_trim),
+          product_info = glue::glue(product_pattern)
+        ) %>%
+        dplyr::select(dplyr::any_of(c(
+          'datetime_utc', 'url_0', 'product_info'
+        )))
+
+      # Visit the XML page to get the right V06[X] values (e.g. C,D,E,...)
+      url_base <- paste0(data$url_0, "catalog.xml")
+      prod <- data$product_info
+      xml <- 
+        xml2::read_xml(url_base) %>%
+        xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
+      prod_name <- xml2::xml_attrs(xml[[1]])[["name"]]
+
+      # Create URL
+      final_url = paste0(data$url_0, prod_name)
+
+    }
+
+    if (version == 7) {
+      # URL structure
+      base = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/GPM_L3/GPM_3IMERGHH.07'
+      product = '3B-HHR.MS.MRG.3IMERG'
+      url_trim = '{base}/{year}/{julian}/'
+      product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.'
+
+      ## Build URLs
+      data = data %>%
+        dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+        dplyr::mutate(
+          julian  = format(dateTime, "%j"),
+          year    = format(dateTime, "%Y"),
+          month   = format(dateTime, "%m"),
+          day     = format(dateTime, "%d"),
+          hour    = sprintf("%02s", format(dateTime, "%H")),
+          minTime = sprintf("%02s", plyr::round_any(as.numeric(
+            format(dateTime, "%M")
+          ), 30, f = floor)),
+          origin_time  = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), "00:00"
+          ), tz = "UTC"),
+          rounded_time = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), hour, ":", minTime
+          ), tz = "UTC"),
+          nasa_time = rounded_time + (29 * 60) + 59,
+          nasa_time_minute = format(nasa_time, "%M"),
+          nasa_time_second = format(nasa_time, "%S"),
+          min = sprintf(
+            "%04s",
+            difftime(rounded_time, origin_time,  units = 'min')
+          ),
+          url_0 = glue::glue(url_trim),
+          product_info = glue::glue(product_pattern)
+        ) %>%
+        dplyr::select(dplyr::any_of(c(
+          'datetime_utc', 'url_0', 'product_info'
+        )))
+
+      # Visit the XML page to get the right V06[X] values (e.g. C,D,E,...)
+      url_base <- paste0(data$url_0, "catalog.xml")
+      prod <- data$product_info
+      xml <- xml2::read_xml(url_base) %>%
+      xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
+      prod_name <- xml2::xml_attrs(xml[[1]])[["name"]]
+
+      # Create URL
+      final_url = paste0(data$url_0, prod_name)
+    }
+
+    ## Get Data
+    gpm_obs =
+      climateR::dap(
+        URL = final_url,
+        varname = var,
+        AOI = data[1,],
+        verbose = FALSE
+      )
+
+    gpm_obs = gpm_obs %>%
+      sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
+      dplyr::select(all_of((var)))
+
+    return(gpm_obs)
+
+  }, error = function(er) {
+    if (version == 7) {
+      message("Final Run v7 data likely unavailable for datetime.")
+    } else{
+      message("Original error message:")
+      message(conditionMessage(er))
+    }
+
+    # Choose a return value in case of error
+    NA
+
+  })
 }
 
 # # Import the citizen science data

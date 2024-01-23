@@ -10,35 +10,73 @@
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
 
-# AWS Profile
-AWS_PROFILE=$2
-
 # # Terraform state S3 bucket name
 # TF_STATE_S3_BUCKET_NAME=$3
 
 # S3 bucket
-BUCKET_NAME=$4
-BUCKET_NAME="mros-output-bucket"
+BUCKET_NAME=$2
+# BUCKET_NAME="mros-output-bucket"
+
+# ECR repo names 
+ECR_REPO_NAME=$3
+# ECR_REPO_NAME="mros-sqs-consumer-lambda-ecr"
+
+# AWS Region to create/check resources, if not given, use "us-west-1"
+AWS_REGION=${4:-"us-west-1"}
+LOCATION_CONSTRAINT=${AWS_REGION}
+
+# AWS Profile, if not given, use "default"
+AWS_PROFILE=${5:-"default"}
+
+echo "- BUCKET_NAME: $BUCKET_NAME"
+echo "- ECR_REPO_NAME: $ECR_REPO_NAME"
+echo "- AWS_REGION: $AWS_REGION"
+echo "- LOCATION_CONSTRAINT: $LOCATION_CONSTRAINT"
+echo "- AWS_PROFILE: $AWS_PROFILE"
+
+# -----------------------------------------------------------------------------------------------
+# ----- Generate an empty CSV file to upload to S3 -----
+# ----- (This is the CSV that gets updated updated by new processed data from the Airtable) -----
+# -----------------------------------------------------------------------------------------------
+
+# Path to save local CSV file path of skeleton CSV file to upload to S3
+LOCAL_CSV_PATH="./tmp_empty_output.csv"
 
 # S3 object key and CSV file content
 S3_OBJECT_KEY="mros_output.csv"
 
 # CSV headers for mros_output.csv
-CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,temp_wet,hads_counts,lcd_counts,wcc_counts,date_key"
-# CSV_CONTENT="date,id,value,lat,lng"
+CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,uuid,duplicate_id,duplicate_count,\
+temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,\
+temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,\
+temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,\
+temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,\
+temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,\
+temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,state,date_key"
+# CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,date_key"
 
-# ECR repo names
-ECR_REPO_NAME="mros-sqs-consumer-lambda-ecr"
+# Check if the local CSV file already exists
+if [ ! -f "$LOCAL_CSV_PATH" ]; then
+    # Create an empty CSV file with headers
+    echo "$CSV_CONTENT" > "$LOCAL_CSV_PATH"
+    echo "Empty CSV file created: $LOCAL_CSV_PATH"
+else
+    echo "CSV file $LOCAL_CSV_PATH already exists."
+fi
 
-# regions to create/check resources
-AWS_REGION="us-west-1"
-LOCATION_CONSTRAINT="us-west-1"
+# -----------------------------------------------------------------------------------------------
+# ----- Export Terraform variables -----
+# -----------------------------------------------------------------------------------------------
 
 # Export ECR repo name as variable for Terraform
 export TF_VAR_output_s3_bucket_name="$BUCKET_NAME"
 export TF_VAR_output_s3_object_key="$S3_OBJECT_KEY"
 export TF_VAR_sqs_consumer_ecr_repo_name="$ECR_REPO_NAME"
 # export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
+
+# -----------------------------------------------------------------------------------------------
+# ----- Create S3 bucket to keep Terraform state files (if does NOT exist) -----
+# -----------------------------------------------------------------------------------------------
 
 # # check if Terraform state S3 bucket ALREADY EXISTS
 # if ! aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
@@ -54,29 +92,49 @@ export TF_VAR_sqs_consumer_ecr_repo_name="$ECR_REPO_NAME"
 #     echo "Bucket $TF_STATE_S3_BUCKET_NAME already exists."
 # fi
 
+# -----------------------------------------------------------------------------------------------
+# ----- Create S3 bucket for mros_output.csv (DO NOT DELETE) -----
+# -----------------------------------------------------------------------------------------------
+
 # check if the output bucket ALREADY EXISTS
 if ! aws s3api head-bucket --bucket "$BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
+    echo "S3 bucket $BUCKET_NAME DOES NOT EXIST."
+    
     # Create the output bucket if it DOESN'T exist
     aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --create-bucket-configuration LocationConstraint="$LOCATION_CONSTRAINT"
     
-    echo "S3 bucket $BUCKET_NAME created."
+    echo "- S3 bucket $BUCKET_NAME created."
 
     # Enable versioning on the bucket
     aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --versioning-configuration Status=Enabled
 
-    echo "Versioning enabled on S3 bucket $BUCKET_NAME."
+    echo "- Versioning enabled on S3 bucket $BUCKET_NAME."
 else
-    echo "Bucket $BUCKET_NAME already exists with versioning enabled."
+    echo "S3 bucket $BUCKET_NAME ALREADY EXIST with versioning enabled."
 fi
+
+# -----------------------------------------------------------------------------------------------
+# ----- Check if "mros_output.csv" is in the S3 Bucket and upload if does NOT exist -----
+# -----------------------------------------------------------------------------------------------
 
 # Upload empty CSV file if it does NOT already exist
 if ! aws s3api head-object --bucket "$BUCKET_NAME" --key "$S3_OBJECT_KEY" --region "$AWS_REGION" --profile "$AWS_PROFILE" 2>/dev/null; then
-    # Create an empty CSV file
-    echo "$CSV_CONTENT" | aws s3 cp - s3://"$BUCKET_NAME"/"$S3_OBJECT_KEY" --region "$AWS_REGION" --profile "$AWS_PROFILE"
-    echo "Empty CSV file uploaded to S3: $BUCKET_NAME/$S3_OBJECT_KEY"
+
+    echo "$S3_OBJECT_KEY DOES NOT EXIST in S3 bucket $BUCKET_NAME."
+    echo "- Uploading empty CSV file to S3 bucket $BUCKET_NAME/$S3_OBJECT_KEY"
+
+    # Upload an empty CSV file
+    aws s3 cp "$LOCAL_CSV_PATH" s3://"$BUCKET_NAME"/"$S3_OBJECT_KEY" --region "$AWS_REGION" --profile "$AWS_PROFILE"
+    # echo "$CSV_CONTENT" | aws s3 cp - s3://"$BUCKET_NAME"/"$S3_OBJECT_KEY" --region "$AWS_REGION" --profile "$AWS_PROFILE"
+    
+    echo "- Empty CSV file uploaded to S3: $BUCKET_NAME/$S3_OBJECT_KEY"
 else
-    echo "CSV file $S3_OBJECT_KEY already exists in S3 bucket $BUCKET_NAME."
+    echo "CSV file $S3_OBJECT_KEY ALREADY EXISTS in S3 bucket $BUCKET_NAME."
 fi
+
+# -----------------------------------------------------------------------------------------------
+# ----- Create ECR repository for Lambda Docker images (if does NOT exist) -----
+# -----------------------------------------------------------------------------------------------
 
 # check if the ECR repository ALREADY EXISTS
 if ! aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region "$AWS_REGION" --profile "$AWS_PROFILE" 2>/dev/null; then
@@ -101,9 +159,12 @@ OS=$(uname -s)
 # print the operating system
 echo "Operating system: $OS"
 
+# -----------------------------------------------------------------------------------------------
+# ----- Build and push Docker image to ECR Repo  -----
+# -----------------------------------------------------------------------------------------------
+
 # AWS CLI and Docker commands to login, build, tag, and push Docker image
 aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | docker login --username AWS --password-stdin $AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com
-
 
 # If the operating system is macOS, update the platform
 if [ "$OS" = "Darwin" ]; then

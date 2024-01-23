@@ -20,8 +20,8 @@ resource "aws_cloudwatch_log_group" "staging_lambda_log_group" {
   name              = "/aws/lambda/${var.stage_s3_to_prod_s3_lambda_function_name}"
 #   name_prefix              = "/aws/lambda/${var.stage_s3_to_prod_s3_lambda_function_name}"
   retention_in_days = 14
-  skip_destroy = false
-#   skip_destroy = true
+#   skip_destroy = false
+  skip_destroy = true
 }
 
 ###################################
@@ -33,19 +33,32 @@ resource "aws_cloudwatch_log_group" "sqs_consumer_lambda_log_group" {
   name              = "/aws/lambda/${var.sqs_consumer_lambda_function_name}"
 #   name_prefix = "/aws/lambda/${var.sqs_consumer_lambda_function_name}"
   retention_in_days = 14
-  skip_destroy = false
-  # skip_destroy = true
+#   skip_destroy = false
+  skip_destroy = true
 }
 
-###################################
-# Lambda Log Group (Prod to Output) #
-###################################
+##############################################################
+# Lambda Log Group (Prod to Output - mros_append_daily_data) #
+##############################################################
 
-# Cloudwatch log group for 'sqs_consumer' R lambda function
+# Cloudwatch log group for 'mros_append_daily_data' python lambda function
 resource "aws_cloudwatch_log_group" "prod_to_output_lambda_log_group" {
   name              = "/aws/lambda/${var.mros_append_daily_data_lambda_function_name}"
-#   name_prefix = "/aws/lambda/${var.sqs_consumer_lambda_function_name}"
+#   name_prefix = "/aws/lambda/${var.mros_append_daily_data_lambda_function_name}"
   retention_in_days = 14
-  skip_destroy = false
-  # skip_destroy = true
+#   skip_destroy = false
+  skip_destroy = true
+}
+
+###########################################
+# Lambda Log Group (Insert into DynamoDB) #
+###########################################
+
+# Cloudwatch log group for 'insert_into_dynamodb' python lambda function
+resource "aws_cloudwatch_log_group" "insert_into_dynamodb_lambda_log_group" {
+  name              = "/aws/lambda/${var.insert_into_dynamodb_lambda_function_name}"
+#   name_prefix = "/aws/lambda/${var.insert_into_dynamodb_lambda_function_name}"
+  retention_in_days = 14
+#   skip_destroy = false
+  skip_destroy = true
 }

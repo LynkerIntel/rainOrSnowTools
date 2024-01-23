@@ -367,6 +367,49 @@ resource "aws_iam_role" "sqs_consumer_lambda_role" {
   }
 }
 
+##############################
+# DynamoDB Table permissions #
+##############################
+
+# Policy docuemnet for DynamoDB permissions 
+data "aws_iam_policy_document" "lambda_dynamodb_policy_doc" {
+  statement {
+    sid = "LambdaDynamoDBPermissions"
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+    ]
+
+    resources = [
+      aws_dynamodb_table.mros_dynamodb_table.arn,
+      "${aws_dynamodb_table.mros_dynamodb_table.arn}/*"
+    ]
+  }
+}
+
+# Make an IAM policy from the IAM policy document for DynamoDB permissions
+resource "aws_iam_policy" "lambda_dynamodb_policy" {
+  name_prefix = "mros-lambda-dynamodb-policy"
+  description = "IAM Policy for MROS mros_insert_into_dynamodb Lambda function to interact with DynamoDB"
+  policy      = data.aws_iam_policy_document.lambda_dynamodb_policy_doc.json
+  tags = {
+    name              = local.name_tag
+    resource_category = "iam"
+  }
+}
+
+# Attach the inline DynamoDB policy to the IAM role
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
 ###################################################
 # Lambda (sqs_consumer) IAM Policy for S3/SQS queue
 ###################################################

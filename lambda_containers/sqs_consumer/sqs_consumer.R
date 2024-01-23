@@ -16,6 +16,9 @@
 
 library(lambdr)
 library(dplyr)
+# library(sf)
+# library(rainOrSnowTools)
+# library(climateR)
 
 # ENV NASA_DATA_USER=XXXXXXXX
 # ENV NASA_DATA_PASSWORD=XXXXXXXX
@@ -68,32 +71,10 @@ message("=====================================")
 
 # Take in the above Event, this is approximately what i can expect a single row from 
 # the S3 CSV to look like when it enters this lambda function code
-sqs_consumer <- function(Records) {
+sqs_consumer <- function(Records = NULL) {
 
     message("SQS Records: ", Records)
 
-
-    # message("Updating .netrc file with NASA data credentials...")
-
-    # # update the .netrc file with the NASA data credentials
-    # update_netrc <- paste0('#!/bin/bash
-
-    #             # Path to the .netrc file
-    #             NETRC_FILE="/lambda/.netrc"
-
-    #             # Replace placeholders with environment variables
-    #             sed -i "s/default_user/', NASA_DATA_USER, '/g" "$NETRC_FILE"
-    #             sed -i "s/default_password/', NASA_DATA_PASSWORD, '/g" "$NETRC_FILE"
-
-    #             # Output the modified .netrc file
-    #             cat "$NETRC_FILE"'
-    # )
-
-    # # run bash script to update netrc file
-    # system(update_netrc)
-
-    # input_list <- list(...)
-    
     # make sure a .netrc file exists, if not, create one
     if(!climateR::checkNetrc(netrcFile = "/tmp/.netrc")){
         message("Writting a '.netrc' file...")
@@ -102,14 +83,27 @@ sqs_consumer <- function(Records) {
         # climateR::writeNetrc(login = Sys.getenv("NASA_DATA_USER"), password = Sys.getenv("NASA_DATA_PASSWORD"))
         climateR::writeNetrc(login = NASA_DATA_USER, password = NASA_DATA_PASSWORD, netrcFile =  "/tmp/.netrc")
     }
+
+    # message("Updating .netrc file with NASA data credentials...")
+    # # update the .netrc file with the NASA data credentials
+    # update_netrc <- paste0('#!/bin/bash
+    #             # Path to the .netrc file
+    #             NETRC_FILE="/lambda/.netrc"
+    #             # Replace placeholders with environment variables
+    #             sed -i "s/default_user/', NASA_DATA_USER, '/g" "$NETRC_FILE"
+    #             sed -i "s/default_password/', NASA_DATA_PASSWORD, '/g" "$NETRC_FILE"
+    #             # Output the modified .netrc file
+    #             cat "$NETRC_FILE"'
+    # )
+
+    # # run bash script to update netrc file
+    # system(update_netrc)
+    # input_list <- list(...)
     
     # dodsrcFile = ".dodsrc"
     # netrcFile = "/tmp/.netrc"
-
     # unlink(dodsrcFile)
-
     # dir = dirname(dodsrcFile)
-    
     # string <- paste0(
     #     'USE_CACHE=0\n',
     #     'MAX_CACHE_SIZE=20\n',
@@ -124,22 +118,24 @@ sqs_consumer <- function(Records) {
 
     # # create a netrc file
     # write(string, path.expand(dodsrcFile))
-    
     # # set the owner-only permission
     # Sys.chmod(dodsrcFile, mode = "755")
-
     # # create a .dodsrc file
     # x = climateR::writeDodsrc()
 
     # message("Writting a '.dodsrc' file that references the '.netrc' file")
-    
     # message(paste0("found a netrc file, writing dodsrc file to ", x))
-    
+
+    ############  ############
+    # UNCOMMENT BELOW
+    ############  ############
+
     # connect to AWS S3 bucket
     s3 <- paws::s3(region = AWS_REGION)
 
     # # Extract message body
     msg_body = Records[[3]]
+    ############  ############
 
     # # Connect to AWS SQS queue client 
     # sqs = paws::sqs(region = AWS_REGION, endpoint = SQS_QUEUE_URL)
@@ -153,25 +149,29 @@ sqs_consumer <- function(Records) {
     # # Extract message body
     # msg_body = msg$Messages[[1]]$Body
 
+    # ############  ############
+    #     # remove msg_body BELOW
+    ############  ############
+        # msg_body = '{
+        #     "id": "rectFNQPJyLyga6Iq",
+        #     "timestamp": "1705589683.0",
+        #     "createdtime": "2024-01-18T14:54:43.000Z",
+        #     "name": "Snow",
+        #     "latitude": "39.64079975903475",
+        #     "user": "mehubZKIjJ",
+        #     "longitude": "-106.53732056267381",
+        #     "submitted_time": "14:54:42",
+        #     "local_time": "07:54:42",
+        #     "submitted_date": "01/18/24",
+        #     "local_date": "1/18/24",
+        #     "comment": "nan",
+        #     "time": "2024-01-18T14:54:43.000Z"
+        # }'
+    # ############  ############
+
     message(paste0("Message Body:\n", msg_body))
 
     message("Parsing SQS trigger event JSON")
-    
-    # msg_body = '{
-    #     "id": "rectFNQPJyLyga6Iq",
-    #     "timestamp": "1705589683.0",
-    #     "createdtime": "2024-01-18T14:54:43.000Z",
-    #     "name": "Snow",
-    #     "latitude": "39.64079975903475",
-    #     "user": "mehubZKIjJ",
-    #     "longitude": "-106.53732056267381",
-    #     "submitted_time": "14:54:42",
-    #     "local_time": "07:54:42",
-    #     "submitted_date": "01/18/24",
-    #     "local_date": "1/18/24",
-    #     "comment": "nan",
-    #     "time": "2024-01-18T14:54:43.000Z"
-    # }'
 
     # Convert message body JSON string to list
     data <- jsonlite::fromJSON(msg_body)
@@ -209,10 +209,18 @@ sqs_consumer <- function(Records) {
     # STEP 4: GET STATE
     state = rainOrSnowTools:::get_state(lon_obs, lat_obs)
 
+    # if state is empty, set to "invalid_location" (this is a placeholder for now)
+    state_str = ifelse(state == "character(0)", "invalid_location", state)
+
     message("Getting GPM PLP data...")
 
     # STEP 5: GET GPM PLP
-    plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
+    # plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
+
+    # plp = get_imerg_v2(datetime, lon_obs, lat_obs)
+    
+    # Place holder integer value for now until we can get the PLP data
+    plp = 2
 
     message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
 
@@ -280,6 +288,13 @@ sqs_consumer <- function(Records) {
                     ),
                     station_counts
                     )
+
+    # Add placeholder for PLP data
+    processed$plp_data = plp
+
+    # Add placeholder for state data
+    processed$state = state_str
+
     # drop id column
     processed = dplyr::select(processed, -id) 
     

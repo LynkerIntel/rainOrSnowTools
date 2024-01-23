@@ -76,14 +76,14 @@ resource "aws_sqs_queue_policy" "sqs_stage_queue_policy" {
   })
 }
 
-# #############################################################
-# # SQS Queue for S3 event notifications from the PROD bucket #
-# #############################################################
+# #############################################################################################
+# # SQS Queue for subscribed to SNS topic that sends event notifications from the PROD bucket #
+# #############################################################################################
 
 # sqs_process_staged_queue
 # sqs_s3_event_queue_stage
 
-# SQS queue for S3 event notifications
+# SQS queue subscribed to SNS topic that sends out S3 upload events from the production S3 bucket
 resource "aws_sqs_queue" "sqs_prod_to_output_queue" {
   name                       = var.sqs_prod_to_output_queue_name
   delay_seconds              = 30
@@ -96,23 +96,51 @@ resource "aws_sqs_queue" "sqs_prod_to_output_queue" {
 
 }
 
-# SQS queue policy to allow lambda to write to queue
+# Policy document for SQS queue to allow SNS to send messages to queue
+data "aws_iam_policy_document" "sqs_prod_to_output_queue_policy_doc" {
+  statement {
+    sid    = "mros-sqs-prod-to-output-queue-policy"
+    effect = "Allow"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.sqs_prod_to_output_queue.arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_sns_topic.sns_output_data_topic.arn]
+    }
+  }
+}
+
+# SQS queue policy to allow SNS to send messages to queue
 resource "aws_sqs_queue_policy" "sqs_prod_to_output_queue_policy" {
   queue_url = aws_sqs_queue.sqs_prod_to_output_queue.id
-  policy    = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = "*",
-        Action = "sqs:SendMessage",
-        Resource = aws_sqs_queue.sqs_prod_to_output_queue.arn,
-        Condition = {
-          ArnEquals = {
-            "aws:SourceArn" = aws_s3_bucket.prod_s3_bucket.arn
-          }
-        }
-      }
-    ]
-  })
+  policy    = data.aws_iam_policy_document.sqs_prod_to_output_queue_policy_doc.json
 }
+
+# # SQS queue policy to allow lambda to write to queue
+# resource "aws_sqs_queue_policy" "sqs_prod_to_output_queue_policy" {
+#   queue_url = aws_sqs_queue.sqs_prod_to_output_queue.id
+#   policy    = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [
+#       {
+#         Effect = "Allow",
+#         Principal = "*",
+#         Action = "sqs:SendMessage",
+#         Resource = aws_sqs_queue.sqs_prod_to_output_queue.arn,
+#         Condition = {
+#           ArnEquals = {
+#             "aws:SourceArn" = aws_s3_bucket.prod_s3_bucket.arn
+#           }
+#         }
+#       }
+#     ]
+#   })
+# }

@@ -23,5 +23,6 @@ locals {
     airtable_to_sqs_zip = "../deploy/airtable_to_sqs.zip"
     stage_s3_to_prod_s3_zip = "../deploy/stage_s3_to_prod_s3.zip"
     mros_append_daily_data_zip = "../deploy/mros_append_daily_data.zip"
+    mros_insert_into_dynamodb_zip = "../deploy/mros_insert_into_dynamodb.zip"
     name_tag = "mros"
 }

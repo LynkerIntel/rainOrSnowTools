@@ -4,9 +4,9 @@
 
 # EventBridge rule to trigger lambda function
 resource "aws_cloudwatch_event_rule" "airtable_event_rule" {
-  name                = "airtable_event_rule"
+  name                = var.eventbridge_cron_rule_name
   description         = "Event rule to trigger lambda function"
-  schedule_expression = "rate(2 minutes)"
+  schedule_expression = "rate(10 minutes)"
 #   tags = {
 #     name              = local.name_tag
 #     resource_category = "eventbridge"

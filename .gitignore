@@ -64,3 +64,7 @@ R/scrap.R
 .env
 
 deploy/
+sh/test_empty_csv.sh
+
+# Ignore this empty csv file that gets generated when sh/build_static_resources.sh is run and this empty is created to be uploaded to the MROS output S3 bucket as a skeleton file
+tmp_empty_output.csv

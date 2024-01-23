@@ -73,6 +73,14 @@ resource "aws_s3_object" "prod_to_output_lambda_code_object" {
   etag   = filemd5(local.mros_append_daily_data_zip)
 }
 
+# s3 object for lambda code mros_append_daily_data lambda function
+resource "aws_s3_object" "insert_into_dynamodb_lambda_code_object" {
+  bucket = aws_s3_bucket.lambda_bucket.bucket
+  key    = var.insert_into_dynamodb_lambda_zip_file_name
+  source = local.mros_insert_into_dynamodb_zip
+  etag   = filemd5(local.mros_insert_into_dynamodb_zip)
+}
+
 #######################################
 # S3 bucket permissions airtable data #
 #######################################

@@ -9,6 +9,7 @@ from datetime import datetime
 import requests
 import json
 import time
+import uuid
 
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
@@ -29,6 +30,12 @@ TABLE_ID = os.environ.get('TABLE_ID')
 AIRTABLE_TOKEN = os.environ.get('AIRTABLE_TOKEN')
 S3_BUCKET = os.environ.get('S3_BUCKET')
 SQS_QUEUE_URL = os.environ.get('SQS_QUEUE_URL')
+
+# DATE=11/21/23
+DATE="01/23/24"
+BASE_ID="appbBvLMulujeg6E6"
+TABLE_ID="tblmBbWPjoY9v1DaN"
+AIRTABLE_TOKEN="patjS0TnuwlngxuS4.6507414a808410e3e54c9d6452e2a2853dac55a171a2e17c35e47f70584a596d"
 
 # DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE')
 # DATE = os.environ.get('DATE')
@@ -133,8 +140,18 @@ def airtable_to_sqs(event, context):
     #         )
         
     #     print(f"=====================")
+    # ud = uuid.uuid4()
+    # ud.hex
+    # ud
 
-    print(f"df.shape: {df.shape}")
+    # Add a uuid column for each row
+    df['uuid'] = df.apply(lambda x: uuid.uuid4().hex, axis=1)
+
+    # create a duplicate_id column which is the concatenation of the user and time columns (reolacing special characters in "time" with underscores)
+    df['duplicate_id'] = df['user'] + "_" + df['time'].apply(lambda x: re.sub(r'[\W_]+', '_', x))
+
+    # Group by 'duplicate_id' and add a 'duplicate_count' column
+    df['duplicate_count'] = df.groupby('duplicate_id').cumcount() + 1
 
     # Loop through the dataframe and send each record to SQS
     # for i in range(0, 20):
@@ -157,6 +174,9 @@ def airtable_to_sqs(event, context):
             'local_date': str(df["local_date"].iloc[i]),
             'comment': str(df["comment"].iloc[i]),
             'time': str(df["time"].iloc[i]),
+            'uuid': str(df["uuid"].iloc[i]),
+            'duplicate_id': str(df["duplicate_id"].iloc[i]),
+            'duplicate_count': str(df["duplicate_count"].iloc[i])
             # Add other fields as needed
         }
 
