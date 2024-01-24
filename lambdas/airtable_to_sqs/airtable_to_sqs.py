@@ -31,12 +31,6 @@ AIRTABLE_TOKEN = os.environ.get('AIRTABLE_TOKEN')
 S3_BUCKET = os.environ.get('S3_BUCKET')
 SQS_QUEUE_URL = os.environ.get('SQS_QUEUE_URL')
 
-# DATE=11/21/23
-DATE="01/23/24"
-BASE_ID="appbBvLMulujeg6E6"
-TABLE_ID="tblmBbWPjoY9v1DaN"
-AIRTABLE_TOKEN="patjS0TnuwlngxuS4.6507414a808410e3e54c9d6452e2a2853dac55a171a2e17c35e47f70584a596d"
-
 # DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE')
 # DATE = os.environ.get('DATE')
 

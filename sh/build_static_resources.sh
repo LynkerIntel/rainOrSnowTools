@@ -10,25 +10,26 @@
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
 
-# # Terraform state S3 bucket name
-# TF_STATE_S3_BUCKET_NAME=$3
-
 # S3 bucket
 BUCKET_NAME=$2
 # BUCKET_NAME="mros-output-bucket"
 
+# Terraform state S3 bucket name
+TF_STATE_S3_BUCKET_NAME=$3
+
 # ECR repo names 
-ECR_REPO_NAME=$3
+ECR_REPO_NAME=$4
 # ECR_REPO_NAME="mros-sqs-consumer-lambda-ecr"
 
 # AWS Region to create/check resources, if not given, use "us-west-1"
-AWS_REGION=${4:-"us-west-1"}
+AWS_REGION=${5:-"us-west-1"}
 LOCATION_CONSTRAINT=${AWS_REGION}
 
 # AWS Profile, if not given, use "default"
-AWS_PROFILE=${5:-"default"}
+AWS_PROFILE=${6:-"default"}
 
 echo "- BUCKET_NAME: $BUCKET_NAME"
+echo "- TF_STATE_S3_BUCKET_NAME: $TF_STATE_S3_BUCKET_NAME"
 echo "- ECR_REPO_NAME: $ECR_REPO_NAME"
 echo "- AWS_REGION: $AWS_REGION"
 echo "- LOCATION_CONSTRAINT: $LOCATION_CONSTRAINT"
@@ -39,8 +40,17 @@ echo "- AWS_PROFILE: $AWS_PROFILE"
 # ----- (This is the CSV that gets updated updated by new processed data from the Airtable) -----
 # -----------------------------------------------------------------------------------------------
 
+# # Create a temporary CSV file in the system's temporary directory
+# TEMP_DIR=$(mktemp -t temp.csv)
+# echo "Temporary directory created: $TEMP_DIR"
+
+# # Full path to the random CSV file
+# LOCAL_CSV_PATH="$TEMP_DIR"
+
 # Path to save local CSV file path of skeleton CSV file to upload to S3
 LOCAL_CSV_PATH="./tmp_empty_output.csv"
+
+echo "Local CSV path: $LOCAL_CSV_PATH"
 
 # S3 object key and CSV file content
 S3_OBJECT_KEY="mros_output.csv"
@@ -72,25 +82,25 @@ fi
 export TF_VAR_output_s3_bucket_name="$BUCKET_NAME"
 export TF_VAR_output_s3_object_key="$S3_OBJECT_KEY"
 export TF_VAR_sqs_consumer_ecr_repo_name="$ECR_REPO_NAME"
-# export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
+export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
 
 # -----------------------------------------------------------------------------------------------
 # ----- Create S3 bucket to keep Terraform state files (if does NOT exist) -----
 # -----------------------------------------------------------------------------------------------
 
-# # check if Terraform state S3 bucket ALREADY EXISTS
-# if ! aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
-#     # Create the Terraform state S3 bucket if it DOESN'T exist
-#     aws s3api create-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --create-bucket-configuration LocationConstraint="$LOCATION_CONSTRAINT"
+# check if Terraform state S3 bucket ALREADY EXISTS
+if ! aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --profile "$AWS_PROFILE" 2>/dev/null; then
+    # Create the Terraform state S3 bucket if it DOESN'T exist
+    aws s3api create-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --create-bucket-configuration LocationConstraint="$LOCATION_CONSTRAINT"
     
-#     echo "S3 bucket $TF_STATE_S3_BUCKET_NAME created."
+    echo "S3 bucket $TF_STATE_S3_BUCKET_NAME created."
 
-#     # Enable versioning on the bucket
-#     aws s3api put-bucket-versioning --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --versioning-configuration Status=Enabled
+    # Enable versioning on the bucket
+    aws s3api put-bucket-versioning --bucket "$TF_STATE_S3_BUCKET_NAME" --region "$AWS_REGION"  --profile "$AWS_PROFILE" --versioning-configuration Status=Enabled
 
-# else
-#     echo "Bucket $TF_STATE_S3_BUCKET_NAME already exists."
-# fi
+else
+    echo "Bucket $TF_STATE_S3_BUCKET_NAME already exists."
+fi
 
 # -----------------------------------------------------------------------------------------------
 # ----- Create S3 bucket for mros_output.csv (DO NOT DELETE) -----
@@ -132,6 +142,12 @@ else
     echo "CSV file $S3_OBJECT_KEY ALREADY EXISTS in S3 bucket $BUCKET_NAME."
 fi
 
+echo "Removing temporary local CSV file: $LOCAL_CSV_PATH"
+
+# Delete the temporary local CSV file
+rm "$LOCAL_CSV_PATH"
+echo "Temporary CSV file deleted: $LOCAL_CSV_PATH"
+
 # -----------------------------------------------------------------------------------------------
 # ----- Create ECR repository for Lambda Docker images (if does NOT exist) -----
 # -----------------------------------------------------------------------------------------------
@@ -153,15 +169,15 @@ export TF_VAR_sqs_consumer_ecr_repo_url="$ECR_REPO_URL"
 
 echo "ECR repository URL: $ECR_REPO_URL"
 
+# -----------------------------------------------------------------------------------------------
+# ----- Build and push Docker image to ECR Repo  -----
+# -----------------------------------------------------------------------------------------------
+
 # Determine the current operating system
 OS=$(uname -s)
 
 # print the operating system
 echo "Operating system: $OS"
-
-# -----------------------------------------------------------------------------------------------
-# ----- Build and push Docker image to ECR Repo  -----
-# -----------------------------------------------------------------------------------------------
 
 # AWS CLI and Docker commands to login, build, tag, and push Docker image
 aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | docker login --username AWS --password-stdin $AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com

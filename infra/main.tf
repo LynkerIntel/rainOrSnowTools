@@ -7,6 +7,29 @@ terraform {
   }
 }
 
+# terraform {
+#   required_providers {
+#     aws = {
+#       source  = "hashicorp/aws"
+#       # version = "~> 4.0"
+#     }
+#   }
+#   backend "s3" {
+#     bucket = var.tfstate_s3_bucket_name,
+#     key    = var.tfstate_s3_object_key,
+#     region = var.aws_region
+#   }
+
+# }
+
+# terraform {
+#   backend "s3" {
+#     bucket = var.tfstate_s3_bucket_name,
+#     key    = var.tfstate_s3_object_key,
+#     region = var.aws_region
+#   }
+# }
+
 provider "aws" {
   region = var.aws_region
   profile = var.aws_profile

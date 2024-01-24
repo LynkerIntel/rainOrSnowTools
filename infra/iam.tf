@@ -384,6 +384,7 @@ data "aws_iam_policy_document" "lambda_dynamodb_policy_doc" {
       "dynamodb:BatchWriteItem",
       "dynamodb:Query",
       "dynamodb:Scan",
+      "dynamodb:DescribeTable",
     ]
 
     resources = [

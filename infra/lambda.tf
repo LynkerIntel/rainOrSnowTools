@@ -346,7 +346,7 @@ resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
   # architectures    = ["arm64"]
 
   # # Pandas lambda layer
-  # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:4"]
+  layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
   # # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python39:14"]
 
   # timeout in seconds
@@ -355,8 +355,8 @@ resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
   # memory in MB
   memory_size     = 1024
 
-  # Only allow for a maximum of 8 Lambdas to be run concurrently
-  reserved_concurrent_executions = 1
+  # Only allow for a maximum of 5 Lambdas to be run concurrently
+  reserved_concurrent_executions = 5
   
   # Attach the Lambda function to the CloudWatch Logs group
   environment {
@@ -394,28 +394,15 @@ resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
 ####### ADD BACK THE BELOW CODE ##############
 ####### ADD BACK THE BELOW CODE ##############
 
-# ######################################################################################
-# # Lambda SQS Event Source Mapping (map prod_to_output lambda to prod_to_output SQS queue) #
-# ######################################################################################
+# #################################################################################################
+# # Lambda SNS permission (allow SNS topic to invoke insert_into_dynamodb_lambda lambda function) #
+# #################################################################################################
 
-# Lambda SQS Event Source Mapping
-resource "aws_lambda_event_source_mapping" "prod_to_output_lambda_sqs_event_source_mapping" {
-  event_source_arn = aws_sqs_queue.sqs_prod_to_output_queue.arn
-  function_name    = aws_lambda_function.mros_append_daily_data_lambda_function.function_name
-  batch_size       = 1
-  maximum_batching_window_in_seconds = 20      # (max time to wait for batch to fill up)
-#   function_response_types = ["ReportBatchItemFailures"]
-  depends_on = [
-    aws_lambda_function.mros_append_daily_data_lambda_function,
-    aws_sqs_queue.sqs_prod_to_output_queue,
-  ]
-}
-
-# Allow the "to prod_to_output" SQS queue to invoke the mros_append_daily_data Lambda function
-resource "aws_lambda_permission" "allow_sqs_invoke_prod_to_output_lambda" {
-  statement_id  = "AllowSQSInvoke"
+# Allow the "sns_output_data_topic" SNS topic to invoke the insert_into_dynamodb_lambda Lambda function
+resource "aws_lambda_permission" "allow_sns_invoke_insert_into_dynamodb_lambda" {
+  statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.mros_append_daily_data_lambda_function.arn}"
-  principal = "sqs.amazonaws.com"
-  source_arn = "${aws_sqs_queue.sqs_prod_to_output_queue.arn}"
+  function_name = "${aws_lambda_function.insert_into_dynamodb_lambda_function.arn}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.sns_output_data_topic.arn
 }

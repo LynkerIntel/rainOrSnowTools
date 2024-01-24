@@ -9,6 +9,14 @@ resource "aws_dynamodb_table" "mros_dynamodb_table" {
   hash_key       = "user"
   range_key      = "timestamp"
   
+  # create a global secondary index for state and timestamp
+  global_secondary_index {
+    name               = "state-timestamp-index"
+    hash_key           = "state"
+    range_key          = "timestamp"
+    projection_type    = "ALL"
+  } 
+
   # set hash key to user
   attribute {
     name = "user"
@@ -21,12 +29,10 @@ resource "aws_dynamodb_table" "mros_dynamodb_table" {
     type = "N"
   }
   
-  # create a global secondary index for state and timestamp
-  global_secondary_index {
-    name               = "state-timestamp-index"
-    hash_key           = "state"
-    range_key          = "timestamp"
-    projection_type    = "ALL"
+  # set state attribute
+  attribute {
+    name = "state"
+    type = "S"
   }
 
 }

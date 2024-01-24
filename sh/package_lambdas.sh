@@ -92,7 +92,6 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
         find "$PKG_DIR" -type d -name "examples" -exec rm -rf {} +
         find "$PKG_DIR" -type d -name "__pycache__" -exec rm -rf {} +
 
-
         # Go into the PKG_DIR directory
         cd "$PKG_DIR" 
 
