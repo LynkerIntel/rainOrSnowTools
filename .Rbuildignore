@@ -18,3 +18,4 @@
 ^lambda_containers/.*$
 ^deploy/.*$
 ^sh/.*$
+^tmp_empty_output.csv$

@@ -13,6 +13,8 @@ get_imerg_v2(datetime_utc, lon_obs, lat_obs, version = 6)
 \item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
 
 \item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
+
+\item{version}{numeric, whether to use version 6 or 7. Default is 6.}
 }
 \value{
 a dataframe of GPM data for each observation

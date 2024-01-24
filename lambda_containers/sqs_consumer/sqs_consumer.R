@@ -1,14 +1,8 @@
 # # R script to be run in Docker container and on AWS Lambda 
 
-# library(dplyr) 
-# library(sf)
-
 # # # install with the below code
 # devtools::install_github("SnowHydrology/rainOrSnowTools",
 #                        ref = "cicd_pipeline")
-
-# library(rainOrSnowTools)
-# library(paws)
 
 # -----------------------------------------
 # --- ENRICH MRoS AIRTABLE OBSERVATION ----
@@ -20,22 +14,6 @@ library(dplyr)
 # library(rainOrSnowTools)
 # library(climateR)
 
-# ENV NASA_DATA_USER=XXXXXXXX
-# ENV NASA_DATA_PASSWORD=XXXXXXXX
-# climateR::writeNetrc(login = Sys.getenv("NASA_DATA_USER"), password = Sys.getenv("NASA_DATA_PASSWORD"))
-
-# NASA_DATA_USER="XXXXXXXx"
-# NASA_DATA_PASSWORD="XXXXXXXX"
-
-# message("NASA_DATA_USER: ", NASA_DATA_USER)
-# message("NASA_DATA_PASSWORD: ", NASA_DATA_PASSWORD)
-# message("Writing .netrc file...")
-# climateR::writeNetrc(login = NASA_DATA_USER, password = NASA_DATA_PASSWORD)
-# message("Done writing .netrc file!")
-
-# message("Writing .dodsrc file...")
-# climateR::writeDodsrc()
-# message("Done writing .dodsrc file!")
 
 # Environment variables
 NASA_DATA_USER = Sys.getenv("NASA_DATA_USER")
@@ -95,36 +73,6 @@ sqs_consumer <- function(Records = NULL) {
     #             # Output the modified .netrc file
     #             cat "$NETRC_FILE"'
     # )
-
-    # # run bash script to update netrc file
-    # system(update_netrc)
-    # input_list <- list(...)
-    
-    # dodsrcFile = ".dodsrc"
-    # netrcFile = "/tmp/.netrc"
-    # unlink(dodsrcFile)
-    # dir = dirname(dodsrcFile)
-    # string <- paste0(
-    #     'USE_CACHE=0\n',
-    #     'MAX_CACHE_SIZE=20\n',
-    #     'MAX_CACHED_OBJ=5\n',
-    #     'IGNORE_EXPIRES=0\n',
-    #     'DEFAULT_EXPIRES=86400\n',
-    #     'ALWAYS_VALIDATE=0\n',
-    #     'DEFLATE=0\n',
-    #     'VALIDATE_SSL=1\n',
-    #     paste0('HTTP.COOKIEJAR=/tmp/.urs_cookies\n'),
-    #     paste0('HTTP.NETRC=', netrcFile))
-
-    # # create a netrc file
-    # write(string, path.expand(dodsrcFile))
-    # # set the owner-only permission
-    # Sys.chmod(dodsrcFile, mode = "755")
-    # # create a .dodsrc file
-    # x = climateR::writeDodsrc()
-
-    # message("Writting a '.dodsrc' file that references the '.netrc' file")
-    # message(paste0("found a netrc file, writing dodsrc file to ", x))
 
     ############  ############
     # UNCOMMENT BELOW
@@ -215,12 +163,13 @@ sqs_consumer <- function(Records = NULL) {
     message("Getting GPM PLP data...")
 
     # STEP 5: GET GPM PLP
+    plp = rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
     # plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
 
-    # plp = get_imerg_v2(datetime, lon_obs, lat_obs)
-    
-    # Place holder integer value for now until we can get the PLP data
-    plp = 2
+    # if plp is empty, set to 999 default value (this is a placeholder for now)
+    plp_val = ifelse(is.na(plp), 999, plp)
+
+    message("- plp_val: ", plp_val)
 
     message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
 
@@ -290,7 +239,7 @@ sqs_consumer <- function(Records = NULL) {
                     )
 
     # Add placeholder for PLP data
-    processed$plp_data = plp
+    processed$plp_data = plp_val
 
     # Add placeholder for state data
     processed$state = state_str

@@ -393,9 +393,10 @@ get_imerg <- function(
 #' @param datetime_utc Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @param version numeric, whether to use version 6 or 7. Default is 6.
 #' @return a dataframe of GPM data for each observation
 #' @importFrom sf st_as_sf st_drop_geometry
-#' @importFrom dplyr mutate any_of select bind_rows select `%>%`
+#' @importFrom dplyr mutate any_of all_of select bind_rows select `%>%`
 #' @importFrom plyr round_any
 #' @importFrom pacman p_load
 #' @importFrom glue glue
@@ -572,7 +573,7 @@ get_imerg_v2 <- function(datetime_utc,
 
     gpm_obs = gpm_obs %>%
       sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
-      dplyr::select(all_of((var)))
+      dplyr::select(dplyr::all_of((var)))
 
     return(gpm_obs)
 
