@@ -486,9 +486,7 @@ sqs_consumer <- function(Records = NULL) {
     #     Key    = file_name
     # )
     message("Done!")
-
 #    return(output_json)
-
 }
 
 # library(rainOrSnowTools)
