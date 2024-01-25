@@ -20,6 +20,13 @@ qaqc_obs = function(data = data){
       observer_count = NULL) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(
+      # Checks for phase observations (if it does not )
+      phase_flag = dplyr::case_when(
+        phase == "Rain" ~ "Pass",
+        phase == "Mix" ~ "Pass",
+        phase == "Snow" ~ "Pass",
+        TRUE ~ "NoPhase")) %>%
+    dplyr::mutate(
       # Checks for if the observation is within CONUS (study boundary)
       CONUS = dplyr::case_when(
         state == "Alaska" ~ "NoCONUS",

@@ -74,6 +74,7 @@ get_elev <- function(lon_obs, lat_obs){
 #' @return Ecoregion level 3
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105
@@ -106,6 +107,7 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' @return Ecoregion level 4
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105
@@ -138,6 +140,7 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 #' @return State
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105
@@ -172,7 +175,7 @@ get_state <- function(lon_obs, lat_obs){
 #'
 #' @return a dataframe of GPM data for each observation
 #' @importFrom sf st_as_sf st_drop_geometry
-#' @importFrom dplyr mutate any_of select bind_rows select `%>%`
+#' @importFrom dplyr mutate any_of select bind_rows `%>%`
 #' @importFrom plyr round_any
 #' @importFrom pacman p_load
 #' @importFrom glue glue
@@ -308,13 +311,13 @@ get_imerg <- function(datetime_utc,
       climateR::dap(
         URL = final_url,
         varname = var,
-        AOI = data[1,],
+        AOI = data,
         verbose = FALSE
       )
 
     gpm_obs = gpm_obs %>%
       sf::st_drop_geometry() %>% # Drop geometry column to make it dataframe
-      dplyr::select(all_of((var)))
+      dplyr::select(dplyr::all_of((var)))
 
     return(gpm_obs)
 
