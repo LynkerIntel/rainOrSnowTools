@@ -12,6 +12,8 @@ RUN mkdir ${LAMBDA_TASK_ROOT}
 WORKDIR ${LAMBDA_TASK_ROOT}
 ENTRYPOINT ["/lambda-entrypoint.sh"]
 
+# ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 # install R packages
 RUN install2.r digest terra remotes dplyr tidyr plyr readr lubridate codetools paws
 # RUN install2.r digest terra remotes dplyr tidyr plyr readr lubridate codetools paws lambdr
@@ -25,11 +27,13 @@ RUN installGithub.r r-rust/gifski
 
 # install AOI, climateR, and rainOrSnowTools...
 RUN installGithub.r mdneuzerling/lambdr@HEAD
-RUN installGithub.r mikejohnson51/AOI@HEAD
-RUN installGithub.r mikejohnson51/climateR@HEAD
+# RUN installGithub.r mikejohnson51/AOI@HEAD
+# RUN installGithub.r mikejohnson51/climateR@HEAD
 
+# this forces climateR and rainOrSnowTools to be installed from github on every build
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
+RUN installGithub.r mikejohnson51/AOI@HEAD
+RUN installGithub.r mikejohnson51/climateR@b73a3167a557840349c63ecc310afc182a1a3156
 RUN installGithub.r SnowHydrology/rainOrSnowTools@cicd_pipeline
 
 RUN mkdir /lambda
@@ -41,7 +45,6 @@ ENV NASA_DATA_PASSWORD=default_password
 ENV SQS_QUEUE_NAME=default
 ENV SQS_QUEUE_URL=default
 ENV S3_BUCKET_NAME=default
-
 
 # Create .dodsrc file
 RUN cd /lambda && Rscript -e ' \

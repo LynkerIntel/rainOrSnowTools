@@ -51,6 +51,8 @@ infra/*
 !cloudwatch.tf
 !eventbridge.tf
 !secrets_manager.tf
+!sns.tf
+!variables_template.tf
 R/scrap.R
 
 .netrc

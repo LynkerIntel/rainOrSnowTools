@@ -10,9 +10,9 @@
 
 library(lambdr)
 library(dplyr)
-# library(sf)
+library(sf)
 # library(rainOrSnowTools)
-# library(climateR)
+library(climateR)
 
 
 # Environment variables
@@ -33,13 +33,174 @@ message("- S3_BUCKET_NAME: ", S3_BUCKET_NAME)
 message("- AWS_REGION: ", AWS_REGION)
 message("=====================================")
 
+get_imerg3 <- function(datetime_utc,
+                        lon_obs,
+                        lat_obs) {
+
+  #############################
+
+  # # Example inputs
+  # library(climateR)
+  # library(dplyr)
+  # library(plyr)
+  # library(glue)
+  # library(sf)
+
+  # # datetime_utc = "2024-01-18 UTC"
+#   datetime_utc = "2023-11-21 UTC"
+#   lon_obs =-79.91447
+#   lat_obs= 39.77836
+  # version = 6
+    # datetime_utc = datetime
+        # datetime_utc = "2024-01-24 UTC"
+    # lon_obs
+    # lat_obs
+  #############################
+
+  # check for valid inputs
+  if(is.null(datetime_utc)) {
+    stop("Missing 'datetime_utc' argument input, 'datetime_utc' must be in format: YYYY-MM-DD HH:MM:SS")
+  }
+
+  # check for valid lon_obs input
+  if(is.null(lon_obs)) {
+    stop("Missing 'lon_obs' argument input, 'lon_obs' must be a numeric LONGITUDE value in CRS 4326")
+  }
+
+  # check for valid lat_obs input
+  if(is.null(lat_obs)) {
+    stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
+  }
+  # Assign GPM variable
+  var = 'probabilityLiquidPrecipitation'
+
+  # Observation data is converted into shapefile format
+  data = sf::st_as_sf(
+    data.frame(datetime_utc, lon_obs, lat_obs),
+    coords = c("lon_obs", "lat_obs"),
+    crs  = 4326
+  )
+
+  tryCatch({
+
+      # URL structure
+      base = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+      product = '3B-HHR-L.MS.MRG.3IMERG'
+      url_trim = '{base}/{year}/{julian}/'
+      product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.'
+
+      ## Build URLs
+      data = 
+        data %>%
+        dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+        dplyr::mutate(
+          julian  = format(dateTime, "%j"),
+          year    = format(dateTime, "%Y"),
+          month   = format(dateTime, "%m"),
+          day     = format(dateTime, "%d"),
+          hour    = sprintf("%02s", format(dateTime, "%H")),
+          minTime = sprintf("%02s", plyr::round_any(as.numeric(
+            format(dateTime, "%M")
+          ), 30, f = floor)),
+          origin_time  = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), "00:00"
+          ), tz = "UTC"),
+          rounded_time = as.POSIXct(paste0(
+            format(dateTime, "%Y-%m-%d"), hour, ":", minTime
+          ), tz = "UTC"),
+          nasa_time = rounded_time + (29 * 60) + 59,
+          nasa_time_minute = format(nasa_time, "%M"),
+          nasa_time_second = format(nasa_time, "%S"),
+          min = sprintf(
+            "%04s",
+            difftime(rounded_time, origin_time,  units = 'min')
+          ),
+          url_0 = glue::glue(url_trim),
+          product_info = glue::glue(product_pattern)
+        ) %>%
+        dplyr::select(dplyr::any_of(c(
+          'datetime_utc', 'url_0', 'product_info'
+        )))
+
+      # Visit the XML page to get the right V06[X] values (e.g. C,D,E,...)
+      url_base <- paste0(data$url_0, "catalog.xml")
+      message("url_base: ", url_base)
+
+    #   url_base = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06/2024/025/catalog.xml"
+
+      prod <- data$product_info
+      message("prod: ", prod)
+
+      xml_data <- 
+        xml2::read_xml(url_base) %>%
+        xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
+
+      message("xml_data: ", xml_data)
+
+      prod_name <- xml2::xml_attrs(xml_data[[1]])[["name"]]
+      message("prod_name: ", prod_name)
+
+      # Create URL
+      final_url = paste0(data$url_0, prod_name)
+      message("final_url: ", final_url)
+
+    ## Get Data
+    gpm_obs =
+      climateR::dap(
+        URL = final_url,
+        varname = var,
+        AOI = data[1,],
+        verbose = TRUE
+      )
+
+    message("Succesfully got GPM data using climateR::dap()")
+    message("gpm_obs: ", gpm_obs)
+
+    # gpm_obs = 
+    # gpm_obs %>%
+    #   sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
+    #   dplyr::select(dplyr::all_of((var)))
+
+     # drop geometry column to make it dataframe
+     gpm_obs = sf::st_drop_geometry(gpm_obs) 
+    
+    # try to use all_of() function to select the variable
+    gpm_obs <- tryCatch({
+                    message("Trying to use all_of() function")
+
+                    gpm_obs %>%
+                    dplyr::select(dplyr::all_of((var)))
+
+                }, error = function(e) {
+                    message("Error using all_of() function", e)
+                    message("gpm_obs: ", gpm_obs)
+
+                    gpm_obs %>%
+                    dplyr::select(probabilityLiquidPrecipitation)
+
+                })
+
+    #   %>% # drop geometry column to make it dataframe
+    #   dplyr::select(dplyr::all_of((var)))
+
+    return(gpm_obs)
+
+  }, error = function(er) {
+      message("Original error message:")
+      message(conditionMessage(er))
+
+    # Choose a return value in case of error
+    NA
+
+  })
+}
 # # # example JSON string
 # event = '{"id": "rec7vrLUoLMeZqfvr",
 #     "createdtime": "2023-11-21 23:27:55 UTC",
 #     "name": "Rain",
 #     "longitude": -79.91447, 
 #     "user": "Wi1uG9H7Wp",
-#     "latitude": 39.77836,
+#     "latitude": 39.6497458,
 #     "submitted_time": "23:27:54",
 #     "local_time": "18:27:54",
 #     "submitted_date": "11/21/23",
@@ -101,20 +262,23 @@ sqs_consumer <- function(Records = NULL) {
     #     # remove msg_body BELOW
     ############  ############
         # msg_body = '{
-        #     "id": "rectFNQPJyLyga6Iq",
-        #     "timestamp": "1705589683.0",
-        #     "createdtime": "2024-01-18T14:54:43.000Z",
-        #     "name": "Snow",
-        #     "latitude": "39.64079975903475",
-        #     "user": "mehubZKIjJ",
-        #     "longitude": "-106.53732056267381",
-        #     "submitted_time": "14:54:42",
-        #     "local_time": "07:54:42",
-        #     "submitted_date": "01/18/24",
-        #     "local_date": "1/18/24",
-        #     "comment": "nan",
-        #     "time": "2024-01-18T14:54:43.000Z"
-        # }'
+        #         "id": "xxxxd",
+        #         "timestamp": "1706147159.0",
+        #         "createdtime": "2024-01-25T01:45:59.000Z",
+        #         "name": "Rain",
+        #         "latitude": "39",
+        #         "user": "user_xxxxd",
+        #         "longitude": "-120",
+        #         "submitted_time": "01:45:58",
+        #         "local_time": "17:45:58",
+        #         "submitted_date": "01/25/24",
+        #         "local_date": "1/24/24",
+        #         "comment": "nan",
+        #         "time": "2024-01-25T01:45:59.000Z",
+        #         "uuid": "e5345sr",
+        #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
+        #         "duplicate_count": "1"
+        #     }'
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -136,6 +300,13 @@ sqs_consumer <- function(Records = NULL) {
     lat_obs  = as.numeric(data$latitude)
     datetime = as.POSIXct(as.character(data$time), tz = "UTC")
     id       = as.character(data$id)
+
+    message("========= Message variables ==========")
+    message("- lon_obs: ", lon_obs)
+    message("- lat_obs: ", lat_obs)
+    message("- datetime: ", datetime)
+    message("- id: ", id)
+    message("======================================")
 
     message("Getting elevation data...")
 
@@ -163,13 +334,31 @@ sqs_consumer <- function(Records = NULL) {
     message("Getting GPM PLP data...")
 
     # STEP 5: GET GPM PLP
-    plp = rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
+    plp = get_imerg3(datetime, lon_obs, lat_obs)
+    # plp = rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
     # plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
 
-    # if plp is empty, set to 999 default value (this is a placeholder for now)
-    plp_val = ifelse(is.na(plp), 999, plp)
+    # Check if plp is NA, get_imerg_v2() returns NA if there is no data for the given datetime or an error occurs
+    if(is.na(plp)) {
+        message("plp is NA, giving default value of 9999...")
+        # if plp is empty, set to 9999 default value (this is a placeholder for now)
+        plp_val <- 9999
 
-    message("- plp_val: ", plp_val)
+    } else {
+        message("plp is not NA, extracting plp value...")
+
+        # extract plp value from the dataframe
+        plp_val <- plp[['probabilityLiquidPrecipitation']][1]
+
+        message("Extracted plp value: ", plp_val, " from plp dataframe")
+
+        # if plp is empty, set to 9999 default value (this is a placeholder for now)
+        plp_val <- ifelse(is.null(plp_val), 9999, plp_val)
+    }
+
+    # if("probabilityLiquidPrecipitation" %in% names(plp)) { } 
+
+    message("---> Final plp_val: ", plp_val)
 
     message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
 

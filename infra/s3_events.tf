@@ -21,6 +21,11 @@ resource "aws_s3_bucket_notification" "prod_s3_bucket_notification" {
     events        = ["s3:ObjectCreated:*"]
     filter_suffix = ".csv"
   }
+  depends_on = [
+    aws_s3_bucket.prod_s3_bucket,
+    aws_sns_topic.sns_output_data_topic
+    ]
+  # depends_on = [aws_s3_bucket.prod_s3_bucket]
 }
 
 

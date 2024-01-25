@@ -2,35 +2,35 @@
 # S3 Policy Documents #
 #######################
 
-# S3 bucket policy (RAW)
-data "aws_iam_policy_document" "s3_bucket_policy_document" {
-  statement {
-    sid = "AllowCurrentAccount"
-    effect = "Allow"
+# # S3 bucket policy (RAW)
+# data "aws_iam_policy_document" "s3_bucket_policy_document" {
+#   statement {
+#     sid = "AllowCurrentAccount"
+#     effect = "Allow"
 
-    principals {
-      type = "AWS"
-      identifiers = ["*"]
-    }
+#     principals {
+#       type = "AWS"
+#       identifiers = ["*"]
+#     }
 
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:ListBucket"
-    ]
+#     actions = [
+#       "s3:GetObject",
+#       "s3:PutObject",
+#       "s3:ListBucket"
+#     ]
 
-    resources = [
-      aws_s3_bucket.airtable_s3_bucket.arn,
-      "${aws_s3_bucket.airtable_s3_bucket.arn}/*"
-    ]
+#     resources = [
+#       aws_s3_bucket.airtable_s3_bucket.arn,
+#       "${aws_s3_bucket.airtable_s3_bucket.arn}/*"
+#     ]
 
-    condition {
-      test = "StringEquals"
-      variable = "aws:PrincipalAccount"
-      values = [var.aws_account_number]
-    }
-  }
-}
+#     condition {
+#       test = "StringEquals"
+#       variable = "aws:PrincipalAccount"
+#       values = [var.aws_account_number]
+#     }
+#   }
+# }
 
 # S3 bucket policy (STAGE)
 data "aws_iam_policy_document" "staging_s3_bucket_policy_document" {
@@ -214,8 +214,8 @@ data "aws_iam_policy_document" "lambda_s3_policy_doc" {
     ]
 
     resources = [
-      aws_s3_bucket.airtable_s3_bucket.arn,
-      "${aws_s3_bucket.airtable_s3_bucket.arn}/*",
+    #   aws_s3_bucket.airtable_s3_bucket.arn,
+    #   "${aws_s3_bucket.airtable_s3_bucket.arn}/*",
       
       aws_s3_bucket.staging_s3_bucket.arn,
       "${aws_s3_bucket.staging_s3_bucket.arn}/*",
@@ -428,8 +428,8 @@ data "aws_iam_policy_document" "sqs_consumer_lambda_policy_doc" {
     ]
 
     resources = [
-      aws_s3_bucket.airtable_s3_bucket.arn,
-      "${aws_s3_bucket.airtable_s3_bucket.arn}/*",
+    #   aws_s3_bucket.airtable_s3_bucket.arn,
+    #   "${aws_s3_bucket.airtable_s3_bucket.arn}/*",
       
       aws_s3_bucket.staging_s3_bucket.arn,
       "${aws_s3_bucket.staging_s3_bucket.arn}/*",

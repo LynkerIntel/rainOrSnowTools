@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Create a ECR repository for use by the infrastructure created by Terraform (e.g. Docker images). 
-# This script is run before terraform plan/apply to ensure that the ECR repository exist before
-# terraform tries to use the Docker Image to create the Lambda function.
+# This script is run before terraform plan/apply to ensure that certain stack resources (ECR repository, S3 buckets, etc)
+#  exist before terraform tries to use the Docker Image while creating infrastructure (e.g. Lambda functions in this case)
 
-# Provide AWS Account Number as first argument
-# Example: source sh/build_static_resources.sh 123456789 aws-profile tfstate-s3-bucket-name
+# Provide AWS Account Number, S3 bucket name, Terraform state S3 bucket name, ECR repo name, AWS region, and AWS profile as arguments to the script.
+# Example: source sh/build_static_resources.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name ecr-repo-name aws-region aws-profile
 
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1

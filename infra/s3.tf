@@ -1,22 +1,22 @@
 
-# ###################################################
-# # S3 bucket for storing the Terraform state files #
-# ###################################################
+###################################################
+# S3 bucket for storing the Terraform state files #
+###################################################
 
-# # s3 bucket for Terraform state files
-# data "aws_s3_bucket" "terraform_state_s3_bucket" {
-#   bucket = var.tfstate_s3_bucket_name
-# }
-
-
-###############################
-# S3 bucket for airtable data #
-###############################
-
-# s3 bucket for lambda code
-resource "aws_s3_bucket" "airtable_s3_bucket" {
-  bucket = var.airtable_s3_bucket_name
+# s3 bucket for Terraform state files
+data "aws_s3_bucket" "terraform_state_s3_bucket" {
+  bucket = var.tfstate_s3_bucket_name
 }
+
+
+# ###############################
+# # S3 bucket for airtable data #
+# ###############################
+
+# # s3 bucket for lambda code
+# resource "aws_s3_bucket" "airtable_s3_bucket" {
+#   bucket = var.airtable_s3_bucket_name
+# }
 
 ###############################
 # S3 Staging JSON data #
@@ -92,48 +92,49 @@ resource "aws_s3_object" "insert_into_dynamodb_lambda_code_object" {
   etag   = filemd5(local.mros_insert_into_dynamodb_zip)
 }
 
-#######################################
-# S3 bucket permissions airtable data #
-#######################################
+# #######################################
+# # S3 bucket permissions airtable data #
+# #######################################
 
-# s3 bucket ownership controls
-resource "aws_s3_bucket_ownership_controls" "airtable_s3_bucket_ownership_controls" {
-  bucket = aws_s3_bucket.airtable_s3_bucket.id
-  rule {
-    object_ownership = "BucketOwnerPreferred"
-  }
-}
+# # s3 bucket ownership controls
+# resource "aws_s3_bucket_ownership_controls" "airtable_s3_bucket_ownership_controls" {
+#   bucket = aws_s3_bucket.airtable_s3_bucket.id
+#   rule {
+#     object_ownership = "BucketOwnerPreferred"
+#   }
+# }
 
-# s3 bucket public access block
-resource "aws_s3_bucket_public_access_block" "airtable_s3_public_access_block" {
-  bucket = aws_s3_bucket.airtable_s3_bucket.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+# # s3 bucket public access block
+# resource "aws_s3_bucket_public_access_block" "airtable_s3_public_access_block" {
+#   bucket = aws_s3_bucket.airtable_s3_bucket.id
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
 
-}
+# }
 
-resource "aws_s3_bucket_acl" "airtable_s3_bucket_acl" {
-  depends_on = [
-    aws_s3_bucket_ownership_controls.airtable_s3_bucket_ownership_controls,
-    aws_s3_bucket_public_access_block.airtable_s3_public_access_block,
-  ]
+# resource "aws_s3_bucket_acl" "airtable_s3_bucket_acl" {
+#   depends_on = [
+#     aws_s3_bucket_ownership_controls.airtable_s3_bucket_ownership_controls,
+#     aws_s3_bucket_public_access_block.airtable_s3_public_access_block,
+#   ]
 
-  bucket = aws_s3_bucket.airtable_s3_bucket.id
-  acl    = "private"
-}
+#   bucket = aws_s3_bucket.airtable_s3_bucket.id
+#   acl    = "private"
+# }
 
-# s3 bucket policy to allow public access
-resource "aws_s3_bucket_policy" "airtable_bucket_policy" {
-  bucket = aws_s3_bucket.airtable_s3_bucket.id
-  policy = data.aws_iam_policy_document.s3_bucket_policy_document.json
-  depends_on = [
-    aws_s3_bucket_acl.airtable_s3_bucket_acl,
-    aws_s3_bucket_ownership_controls.airtable_s3_bucket_ownership_controls,
-    aws_s3_bucket_public_access_block.airtable_s3_public_access_block,
-  ]
-}
+# # s3 bucket policy to allow public access
+# resource "aws_s3_bucket_policy" "airtable_bucket_policy" {
+#   bucket = aws_s3_bucket.airtable_s3_bucket.id
+#   policy = data.aws_iam_policy_document.s3_bucket_policy_document.json
+#   depends_on = [
+#     aws_s3_bucket_acl.airtable_s3_bucket_acl,
+#     aws_s3_bucket_ownership_controls.airtable_s3_bucket_ownership_controls,
+#     aws_s3_bucket_public_access_block.airtable_s3_public_access_block,
+#   ]
+# }
+
 #################################
 # Staging S3 bucket permissions #
 #################################

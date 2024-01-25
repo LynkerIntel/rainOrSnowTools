@@ -1,0 +1,45 @@
+# # This workflow uses actions that are not certified by GitHub.
+# # They are provided by a third-party and are governed by
+# # separate terms of service, privacy policy, and support
+# # documentation.
+
+# # GitHub recommends pinning actions to a commit SHA.
+# # To get a newer version, you will need to update the SHA.
+# # You can also reference a tag or branch, but the action may change without warning.
+
+# name: Deploy Infrastructure
+
+# on:
+#   push:
+#     branches:
+#       - cicd_pipeline
+
+# jobs:
+#   deploy:
+#     name: Deploy Infrastructure
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+#           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+#       - name: Source build_static_resources.sh
+#         run: source sh/build_static_resources.sh ${{ secrets.AWS_ACCOUNT_NUMBER }} ${{ secrets.OUTPUT_S3_BUCKET }} ${{ secrets.TFSTATE_BUCKET }} ${{ secrets.ECR_REPO_NAME }} ${{ secrets.AWS_REGION }} ${{ secrets.AWS_PROFILE }}
+
+#       - name: Package Lambdas
+#         run: sh/package_lambdas.sh
+
+#       - name: Terraform Init
+#         run: terraform init -backend-config="bucket=${{ secrets.TFSTATE_BUCKET }}" -backend-config="profile=${{ secrets.AWS_PROFILE }}" -backend-config="region=${{ secrets.AWS_REGION }}"
+
+#       - name: Terraform Plan
+#         run: terraform plan
+
+#       - name: Terraform Apply
+#         run: terraform apply -auto-approve

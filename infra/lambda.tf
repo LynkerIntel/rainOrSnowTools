@@ -24,7 +24,7 @@ resource "aws_lambda_function" "airtable_lambda_function" {
         BASE_ID = var.airtable_base_id,
         TABLE_ID = var.airtable_table_id,
         AIRTABLE_TOKEN = var.airtable_api_token,
-        S3_BUCKET = "s3://${aws_s3_bucket.airtable_s3_bucket.bucket}",
+        # S3_BUCKET = "s3://${aws_s3_bucket.airtable_s3_bucket.bucket}",
         # S3_BUCKET = var.airtable_s3_bucket_name,
         # DYNAMODB_TABLE = aws_dynamodb_table.airtable_dynamodb_table.name,
         SQS_QUEUE_URL = aws_sqs_queue.mros_sqs_queue.url
@@ -170,7 +170,10 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
   # role             = aws_iam_role.lambda_role.arn
   # handler          = "sqs_consumer.sqs_consumer"
   # runtime          = "provided.al2"
-  image_uri        = "${var.sqs_consumer_ecr_repo_url}:latest"
+
+    image_uri        = "${var.sqs_consumer_ecr_repo_url}:latest"
+#   image_uri = data.aws_ecr_image.repo_image.image_uri
+  
   # image_uri        = "${data.aws_ecr_repository.r_ecr_repository.repository_url}:latest"
   # image_uri        = data.aws_ecr_repository.r_ecr_repository.repository_url
   package_type     = "Image"
@@ -180,6 +183,9 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
+  
+  # force a new resource when the image is updated /changes
+  source_code_hash = trimprefix(data.aws_ecr_image.repo_image.id, "sha256:")
 
     # Attach the Lambda function to the CloudWatch Logs group
   environment {
