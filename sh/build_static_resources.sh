@@ -62,7 +62,7 @@ temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stat
 temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,\
 temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,\
 temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,\
-temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,state,date_key"
+temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,state,geohash5,geohash12,date_key,record_hash"
 # CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,date_key"
 
 # Check if the local CSV file already exists
@@ -177,7 +177,7 @@ echo "ECR repository URL: $ECR_REPO_URL"
 OS=$(uname -s)
 
 # print the operating system
-echo "Operating system: $OS"
+echo "Operating system: $OS"cd 
 
 # AWS CLI and Docker commands to login, build, tag, and push Docker image
 aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | docker login --username AWS --password-stdin $AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com

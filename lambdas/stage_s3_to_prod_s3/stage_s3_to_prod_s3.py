@@ -9,6 +9,7 @@ from datetime import datetime
 import json
 import uuid 
 import time
+import hashlib
 
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
@@ -42,6 +43,149 @@ S3_PROD_BUCKET_URI  = os.environ.get('S3_PROD_BUCKET_URI')
 
 # S3 client
 s3 = boto3.client('s3')
+
+"""
+Copyright (C) 2008 Leonard Norrgard <leonard.norrgard@gmail.com>
+Copyright (C) 2015 Leonard Norrgard <leonard.norrgard@gmail.com>
+
+The below code (the decode_exactly(), decode(), and encode() functions) are part of the Geohash package  all credit goes to: Leonard Norrgard <leonard.norrgard@gmail.com>
+
+Geohash is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Geohash is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with Geohash.  If not, see
+<http://www.gnu.org/licenses/>.
+"""
+
+from math import log10
+
+#  Note: the alphabet in geohash differs from the common base32
+#  alphabet described in IETF's RFC 4648
+#  (http://tools.ietf.org/html/rfc4648)
+
+__base32 = '0123456789bcdefghjkmnpqrstuvwxyz'
+__decodemap = { }
+for i in range(len(__base32)):
+    __decodemap[__base32[i]] = i
+del i
+
+def decode_exactly(geohash):
+    """
+    Decode the geohash to its exact values, including the error
+    margins of the result.  Returns four float values: latitude,
+    longitude, the plus/minus error for latitude (as a positive
+    number) and the plus/minus error for longitude (as a positive
+    number).
+    """
+    lat_interval, lon_interval = (-90.0, 90.0), (-180.0, 180.0)
+    lat_err, lon_err = 90.0, 180.0
+    is_even = True
+    for c in geohash:
+        cd = __decodemap[c]
+        for mask in [16, 8, 4, 2, 1]:
+            if is_even: # adds longitude info
+                lon_err /= 2
+                if cd & mask:
+                    lon_interval = ((lon_interval[0]+lon_interval[1])/2, lon_interval[1])
+                else:
+                    lon_interval = (lon_interval[0], (lon_interval[0]+lon_interval[1])/2)
+            else:      # adds latitude info
+                lat_err /= 2
+                if cd & mask:
+                    lat_interval = ((lat_interval[0]+lat_interval[1])/2, lat_interval[1])
+                else:
+                    lat_interval = (lat_interval[0], (lat_interval[0]+lat_interval[1])/2)
+            is_even = not is_even
+    lat = (lat_interval[0] + lat_interval[1]) / 2
+    lon = (lon_interval[0] + lon_interval[1]) / 2
+    return lat, lon, lat_err, lon_err
+
+def decode(geohash):
+    """
+    Decode geohash, returning two strings with latitude and longitude
+    containing only relevant digits and with trailing zeroes removed.
+    """
+    lat, lon, lat_err, lon_err = decode_exactly(geohash)
+    # Format to the number of decimals that are known
+    lats = "%.*f" % (max(1, int(round(-log10(lat_err)))) - 1, lat)
+    lons = "%.*f" % (max(1, int(round(-log10(lon_err)))) - 1, lon)
+    if '.' in lats: lats = lats.rstrip('0')
+    if '.' in lons: lons = lons.rstrip('0')
+    return lats, lons
+
+def encode(latitude, longitude, precision=12):
+    """
+    Encode a position given in float arguments latitude, longitude to
+    a geohash which will have the character count precision.
+    """
+    lat_interval, lon_interval = (-90.0, 90.0), (-180.0, 180.0)
+    geohash = []
+    bits = [ 16, 8, 4, 2, 1 ]
+    bit = 0
+    ch = 0
+    even = True
+    while len(geohash) < precision:
+        if even:
+            mid = (lon_interval[0] + lon_interval[1]) / 2
+            if longitude > mid:
+                ch |= bits[bit]
+                lon_interval = (mid, lon_interval[1])
+            else:
+                lon_interval = (lon_interval[0], mid)
+        else:
+            mid = (lat_interval[0] + lat_interval[1]) / 2
+            if latitude > mid:
+                ch |= bits[bit]
+                lat_interval = (mid, lat_interval[1])
+            else:
+                lat_interval = (lat_interval[0], mid)
+        even = not even
+        if bit < 4:
+            bit += 1
+        else:
+            geohash += __base32[ch]
+            bit = 0
+            ch = 0
+    return ''.join(geohash)
+
+#############################################
+############# END GEOHASH CODE ##############
+#############################################
+
+# function to create a hash value of a Python dictionary
+def hash_dictionary(dictionary, hash_type="sha256"):
+    """
+    Create a hash of all the values in a Python dictionary.
+
+    Parameters:
+    dictionary (dict): Input dictionary.
+    hash_type (str): Hash type to use. Default is "sha256". Other options include "md5". 
+            If an invalid hash_type is provided, "sha256" will be used.
+
+    Returns:
+    str: Hash value.
+
+    """
+    # Convert dictionary to a string representation
+    dict_str = str(dictionary)
+
+    # Generate hash value of the string representation
+    if hash_type == "sha256":
+        hash_value = hashlib.sha256(dict_str.encode('utf-8')).hexdigest()
+    elif hash_type == "md5":
+        hash_value = hashlib.md5(dict_str.encode('utf-8')).hexdigest()
+    else:
+        hash_value = hashlib.sha256(dict_str.encode('utf-8')).hexdigest()
+
+    return hash_value
 
 # lambda handler function
 def process_stage_messages(message):
@@ -133,8 +277,33 @@ def process_stage_messages(message):
     # extract the JSON data from obj_content
     json_data = json.loads(obj_content[0])[0]
 
+    print(f"Creating geohash from latitude and longitude...")
+    print(f"- latitude: {json_data['latitude']}")
+    print(f"- longitude: {json_data['longitude']}")
+
+    # Create a geohash from the latitude and longitude with a precision of 5 characters (~ 4.9km x 4.9km)
+    geohash5 = encode(float(json_data["latitude"]), float(json_data["longitude"]), 5)
+
+    # Create a geohash from the latitude and longitude with a precision of 5 characters (~ 4.9km x 4.9km)
+    geohash12 = encode(float(json_data["latitude"]), float(json_data["longitude"]), 12)
+
+    print(f"Adding geohash5 '{geohash5}' to json_data...")
+    print(f"Adding geohash12 '{geohash12}' to json_data...")
+
+    # Add the geohash5 to the json_data
+    json_data["geohash5"] = geohash5
+
+    # Add the geohash12 to the json_data
+    json_data["geohash12"] = geohash12
+
     # add the date_key to the json_data
     json_data["date_key"] = date_key
+    
+    # Create a hash value for all of the data in the json_data dictionary
+    json_data["record_hash"] = hash_dictionary(json_data)
+    
+    # # use hash_pandas_object to generate a hash value for all the values in each row
+    # df['record_hash'] = pd.util.hash_pandas_object(df, index=False)
 
     print(f"json_data: {json_data}")
     print(f"===" * 5)

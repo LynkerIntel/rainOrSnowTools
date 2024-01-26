@@ -137,26 +137,39 @@ def mros_append_daily_data(event, context):
     print(f"- output_df.shape: {output_df.shape}")
     print(f"- Number of columns in output_df: {len(output_df.columns)}")
     print(f"- Number of rows in output_df: {len(output_df)}")
-
-    # Create a new column 'duplicate_count_id' which is the concatenation of 'duplicate_id' and 'duplicate_count' in both dataframes
-    # This will be used to remove rows in the input dataframe that are already in the output dataframe
-    input_df["duplicate_count_id"] = input_df["duplicate_id"] + "_" + input_df["duplicate_count"].astype(str)
-    output_df["duplicate_count_id"] = output_df["duplicate_id"] + "_" + output_df["duplicate_count"].astype(str)
-
-    print(f"Number of rows in input_df: {len(input_df)} (BEFORE removing duplicates)")
     
+    ####################################################
+    #### OLD METHOD OF REMOVING DUPLICATES (BELOW) ####
+    # # Create a new column 'duplicate_count_id' which is the concatenation of 'duplicate_id' and 'duplicate_count' in both dataframes
+    # # This will be used to remove rows in the input dataframe that are already in the output dataframe
+    # input_df["duplicate_count_id"] = input_df["duplicate_id"] + "_" + input_df["duplicate_count"].astype(str)
+    # output_df["duplicate_count_id"] = output_df["duplicate_id"] + "_" + output_df["duplicate_count"].astype(str)
+
+    # print(f"Number of rows in input_df: {len(input_df)} (BEFORE removing duplicates)")
+    
+    # # Remove rows of the "input_df" that have a "duplicate_count_id" that is already in the "output_df"
+    # # This is to prevent duplicate rows from being added to the output file
+    # input_df = input_df[-input_df["duplicate_count_id"].isin(output_df["duplicate_count_id"])]
+
+    # print(f"Number of rows in input_df: {len(input_df)} (AFTER removing duplicates)")
+    
+    # print(f"Dropping 'duplicate_count_id' column from input_df and output_df...")
+
+    # # Drop the 'duplicate_count_id' column from both dataframes
+    # input_df.drop(columns=["duplicate_count_id"], inplace=True)
+    # output_df.drop(columns=["duplicate_count_id"], inplace=True)
+
+    #### OLD METHOD OF REMOVING DUPLICATES (ABOVE) ####
+    ####################################################
+
+    print(f"Number of rows in input_df: {len(input_df)} (BEFORE removing duplicate record_hash values)")
+
     # Remove rows of the "input_df" that have a "duplicate_count_id" that is already in the "output_df"
     # This is to prevent duplicate rows from being added to the output file
-    input_df = input_df[-input_df["duplicate_count_id"].isin(output_df["duplicate_count_id"])]
+    input_df = input_df[-input_df["record_hash"].isin(output_df["record_hash"])]
 
-    print(f"Number of rows in input_df: {len(input_df)} (AFTER removing duplicates)")
-    
-    print(f"Dropping 'duplicate_count_id' column from input_df and output_df...")
+    print(f"Number of rows in input_df: {len(input_df)} (AFTER removing duplicate record_hash values)")
 
-    # Drop the 'duplicate_count_id' column from both dataframes
-    input_df.drop(columns=["duplicate_count_id"], inplace=True)
-    output_df.drop(columns=["duplicate_count_id"], inplace=True)
-    
     print(f"Concatenating dataframes...")
 
     # Concatenate the input file to the output file

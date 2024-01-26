@@ -11,7 +11,7 @@ from datetime import datetime
 import json
 from decimal import Decimal
 
-# # AWS SDK for Python (Boto3) and S3fs for S3 file system support
+# # # AWS SDK for Python (Boto3) and S3fs for S3 file system support
 # import boto3
 # import s3fs
 # import pandas as pd
@@ -24,7 +24,10 @@ import awswrangler as wr
 # Full bucket URIs
 DYNAMODB_TABLE  = os.environ.get('DYNAMODB_TABLE')
 
-# # S3 client
+# s3 = session.client('s3')
+# dynamodb = session.client('dynamodb')
+
+# # # S3 client
 # s3 = boto3.client('s3')
 
 # # DynamoDB client
@@ -113,17 +116,40 @@ def mros_insert_into_dynamodb(event, context):
 
     print(f"Attempting to write dataframe to DynamoDB table...")
 
-    # batch write the dataframe to DynamoDB
-    pandas_to_dynamodb(df, DYNAMODB_TABLE)
+    try: 
+        # write the dataframe to DynamoDB
+        pandas_to_dynamodb(df, DYNAMODB_TABLE)
+    except Exception as e:
+        print(f"Exception writing dataframe to DynamoDB: {e}")
+        raise 
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Lambda function executed successfully!')
-    }
+    # # batch write the dataframe to DynamoDB
+    # pandas_to_dynamodb(df, DYNAMODB_TABLE)
+
+    return
 
 
-# # function to make a DynamoDB item and add a status code and "epoch_time" timestamp attribute. 
-# # Any None values are converted to empty strings
+# # df = pd.read_csv(local_file_path)
+# pd.util.hash_pandas_object(pd.Series([1, 2, 3]))
+# pd.util.hash_pandas_object(df, index=False)
+# # use hash_pandas_object to generate a hash value for all the values in each row
+# df['hash'] = pd.util.hash_pandas_object(df, index=False)
+
+# ddb_items = df_to_dynamodb_items(df)
+
+# len(ddb_items)
+# ddb_items[0]
+# xx = ddb_items[0]
+# try:
+#     dynamodb.put_item(
+#         TableName=DYNAMODB_TABLE,
+#         Item=ddb_item
+#     )
+# except Exception as e:
+#     print(f"Error logging failed request to DynamoDB: {e}")
+
+# # # function to make a DynamoDB item and add a status code and "epoch_time" timestamp attribute. 
+# # # Any None values are converted to empty strings
 # def make_dynamodb_item(json_object):
 
 #     # set any None values to empty strings
@@ -142,45 +168,43 @@ def mros_insert_into_dynamodb(event, context):
 #     # ddb_item = {"url": {"S": origin_json["url"]}}
 #     # ddb_item = {"uid": {"S": origin_json["uid"]}}
 
+#     # # iterate through keys in origin_json and add them to ddb_item
+#     # for key, value in json_object.items():
+#     #     ddb_item[key] = {"S": str(value)}
+
 #     # iterate through keys in origin_json and add them to ddb_item
 #     for key, value in json_object.items():
-#         ddb_item[key] = {"S": str(value)}
+#         if isinstance(value, int):
+#             ddb_item[key] = {'N': str(value)}  # If value is an integer, represent as "N" (number)
+#         else:
+#             ddb_item[key] = {"S": str(value)}  # Otherwise, treat as string
     
 #     ddb_item["epoch_time"] = {'N': str(epoch_time)}
 
 #     return ddb_item
 
-# # function that takes a pandas dataframe and generates a list of jsons that can be used to make dynamodb items
-# def make_dynamodb_items(df):
+# # # function that takes a pandas dataframe and generates a list of jsons that can be used to make dynamodb items
+# def df_to_dynamodb_items(df):
 
 #     # initialize an empty list
 #     dynamodb_items = []
 
 #     # iterate through columns in the dataframe and convert any float64 columns to Decimal
 #     for i in df.columns:
-#         print(f"i: {i}")
-#         print(f"df[i].dtype: {df[i].dtype}")
+#         # print(f"i: {i}")
+#         # print(f"df[i].dtype: {df[i].dtype}")
 #         if df[i].dtype == 'float64':
-#             print(f"---> datatype is float64")
+#             # print(f"---> datatype is float64")
 #             df[i] = df[i].apply(float_to_decimal)
-#         print(f"===" * 5)
+#         # print(f"===" * 5)
 
 #     # Iterate over rows, convert each row to a dictionary, and save as JSON
 #     for index, row in df.iterrows():
-#         print(f"Processing row {index}...")
-#         print(f"row: {row}")
+#         # print(f"Processing row {index}...")
+#         # print(f"row: {row}")
 
 #         # Convert the row to a dictionary
 #         row_dict = row.to_dict()
-
-#         # # get the datatype of the current column
-#         # datatype = df[i].dtype
-
-#         # print(f"datatype: {datatype}")
-
-#         # if datatype == 'float64':
-#         #     print(f"---> datatype is float64")
-#             # df[i] = df[i].apply(float_to_decimal)
         
 #         # make a dynamodb item from the row dictionary
 #         dynamodb_item = make_dynamodb_item(row_dict)

@@ -14,6 +14,7 @@ import uuid
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
 from pandas import json_normalize
+
 # import awswrangler as wr
 
 # AWS SDK for Python (Boto3) and S3fs for S3 file system support
@@ -240,7 +241,7 @@ def airtable_to_sqs(event, context):
         # Get the dataframe for the given date
         df = airtable_data[date_key]
 
-        if df:
+        if df is not None:
             print(f"Number of rows in df: {len(df)}")
             print(f"Number of columns in df: {len(df.columns)}")
 

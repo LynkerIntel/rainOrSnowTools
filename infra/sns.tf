@@ -15,18 +15,18 @@ data "aws_iam_policy_document" "sns_topic_policy_doc" {
     actions   = ["SNS:Publish"]
     resources = [aws_sns_topic.sns_output_data_topic.arn]
 
-    condition {
-      test     = "ArnLike"
-      variable = "aws:SourceArn"
-      values   = [aws_s3_bucket.prod_s3_bucket.arn]
-    }
-    
-    # # Build ARN for S3 bucket manually to avoid circular dependency
     # condition {
     #   test     = "ArnLike"
     #   variable = "aws:SourceArn"
-    #   values   = ["arn:aws:s3:::${var.prod_s3_bucket_name}"]
+    #   values   = [aws_s3_bucket.prod_s3_bucket.arn]
     # }
+
+    # Build ARN for S3 bucket manually to avoid circular dependency
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:s3:::${var.prod_s3_bucket_name}"]
+    }
     
     
   }

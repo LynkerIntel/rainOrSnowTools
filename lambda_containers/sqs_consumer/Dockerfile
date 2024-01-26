@@ -33,7 +33,8 @@ RUN installGithub.r mdneuzerling/lambdr@HEAD
 # this forces climateR and rainOrSnowTools to be installed from github on every build
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN installGithub.r mikejohnson51/AOI@HEAD
-RUN installGithub.r mikejohnson51/climateR@b73a3167a557840349c63ecc310afc182a1a3156
+# RUN installGithub.r mikejohnson51/climateR@b73a3167a557840349c63ecc310afc182a1a3156
+RUN installGithub.r mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb
 RUN installGithub.r SnowHydrology/rainOrSnowTools@cicd_pipeline
 
 RUN mkdir /lambda

@@ -500,3 +500,4 @@ sqs_consumer <- function(Records = NULL) {
 lambdr::start_lambda(config = lambdr::lambda_config(
     environ    = parent.frame()
 ))
+

@@ -3,12 +3,31 @@
 # (via Lambda function that gets triggered by an SNS topic w/ event notifications) #
 # ##################################################################################
 
+# Create a DynamoDB table to store data from PROD S3 bucket
+# Primary key is a composite key of uuid (hash key) and timestamp (range key)
+# - Global secondary index for state and timestamp
+# - Global secondary index for phase and timestamp
+# - Global secondary index for geohash5 and timestamp
+# - Global secondary index for geohash12 and timestamp
+
 resource "aws_dynamodb_table" "mros_dynamodb_table" {
   name           = var.dynamodb_table_name
   billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user"
-  range_key      = "timestamp"
+  hash_key       = "record_hash"
+  # range_key      = "timestamp"
+
+  # set hash key to record_hash
+  attribute {
+    name = "record_hash"
+    type = "S"
+  }
   
+  # set timestamp as an attribute that is used as the range key for GSIs 
+  attribute {
+    name = "timestamp"
+    type = "N"
+  }
+
   # create a global secondary index for state and timestamp
   global_secondary_index {
     name               = "state-timestamp-index"
@@ -17,22 +36,52 @@ resource "aws_dynamodb_table" "mros_dynamodb_table" {
     projection_type    = "ALL"
   } 
 
-  # set hash key to user
-  attribute {
-    name = "user"
-    type = "S"
-  }
-
-  # set range key to timestamp  
-  attribute {
-    name = "timestamp"
-    type = "N"
-  }
-  
   # set state attribute
   attribute {
     name = "state"
     type = "S"
+  }
+
+  # create a global secondary index for phase and timestamp
+  global_secondary_index {
+    name               = "phase-timestamp-index"
+    hash_key           = "phase"
+    range_key          = "timestamp"
+    projection_type    = "ALL"
+  } 
+
+  # set phase attribute
+  attribute {
+    name = "phase"
+    type = "S"
+  }
+
+  # create a global secondary index for geohash5 and timestamp
+  global_secondary_index {
+    name               = "geohash5-timestamp-index"
+    hash_key           = "geohash5"
+    range_key          = "timestamp"
+    projection_type    = "ALL"
+  } 
+
+  # set hash key to geohash5
+  attribute {
+      name = "geohash5"
+      type = "S"
+  }
+
+  # create a global secondary index for geohash12 and timestamp
+  global_secondary_index {
+    name               = "geohash12-timestamp-index"
+    hash_key           = "geohash12"
+    range_key          = "timestamp"
+    projection_type    = "ALL"
+  } 
+
+  # set hash key to geohash12
+  attribute {
+      name = "geohash12"
+      type = "S"
   }
 
 }
