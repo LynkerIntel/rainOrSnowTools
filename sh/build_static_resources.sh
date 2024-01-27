@@ -56,7 +56,7 @@ echo "Local CSV path: $LOCAL_CSV_PATH"
 S3_OBJECT_KEY="mros_output.csv"
 
 # CSV headers for mros_output.csv
-CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,uuid,duplicate_id,duplicate_count,\
+CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,duplicate_id,duplicate_count,\
 temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,\
 temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,\
 temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,\

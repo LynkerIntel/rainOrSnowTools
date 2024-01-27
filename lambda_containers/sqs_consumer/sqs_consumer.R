@@ -10,9 +10,9 @@
 
 library(lambdr)
 library(dplyr)
-library(sf)
+# library(sf)
 # library(rainOrSnowTools)
-library(climateR)
+# library(climateR)
 
 
 # Environment variables
@@ -52,9 +52,10 @@ get_imerg3 <- function(datetime_utc,
 #   lat_obs= 39.77836
   # version = 6
     # datetime_utc = datetime
-        # datetime_utc = "2024-01-24 UTC"
+        # datetime_utc = "2024-01-25 UTC"
     # lon_obs
     # lat_obs
+
   #############################
 
   # check for valid inputs
@@ -99,7 +100,7 @@ get_imerg3 <- function(datetime_utc,
           month   = format(dateTime, "%m"),
           day     = format(dateTime, "%d"),
           hour    = sprintf("%02s", format(dateTime, "%H")),
-          minTime = sprintf("%02s", plyr::round_any(as.numeric(
+          minTime = sprintf("%02d", plyr::round_any(as.numeric(
             format(dateTime, "%M")
           ), 30, f = floor)),
           origin_time  = as.POSIXct(paste0(
@@ -112,7 +113,7 @@ get_imerg3 <- function(datetime_utc,
           nasa_time_minute = format(nasa_time, "%M"),
           nasa_time_second = format(nasa_time, "%S"),
           min = sprintf(
-            "%04s",
+            "%04d",
             difftime(rounded_time, origin_time,  units = 'min')
           ),
           url_0 = glue::glue(url_trim),
@@ -130,39 +131,43 @@ get_imerg3 <- function(datetime_utc,
 
       prod <- data$product_info
       message("prod: ", prod)
+      message("Getting XML data from url base '", url_base, "'")
 
       xml_data <- 
         xml2::read_xml(url_base) %>%
         xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
 
-      message("xml_data: ", xml_data)
+      message("Length of xml_data: ", length(xml_data))
+
+      message("Getting name attribute from xml_data...")
 
       prod_name <- xml2::xml_attrs(xml_data[[1]])[["name"]]
-      message("prod_name: ", prod_name)
+      message("Extracted name from xml (prod_name): ", prod_name)
 
       # Create URL
       final_url = paste0(data$url_0, prod_name)
       message("final_url: ", final_url)
 
-    ## Get Data
-    gpm_obs =
-      climateR::dap(
-        URL = final_url,
-        varname = var,
-        AOI = data[1,],
-        verbose = TRUE
-      )
+      message("Trying to get GPM data using climateR::dap()")
+      ## Get Data
+      gpm_obs =
+        climateR::dap(
+          URL = final_url,
+          varname = var,
+          AOI = data[1,],
+          verbose = TRUE
+        )
 
-    message("Succesfully got GPM data using climateR::dap()")
-    message("gpm_obs: ", gpm_obs)
+      message("Succesfully got GPM data using climateR::dap()")
+      message("gpm_obs: ", gpm_obs)
 
     # gpm_obs = 
     # gpm_obs %>%
     #   sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
     #   dplyr::select(dplyr::all_of((var)))
 
-     # drop geometry column to make it dataframe
-     gpm_obs = sf::st_drop_geometry(gpm_obs) 
+    # drop geometry column to make it dataframe
+    gpm_obs = sf::st_drop_geometry(gpm_obs) 
     
     # try to use all_of() function to select the variable
     gpm_obs <- tryCatch({
@@ -194,26 +199,19 @@ get_imerg3 <- function(datetime_utc,
 
   })
 }
-# # # example JSON string
-# event = '{"id": "rec7vrLUoLMeZqfvr",
-#     "createdtime": "2023-11-21 23:27:55 UTC",
-#     "name": "Rain",
-#     "longitude": -79.91447, 
-#     "user": "Wi1uG9H7Wp",
-#     "latitude": 39.6497458,
-#     "submitted_time": "23:27:54",
-#     "local_time": "18:27:54",
-#     "submitted_date": "11/21/23",
-#     "local_date": "11/21/23",
-#     "comment": "NA",
-#     "time": "2023-11-21 23:27:55 UTC"}'
 
 # Take in the above Event, this is approximately what i can expect a single row from 
 # the S3 CSV to look like when it enters this lambda function code
 sqs_consumer <- function(Records = NULL) {
+    ############  ############
+    # UNCOMMENT BELOW HERE
+    ############  ############
 
     message("SQS Records: ", Records)
-
+    
+    ############  ############
+    # UNCOMMENT ABOVE HERE
+    ############  ############
     # make sure a .netrc file exists, if not, create one
     if(!climateR::checkNetrc(netrcFile = "/tmp/.netrc")){
         message("Writting a '.netrc' file...")
@@ -236,7 +234,7 @@ sqs_consumer <- function(Records = NULL) {
     # )
 
     ############  ############
-    # UNCOMMENT BELOW
+    # UNCOMMENT BELOW HERE
     ############  ############
 
     # connect to AWS S3 bucket
@@ -245,7 +243,11 @@ sqs_consumer <- function(Records = NULL) {
     # # Extract message body
     msg_body = Records[[3]]
     ############  ############
+    # UNCOMMENT ABOVE HERE
+    ############  ############
 
+    ############  ############
+    
     # # Connect to AWS SQS queue client 
     # sqs = paws::sqs(region = AWS_REGION, endpoint = SQS_QUEUE_URL)
 
@@ -266,19 +268,19 @@ sqs_consumer <- function(Records = NULL) {
         #         "timestamp": "1706147159.0",
         #         "createdtime": "2024-01-25T01:45:59.000Z",
         #         "name": "Rain",
-        #         "latitude": "39",
+        #         "latitude": "39.5",
         #         "user": "user_xxxxd",
-        #         "longitude": "-120",
+        #         "longitude": "-120.5",
         #         "submitted_time": "01:45:58",
         #         "local_time": "17:45:58",
         #         "submitted_date": "01/25/24",
         #         "local_date": "1/24/24",
         #         "comment": "nan",
         #         "time": "2024-01-25T01:45:59.000Z",
-        #         "uuid": "e5345sr",
         #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
         #         "duplicate_count": "1"
         #     }'
+
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -324,6 +326,7 @@ sqs_consumer <- function(Records = NULL) {
     eco_level4 = rainOrSnowTools:::get_eco_level4(lon_obs, lat_obs)
 
     message("Getting state data...")
+
 
     # STEP 4: GET STATE
     state = rainOrSnowTools:::get_state(lon_obs, lat_obs)
@@ -466,19 +469,27 @@ sqs_consumer <- function(Records = NULL) {
     message(paste0("Calling S3 PutObject:\n- '", file_name, "'\n- S3 Object: ", paste0("/tmp/", file_name)))
     # jsonlite::read_json(paste0("/tmp/", file_name))
 
-    # Try and upload file to s3
-    tryCatch({
-            s3$put_object(
-                Body   = paste0("/tmp/", file_name),
-                # Body   = paste0("./tmp/", file_name),
-                Bucket = S3_BUCKET_NAME,
-                Key    = file_name
-                )
-        },
-        error = function(e) {
-            message("Error: ", e)
-        }
-    )
+    # #### COMMENTING OUT FOR TESTING #######
+    # #### COMMENTING OUT FOR TESTING #######
+    # #### COMMENTING OUT FOR TESTING #######
+    # # Try and upload file to s3
+    # tryCatch({
+    #         s3$put_object(
+    #             Body   = paste0("/tmp/", file_name),
+    #             # Body   = paste0("./tmp/", file_name),
+    #             Bucket = S3_BUCKET_NAME,
+    #             Key    = file_name
+    #             )
+    #     },
+    #     error = function(e) {
+    #         message("Error: ", e)
+    #     }
+    # )
+
+    # #### COMMENTING OUT FOR TESTING #######
+    # #### COMMENTING OUT FOR TESTING #######
+    # #### COMMENTING OUT FOR TESTING #######
+
 
     # s3$put_object(
     #     Body   = paste0("/tmp/", file_name),
@@ -488,10 +499,6 @@ sqs_consumer <- function(Records = NULL) {
     message("Done!")
 #    return(output_json)
 }
-
-# library(rainOrSnowTools)
-# library(terra)
-# library(dplyr)
 
 # sqs_consumer <- function(event) { 
 #   sqs_consumer(event) 

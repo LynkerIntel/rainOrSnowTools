@@ -1,6 +1,6 @@
 Package: rainOrSnowTools
 Title: Data Access, QC, and Processing for Mountain Rain or Snow
-Version: 0.1
+Version: 0.2
 Authors@R: 
     person("Jennings", "Keith", , "kjennings@lynker.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4660-1472"))
@@ -9,7 +9,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-LazyData: True
+LazyData: true
 Imports: 
   tidyselect,
   geosphere,
@@ -28,9 +28,9 @@ Imports:
   xml2
 Remotes:
   SnowHydrology/humidity,
-  mikejohnson51/climateR
+  mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb
 Depends: 
-    R (>= 2.10)
+    R(>= 3.5.0)
 Suggests: 
     knitr,
     rmarkdown,

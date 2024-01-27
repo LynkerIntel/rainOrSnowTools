@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 import time
-import uuid
+# import uuid
 
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
@@ -155,8 +155,8 @@ def records_to_dataframe(records_list):
             # Convert the datetime object to an epoch timestamp
             df['timestamp'] = df['timestamp'].apply(lambda x: x.timestamp())
 
-            # Add a uuid column for each row
-            df['uuid'] = df.apply(lambda x: uuid.uuid4().hex, axis=1)
+            # # Add a uuid column for each row
+            # df['uuid'] = df.apply(lambda x: uuid.uuid4().hex, axis=1)
 
             # create a duplicate_id column which is the concatenation of the user and time columns (replacing special characters in "time" with underscores)
             df['duplicate_id'] = df['user'] + "_" + df['time'].apply(lambda x: re.sub(r'[\W_]+', '_', x))
@@ -246,7 +246,8 @@ def airtable_to_sqs(event, context):
             print(f"Number of columns in df: {len(df.columns)}")
 
             # Loop through the dataframe and send each record to SQS
-            for i in range(0, len(df)):
+            for i in range(0, 3):
+            # for i in range(0, len(df)):
 
                 print(f"Adding record {i} to SQS queue")
 
@@ -265,7 +266,7 @@ def airtable_to_sqs(event, context):
                     'local_date': str(df["local_date"].iloc[i]),
                     'comment': str(df["comment"].iloc[i]),
                     'time': str(df["time"].iloc[i]),
-                    'uuid': str(df["uuid"].iloc[i]),
+                    # 'uuid': str(df["uuid"].iloc[i]),
                     'duplicate_id': str(df["duplicate_id"].iloc[i]),
                     'duplicate_count': str(df["duplicate_count"].iloc[i])
                     # Add other fields as needed

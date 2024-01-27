@@ -4,7 +4,7 @@
 # ##################################################################################
 
 # Create a DynamoDB table to store data from PROD S3 bucket
-# Primary key is a composite key of uuid (hash key) and timestamp (range key)
+# Primary key is a composite key of record_hash (hash key) and timestamp (range key)
 # - Global secondary index for state and timestamp
 # - Global secondary index for phase and timestamp
 # - Global secondary index for geohash5 and timestamp
