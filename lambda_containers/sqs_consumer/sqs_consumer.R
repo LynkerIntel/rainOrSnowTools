@@ -33,28 +33,74 @@ message("- S3_BUCKET_NAME: ", S3_BUCKET_NAME)
 message("- AWS_REGION: ", AWS_REGION)
 message("=====================================")
 
+# Get the dap paths from the XML catalog.xml file
+get_final_urls <- function(url) {
+
+  # read the catalog.xml file from the url
+  xml_data <- xml2::read_xml(url)
+  message("Length of xml_data: ", length(xml_data))
+
+  # get all the thredds dataset xpaths
+  dap_xmls <- 
+    xml_data %>% 
+    xml2::xml_find_all(glue::glue('////thredds:dataset'))
+
+  message("Number of thredds:dataset nodees: ", length(dap_xmls))
+  
+  # extract only the "dap" service files
+  dap_xmls <- 
+    dap_xmls %>%         
+    xml2::xml_find_all(glue::glue('///thredds:access[contains(@serviceName, "dap")]'))
+
+  message("Number of thredds:dataset DAP nodes: ", length(dap_xmls))
+
+  message("Extracting attributes from dap_xmls...")
+
+  # extract the attributes from all of the dap_xmls
+  dap_attrs <- xml2::xml_attrs(dap_xmls)
+  
+  message("Extracting URL paths from attributes...")
+
+  # contruct final URLs vector
+  dap_paths <- sapply(dap_attrs, function(x) {
+    paste0("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax", x[["urlPath"]])
+  })
+  
+  return(dap_paths)
+
+  # # extract the URL paths from attributes
+  # dap_paths <- lapply(dap_attrs, function(x) {
+  #   x[["urlPath"]]
+  # })
+
+  # # construct final URLs vector
+  # final_urls <- sapply(dap_paths, function(x) {
+  #   paste0("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax", x)
+  # })
+
+  # return(final_urls)
+
+}
+
 get_imerg3 <- function(datetime_utc,
                         lon_obs,
                         lat_obs) {
 
   #############################
 
-  # # Example inputs
+  # # # Example inputs
   # library(climateR)
   # library(dplyr)
   # library(plyr)
   # library(glue)
   # library(sf)
 
-  # # datetime_utc = "2024-01-18 UTC"
-#   datetime_utc = "2023-11-21 UTC"
-#   lon_obs =-79.91447
-#   lat_obs= 39.77836
+  # datetime_utc = "2024-01-18 UTC"
+  # datetime_utc = "2023-11-21 UTC"
   # version = 6
-    # datetime_utc = datetime
-        # datetime_utc = "2024-01-25 UTC"
-    # lon_obs
-    # lat_obs
+  # datetime_utc = datetime
+  # datetime_utc = "2024-01-26 UTC"
+
 
   #############################
 
@@ -127,36 +173,97 @@ get_imerg3 <- function(datetime_utc,
       url_base <- paste0(data$url_0, "catalog.xml")
       message("url_base: ", url_base)
 
-    #   url_base = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06/2024/025/catalog.xml"
+      #######################     #######################
+      # Get the dap paths from the XML catalog.xml file #
+      # NEW VERSION
+      #######################     #######################
 
-      prod <- data$product_info
-      message("prod: ", prod)
-      message("Getting XML data from url base '", url_base, "'")
+      # Get the dap paths from the XML catalog.xml file
+      final_urls <- get_final_urls(url_base)
 
-      xml_data <- 
-        xml2::read_xml(url_base) %>%
-        xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
+      message(glue::glue("{length(final_urls)} total resources found at:\n - '{url_base}'"))
 
-      message("Length of xml_data: ", length(xml_data))
-
-      message("Getting name attribute from xml_data...")
-
-      prod_name <- xml2::xml_attrs(xml_data[[1]])[["name"]]
-      message("Extracted name from xml (prod_name): ", prod_name)
-
-      # Create URL
-      final_url = paste0(data$url_0, prod_name)
-      message("final_url: ", final_url)
-
-      message("Trying to get GPM data using climateR::dap()")
-      ## Get Data
+      ## Get Data for the first URL (temporarily, may end up looping through all of them, 
+      # and stopping when data is returned)
       gpm_obs =
         climateR::dap(
-          URL = final_url,
+          URL = final_urls[1],
           varname = var,
+          # startDate=as.Date(datetime_utc),
+          # endDate=as.Date(datetime_utc),
           AOI = data[1,],
           verbose = TRUE
         )
+
+      # # Loop through each final_url and try to get the data and stop when it works
+      # for (i in 1:length(final_urls)) {
+      #   message(glue::glue("Final url: {final_urls[i]}"))
+      #   message(glue::glue("Trying final_url {i} of {length(final_urls)}..."))
+      #   # Try to get the data
+      #   gpm_obs <- tryCatch({
+      #       climateR::dap(
+      #       # gpm_obs <- climateR::dap(
+      #       URL = final_urls[i],
+      #       varname = var,
+      #       AOI = data[1,],
+      #       verbose = TRUE
+      #     )
+      #   }, error = function(e) {
+      #     message("Error getting data from final_url: ", e)
+      #     message("Trying next final_url...")
+      #   })
+
+      #   # Check if gpm_obs is a dataframe
+      #   if(is.data.frame(gpm_obs)) {
+      #     message("gpm_obs is a dataframe, breaking loop...")
+      #     break
+      #   }
+      # }
+
+
+      #######################     #######################
+      #######################     #######################
+
+      # #######################     #######################
+      # # Get the dap paths from the XML catalog.xml file #
+      # # OLD version - uncomment BELOW to use
+      # #######################     #######################
+
+      # prod <- data$product_info
+      # message("prod: ", prod)
+      # message("Getting XML data from url base '", url_base, "'")
+
+      # xml_data <- 
+      #   xml2::read_xml(url_base) %>%
+      #   xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
+
+      # message("Length of xml_data: ", length(xml_data))
+
+      # message("Getting name attribute from xml_data...")
+
+      # prod_name <- xml2::xml_attrs(xml_data[[1]])[["name"]]
+      # message("Extracted name from xml (prod_name): ", prod_name)
+
+      # # Create URL
+      # final_url = paste0(data$url_0, prod_name)
+      # message("final_url: ", final_url)
+
+      # message("Trying to get GPM data using climateR::dap()")
+      
+      # ## Get Data
+      # gpm_obs =
+      #   climateR::dap(
+      #     URL = final_url,
+      #     varname = var,
+      #     # startDate=as.Date(datetime_utc),
+      #     # endDate=as.Date(datetime_utc),
+      #     AOI = data[1,],
+      #     verbose = TRUE
+      #   )
+
+      # #######################     #######################
+      # # OLD version - uncomment ABOVE to use
+      # #######################     #######################
 
       message("Succesfully got GPM data using climateR::dap()")
       message("gpm_obs: ", gpm_obs)
@@ -174,14 +281,16 @@ get_imerg3 <- function(datetime_utc,
                     message("Trying to use all_of() function")
 
                     gpm_obs %>%
-                    dplyr::select(dplyr::all_of((var)))
+                    dplyr::select(dplyr::all_of((var)))  %>% 
+                    .[[var]]
 
                 }, error = function(e) {
                     message("Error using all_of() function", e)
                     message("gpm_obs: ", gpm_obs)
 
                     gpm_obs %>%
-                    dplyr::select(probabilityLiquidPrecipitation)
+                    dplyr::select(probabilityLiquidPrecipitation)  %>% 
+                    .$probabilityLiquidPrecipitation
 
                 })
 
@@ -206,9 +315,16 @@ sqs_consumer <- function(Records = NULL) {
     ############  ############
     # UNCOMMENT BELOW HERE
     ############  ############
-
+    # Records = 1
     message("SQS Records: ", Records)
-    
+
+    tryCatch({
+        message("Trying to convert Records to JSON")
+        message("- jsonlite::fromJSON(Records): ", jsonlite::fromJSON(Records))
+    }, error = function(e) {
+        message("Error converting Records to JSON: ", e)
+    })
+
     ############  ############
     # UNCOMMENT ABOVE HERE
     ############  ############
@@ -240,7 +356,7 @@ sqs_consumer <- function(Records = NULL) {
     # connect to AWS S3 bucket
     s3 <- paws::s3(region = AWS_REGION)
 
-    # # Extract message body
+    # # # # Extract message body
     msg_body = Records[[3]]
     ############  ############
     # UNCOMMENT ABOVE HERE

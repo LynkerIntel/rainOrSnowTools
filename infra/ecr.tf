@@ -5,19 +5,19 @@
 
 # ECR Repo for R Docker image for Lambda Function
 data "aws_ecr_repository" "r_ecr_repository" {
-  name = var.sqs_consumer_ecr_repo_name
+  name = var.mros_ecr_repo_name
 }
 
 # # Create ECR repository for R Docker image for Lambda Function
 # resource "aws_ecr_repository" "r_ecr_repository" {
-#   name = var.sqs_consumer_ecr_repo_name
+#   name = var.mros_ecr_repo_name
 # }
 #################################################
 # ECR Docker image data source
 #################################################
 
 data "aws_ecr_image" "repo_image" {
-  repository_name = var.sqs_consumer_ecr_repo_name
+  repository_name = var.mros_ecr_repo_name
   most_recent       = true
 }
 

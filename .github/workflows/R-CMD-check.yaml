@@ -1,103 +1,103 @@
-# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
-name: R-CMD-check
-
-on:
-  push:
-    branches:
-      - cicd_pipeline
-
-jobs:
-  R-CMD-check:
-    runs-on: ${{ matrix.config.os }}
-
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
-
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - { os: macos-latest, r: "release" }
-          - { os: windows-latest, r: "release" }
-          - { os: ubuntu-latest, r: "devel", http-user-agent: "release" }
-          - { os: ubuntu-latest, r: "release" }
-          - { os: ubuntu-latest, r: "oldrel-1" }
-
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.config.r }}
-          http-user-agent: ${{ matrix.config.http-user-agent }}
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-
-      - uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
-# name: "Terraform"
+# # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# name: R-CMD-check
 
 # on:
 #   push:
 #     branches:
 #       - cicd_pipeline
-# on:
-#   push:
-#     branches: [main, master]
-#   pull_request:
-#     branches: [main, master]
+
 # jobs:
-#   terraform:
-#     name: "Terraform"
-#     runs-on: ubuntu-latest
+#   R-CMD-check:
+#     runs-on: ${{ matrix.config.os }}
+
+#     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         config:
+#           - { os: macos-latest, r: "release" }
+#           - { os: windows-latest, r: "release" }
+#           - { os: ubuntu-latest, r: "devel", http-user-agent: "release" }
+#           - { os: ubuntu-latest, r: "release" }
+#           - { os: ubuntu-latest, r: "oldrel-1" }
+
+#     env:
+#       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+#       R_KEEP_PKG_SOURCE: yes
 
 #     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v2
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+#       - uses: actions/checkout@v3
+
+#       - uses: r-lib/actions/setup-pandoc@v2
+
+#       - uses: r-lib/actions/setup-r@v2
 #         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-#           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-#       - name: Set up Terraform
-#         uses: hashicorp/setup-terraform@v1
+#           r-version: ${{ matrix.config.r }}
+#           http-user-agent: ${{ matrix.config.http-user-agent }}
+#           use-public-rspm: true
 
-#       - name: Terraform Initialize
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         run: terraform init
+#       - uses: r-lib/actions/setup-r-dependencies@v2
+#         with:
+#           extra-packages: any::rcmdcheck
+#           needs: check
 
-#       - name: Terraform Validate
-#         run: terraform validate
+#       - uses: r-lib/actions/check-r-package@v2
+#         with:
+#           upload-snapshots: true
+# # name: "Terraform"
 
-#       - name: Terraform Plan
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         run: terraform plan
+# # on:
+# #   push:
+# #     branches:
+# #       - cicd_pipeline
+# # on:
+# #   push:
+# #     branches: [main, master]
+# #   pull_request:
+# #     branches: [main, master]
+# # jobs:
+# #   terraform:
+# #     name: "Terraform"
+# #     runs-on: ubuntu-latest
 
-#       - name: Terraform Apply
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         run: terraform apply -auto-approve
+# #     steps:
+# #       - name: Checkout
+# #         uses: actions/checkout@v2
+# #       - name: Configure AWS credentials
+# #         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+# #         with:
+# #           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+# #           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+# #           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+# #       - name: Set up Terraform
+# #         uses: hashicorp/setup-terraform@v1
 
-#       - name: Upload to S3
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#         run: aws s3 sync . s3://your-s3-bucket-name
+# #       - name: Terraform Initialize
+# #         env:
+# #           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+# #           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+# #         run: terraform init
+
+# #       - name: Terraform Validate
+# #         run: terraform validate
+
+# #       - name: Terraform Plan
+# #         env:
+# #           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+# #           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+# #         run: terraform plan
+
+# #       - name: Terraform Apply
+# #         env:
+# #           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+# #           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+# #         run: terraform apply -auto-approve
+
+# #       - name: Upload to S3
+# #         env:
+# #           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+# #           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+# #         run: aws s3 sync . s3://your-s3-bucket-name
 

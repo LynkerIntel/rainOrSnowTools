@@ -12,10 +12,9 @@ RUN mkdir ${LAMBDA_TASK_ROOT}
 WORKDIR ${LAMBDA_TASK_ROOT}
 ENTRYPOINT ["/lambda-entrypoint.sh"]
 
-# ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
 # install R packages
-RUN install2.r digest terra remotes dplyr tidyr plyr readr lubridate codetools paws
+RUN install2.r remotes dplyr plyr lubridate codetools paws
+# RUN install2.r digest terra remotes dplyr tidyr plyr readr lubridate codetools paws
 # RUN install2.r digest terra remotes dplyr tidyr plyr readr lubridate codetools paws lambdr
 
 # Add rust cargo 
@@ -34,14 +33,13 @@ RUN installGithub.r mdneuzerling/lambdr@a3cece5b23f9f1b89e95972506f79f9a6eb2ee22
 RUN installGithub.r mikejohnson51/AOI@f821d499b80371c7c389937072ea041312a8efcd
 # RUN installGithub.r mikejohnson51/AOI@HEAD
 
-# climateR
+# # climateR
 RUN installGithub.r mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb
 # RUN installGithub.r mikejohnson51/climateR@b73a3167a557840349c63ecc310afc182a1a3156
-# RUN installGithub.r mikejohnson51/climateR@HEAD
 
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
-RUN installGithub.r SnowHydrology/rainOrSnowTools@cicd_pipeline
+RUN installGithub.r LynkerIntel/rainOrSnowTools@cicd_pipeline
 
 RUN mkdir /lambda
 COPY sqs_consumer.R /lambda

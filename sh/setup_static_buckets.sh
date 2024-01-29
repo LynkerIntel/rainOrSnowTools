@@ -4,8 +4,15 @@
 # This script is run before terraform plan/apply to ensure that certain stack resources (ECR repository, S3 buckets, etc)
 #  exist before terraform tries to use the Docker Image while creating infrastructure (e.g. Lambda functions in this case)
 
-# Provide AWS Account Number, S3 bucket name, Terraform state S3 bucket name, ECR repo name, AWS region, and AWS profile as arguments to the script.
-# Example: source sh/build_static_resources.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name ecr-repo-name aws-region aws-profile
+
+# Provide following as arguments to script: 
+# AWS Account Number
+# S3 bucket name
+# Terraform state S3 bucket name
+# AWS region
+# AWS profile
+# RUNNING_ON_GITHUB_ACTION
+# Example: source sh/setup_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region aws-profile false
 
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
@@ -17,20 +24,18 @@ BUCKET_NAME=$2
 # Terraform state S3 bucket name
 TF_STATE_S3_BUCKET_NAME=$3
 
-# ECR repo names 
-ECR_REPO_NAME=$4
-# ECR_REPO_NAME="mros-sqs-consumer-lambda-ecr"
-
 # AWS Region to create/check resources, if not given, use "us-west-1"
-AWS_REGION=${5:-"us-west-1"}
+AWS_REGION=${4:-"us-west-1"}
 LOCATION_CONSTRAINT=${AWS_REGION}
 
 # AWS Profile, if not given, use "default"
-AWS_PROFILE=${6:-"default"}
+AWS_PROFILE=${5:-"default"}
+
+# Flag to determine whether to export variables to $GITHUB_ENV
+RUNNING_ON_GITHUB_ACTION=${6:-false}
 
 echo "- BUCKET_NAME: $BUCKET_NAME"
 echo "- TF_STATE_S3_BUCKET_NAME: $TF_STATE_S3_BUCKET_NAME"
-echo "- ECR_REPO_NAME: $ECR_REPO_NAME"
 echo "- AWS_REGION: $AWS_REGION"
 echo "- LOCATION_CONSTRAINT: $LOCATION_CONSTRAINT"
 echo "- AWS_PROFILE: $AWS_PROFILE"
@@ -73,16 +78,6 @@ if [ ! -f "$LOCAL_CSV_PATH" ]; then
 else
     echo "CSV file $LOCAL_CSV_PATH already exists."
 fi
-
-# -----------------------------------------------------------------------------------------------
-# ----- Export Terraform variables -----
-# -----------------------------------------------------------------------------------------------
-
-# Export ECR repo name as variable for Terraform
-export TF_VAR_output_s3_bucket_name="$BUCKET_NAME"
-export TF_VAR_output_s3_object_key="$S3_OBJECT_KEY"
-export TF_VAR_mros_ecr_repo_name="$ECR_REPO_NAME"
-export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
 
 # -----------------------------------------------------------------------------------------------
 # ----- Create S3 bucket to keep Terraform state files (if does NOT exist) -----
@@ -149,63 +144,20 @@ rm "$LOCAL_CSV_PATH"
 echo "Temporary CSV file deleted: $LOCAL_CSV_PATH"
 
 # -----------------------------------------------------------------------------------------------
-# ----- Create ECR repository for Lambda Docker images (if does NOT exist) -----
+# ----- Export Terraform variables -----
 # -----------------------------------------------------------------------------------------------
 
-# check if the ECR repository ALREADY EXISTS
-if ! aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region "$AWS_REGION" --profile "$AWS_PROFILE" 2>/dev/null; then
-    # create the ECR repository if it DOESN'T exist
-    aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region "$AWS_REGION" --profile "$AWS_PROFILE"
-    echo "ECR repository $ECR_REPO_NAME created."
-else
-    echo "ECR repository $ECR_REPO_NAME already exists."
+# Export ECR repo name as variable for Terraform
+export TF_VAR_output_s3_bucket_name="$BUCKET_NAME"
+export TF_VAR_output_s3_object_key="$S3_OBJECT_KEY"
+export TF_VAR_tfstate_s3_bucket_name="$TF_STATE_S3_BUCKET_NAME"
+
+# Check if the script is running on GitHub Actions and the flag is set to true
+if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
+    echo "Running on GitHub Actions, exporting environment variables to Github Env..."
+    # Export the environment variables to $GITHUB_ENV
+    echo "TF_VAR_output_s3_bucket_name=$BUCKET_NAME" >> $GITHUB_ENV
+    echo "TF_VAR_output_s3_object_key=$S3_OBJECT_KEY" >> $GITHUB_ENV
+    echo "TF_VAR_tfstate_s3_bucket_name=$TF_STATE_S3_BUCKET_NAME" >> $GITHUB_ENV
+    echo "Exported TF_VAR_output_s3_bucket_name, TF_VAR_output_s3_object_key, and TF_VAR_tfstate_s3_bucket_name to Github Env"
 fi
-
-# Get the ECR repository URL
-ECR_REPO_URL=$(aws ecr describe-repositories --repository-names "$ECR_REPO_NAME" --region "$AWS_REGION" --profile "$AWS_PROFILE" --query 'repositories[0].repositoryUri' --output text)
-
-# export ECR repository URL as Terraform variable
-export TF_VAR_mros_ecr_repo_url="$ECR_REPO_URL"
-
-echo "ECR repository URL: $ECR_REPO_URL"
-
-# -----------------------------------------------------------------------------------------------
-# ----- Build and push Docker image to ECR Repo  -----
-# -----------------------------------------------------------------------------------------------
-
-# Determine the current operating system
-OS=$(uname -s)
-
-# print the operating system
-echo "Operating system: $OS"cd 
-
-# AWS CLI and Docker commands to login, build, tag, and push Docker image
-aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | docker login --username AWS --password-stdin $AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com
-
-# If the operating system is macOS, update the platform
-if [ "$OS" = "Darwin" ]; then
-  PLATFORM="linux/amd64"
-  
-  echo "Building Docker image with --platform $PLATFORM flag"
-
-  # build Docker image
-  docker build -t mros-sqs-consumer-lambda-ecr --platform $PLATFORM lambda_containers/sqs_consumer/
-#   docker build -t $ECR_REPO_NAME --platform $PLATFORM lambda_containers/sqs_consumer/
-else
-  echo "Building Docker image with no --platform flag"
-  # For other operating systems, you can set a default platform or handle it as needed
-  # Here, we're setting it to the default platform for Linux
-  # build Docker image
-  docker build -t mros-sqs-consumer-lambda-ecr lambda_containers/sqs_consumer/
-#   docker build -t $ECR_REPO_NAME lambda_containers/sqs_consumer/
-fi
-
-# # build Docker image
-# docker build -t $ECR_REPO_NAME --platform linux/amd64 lambda_containers/sqs_consumer/
-
-# tag Docker image
-docker tag mros-sqs-consumer-lambda-ecr:latest "$AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com/mros-sqs-consumer-lambda-ecr:latest"
-# docker tag $ECR_REPO_NAME:latest "$AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest"
-
-# push Docker image to ECR repository
-docker push "$AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com/mros-sqs-consumer-lambda-ecr:latest"

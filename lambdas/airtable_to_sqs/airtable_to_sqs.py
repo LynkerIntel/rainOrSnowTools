@@ -41,6 +41,27 @@ SQS_QUEUE_URL = os.environ.get('SQS_QUEUE_URL')
 # SQS client
 sqs = boto3.client('sqs')
 
+# Construct a list of dates 'n' days before the provided date 'timestamp' (in the format "YYYY-MM-DDTHH:MM:SSZ")
+def get_dates_before(timestamp, n):
+    # parse input string
+    parsed_date = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+
+    # output list of dates
+    date_list = []
+
+    # Iterate over n days
+    for i in range(1, n + 1):
+        # Get date i days before the current date
+        date_before = parsed_date - timedelta(days=i)
+        
+        # Format the date as "MM/DD/YY"
+        formatted_date = date_before.strftime("%m/%d/%y")
+
+        # Append the formatted date to the list
+        date_list.append(formatted_date)
+
+    return date_list
+
 def fetch_airtable_data(date, base_id, table_id, airtable_token):
 
     # Initialize an empty list to store all records
@@ -176,36 +197,52 @@ def airtable_to_sqs(event, context):
 
     # curr_time = "2023-11-21T00:00:00Z"
     # curr_time = "2024-01-25T00:00:00Z"
+    # curr_time = "2024-01-28T00:00:00Z"
+
 
     # 2018-09-19 17:47:12
     print(f"curr_time: {curr_time}")
+
+    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (BELOW) ########
+    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (BELOW) ########
+
+    # # Parse the input string
+    # parsed_date = datetime.strptime(curr_time, "%Y-%m-%dT%H:%M:%SZ")
+    # print(f"parsed_date: {parsed_date}")
     
-    # Parse the input string
-    parsed_date = datetime.strptime(curr_time, "%Y-%m-%dT%H:%M:%SZ")
-    print(f"parsed_date: {parsed_date}")
+    # # Get date 1 day before the current date
+    # date_one_days_ago = parsed_date - timedelta(days=1)
+    # print(f"1 days ago date: {date_one_days_ago}")
+
+    # # Get date 2 day before the current date
+    # date_two_days_ago = parsed_date - timedelta(days=2)
+    # print(f"2 days ago date: {date_two_days_ago}")
+
+    # # Format the date as "MM/DD/YY"
+    # DATE = parsed_date.strftime("%m/%d/%y")
+
+    # # Coerce 1 and 2 days dates to format for querying airtable 
+    # DATE_1_DAY_AGO = date_one_days_ago.strftime("%m/%d/%y")
+    # DATE_2_DAY_AGO = date_two_days_ago.strftime("%m/%d/%y")
+
+    # print(f"- DATE: {DATE}")
+    # print(f"- DATE_1_DAY_AGO: {DATE_1_DAY_AGO}")
+    # print(f"- DATE_2_DAY_AGO: {DATE_2_DAY_AGO}")
     
-    # Get date 1 day before the current date
-    date_one_days_ago = parsed_date - timedelta(days=1)
-    print(f"1 days ago date: {date_one_days_ago}")
+    # # Make a list of dates 
+    # DATE_LIST = [DATE_1_DAY_AGO, DATE_2_DAY_AGO]
+    # # DATE_LIST = ['01/24/24', '01/23/24', '0010/3212/34134']
 
-    # Get date 2 day before the current date
-    date_two_days_ago = parsed_date - timedelta(days=2)
-    print(f"2 days ago date: {date_two_days_ago}")
+    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
+    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
 
-    # Format the date as "MM/DD/YY"
-    DATE = parsed_date.strftime("%m/%d/%y")
+    # New method of getting DATE_LIST for 5 days ago (or any number of days with 'n' argument)
+    DATE_LIST = get_dates_before(curr_time, 5)
 
-    # Coerce 1 and 2 days dates to format for querying airtable 
-    DATE_1_DAY_AGO = date_one_days_ago.strftime("%m/%d/%y")
-    DATE_2_DAY_AGO = date_two_days_ago.strftime("%m/%d/%y")
-
-    print(f"- DATE: {DATE}")
-    print(f"- DATE_1_DAY_AGO: {DATE_1_DAY_AGO}")
-    print(f"- DATE_2_DAY_AGO: {DATE_2_DAY_AGO}")
-    
-    # Make a list of dates 
-    DATE_LIST = [DATE_1_DAY_AGO, DATE_2_DAY_AGO]
-    # DATE_LIST = ['01/24/24', '01/23/24', '0010/3212/34134']
+    # temporarily set DATE_LIST to the last two dates in the list 
+    # Theorizing that GPM PLP data has some sort of 5 day lag on when the data is 
+    # properly uploaded and ready to be accessed
+    DATE_LIST = DATE_LIST[-2:]
 
     print(f"- DATE_LIST: {json.dumps(DATE_LIST)}")
 

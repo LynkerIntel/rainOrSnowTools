@@ -66,6 +66,8 @@ resource "aws_s3_object" "airtable_lambda_code_object" {
   key    = var.airtable_to_sqs_lambda_zip_file_name
   source = local.airtable_to_sqs_zip
   etag   = filemd5(local.airtable_to_sqs_zip)
+  # source = var.airtable_to_sqs_zip
+  # etag   = filemd5(var.airtable_to_sqs_zip)
 }
 
 # s3 object for lambda code process_staging function

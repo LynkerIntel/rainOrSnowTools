@@ -171,7 +171,9 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
   # handler          = "sqs_consumer.sqs_consumer"
   # runtime          = "provided.al2"
 
-    image_uri        = "${var.sqs_consumer_ecr_repo_url}:latest"
+  # image_uri        = "${var.mros_ecr_repo_url}:latest"
+  image_uri        = "${var.mros_ecr_repo_url}:${var.mros_ecr_image_tag}"
+  
 #   image_uri = data.aws_ecr_image.repo_image.image_uri
   
   # image_uri        = "${data.aws_ecr_repository.r_ecr_repository.repository_url}:latest"

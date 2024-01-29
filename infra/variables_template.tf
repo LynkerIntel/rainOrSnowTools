@@ -185,12 +185,12 @@
 # # ---- SQS variables ----
 # # ----------------------------
 
-# variable "sqs_consumer_ecr_repo_name" {
+# variable "mros_ecr_repo_name" {
 #     description = "Name of the ECR repo to store the Docker image."
 #     type        = string
 # }
 
-# variable "sqs_consumer_ecr_repo_url" {
+# variable "mros_ecr_repo_url" {
 #     description = "URL of the ECR repo to store the Docker image"
 #     type        = string
 # }
