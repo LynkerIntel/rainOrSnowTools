@@ -133,6 +133,5 @@ jobs:
     #         -var "tfstate_s3_bucket_name=${tfstate_s3_bucket_name}" \
     #         -var "tfstate_s3_object_key=${tfstate_s3_object_key}" \
     #     continue-on-error: true
-
     #   - name: Terraform Apply
     #     run: terraform apply -auto-approve
