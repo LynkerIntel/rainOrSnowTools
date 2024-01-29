@@ -25,7 +25,7 @@ LOCATION_CONSTRAINT=${AWS_REGION}
 AWS_PROFILE=${4:-"default"}
 
 # Flag to determine whether to export variables to $GITHUB_ENV
-RUNNING_ON_GITHUB_ACTION=${5:-false}
+RUNNING_ON_GITHUB_ACTION=${5:-"false"}
 
 echo "- ECR_REPO_NAME: $ECR_REPO_NAME"
 echo "- AWS_REGION: $AWS_REGION"

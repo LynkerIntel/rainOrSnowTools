@@ -32,7 +32,7 @@ LOCATION_CONSTRAINT=${AWS_REGION}
 AWS_PROFILE=${5:-"default"}
 
 # Flag to determine whether to export variables to $GITHUB_ENV
-RUNNING_ON_GITHUB_ACTION=${6:-false}
+RUNNING_ON_GITHUB_ACTION=${6:-"false"}
 
 echo "- BUCKET_NAME: $BUCKET_NAME"
 echo "- TF_STATE_S3_BUCKET_NAME: $TF_STATE_S3_BUCKET_NAME"

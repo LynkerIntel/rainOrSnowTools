@@ -15,7 +15,7 @@ AWS_PROFILE=${1:-"default"}
 ECR_REPO_TAG=${2:-"latest"}
 
 # Flag to determine whether to export variables to $GITHUB_ENV
-RUNNING_ON_GITHUB_ACTION=${3:-false}
+RUNNING_ON_GITHUB_ACTION=${3:-"false"}
 
 # Export the AWS profile as a Terraform variable
 export "TF_VAR_aws_profile"="$AWS_PROFILE"
@@ -48,7 +48,7 @@ export "TF_VAR_eventbridge_cron_rule_name"="mros_airtable_event_rule"
 if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
 
     echo "Running on GitHub Actions, exporting environment variables to Github Env..."
-    
+
     # Export the environment variables to $GITHUB_ENV
     # AWS Profile
     echo "TF_VAR_aws_profile=$AWS_PROFILE" >> $GITHUB_ENV

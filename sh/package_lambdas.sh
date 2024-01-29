@@ -45,7 +45,7 @@ BASE_DIR=${1:-$(pwd)}
 echo "- BASE_DIR: $BASE_DIR"
 
 # Flag to determine whether to export variables to $GITHUB_ENV
-RUNNING_ON_GITHUB_ACTION=${2:-false}
+RUNNING_ON_GITHUB_ACTION=${2:-"false"}
 
 # Set the deploy directory
 DEPLOY_DIR="$BASE_DIR/deploy"
