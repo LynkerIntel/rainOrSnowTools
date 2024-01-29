@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# ----- NEW VERSION THAT DOES NOT USE AWS PROFILE AS AN ARGUMENT -----
 # Create a ECR repository for use by the infrastructure created by Terraform (e.g. Docker images). 
 # This script is run before terraform plan/apply to ensure that certain stack resources (ECR repository, S3 buckets, etc)
 #  exist before terraform tries to use the Docker Image while creating infrastructure (e.g. Lambda functions in this case)
@@ -10,9 +10,8 @@
 # S3 bucket name
 # Terraform state S3 bucket name
 # AWS region
-# AWS profile
 # RUNNING_ON_GITHUB_ACTION
-# Example: source sh/setup_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region aws-profile false
+# Example: source sh/setup_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region "false"
 
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
@@ -158,7 +157,7 @@ if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
     echo "Exported TF_VAR_output_s3_bucket_name, TF_VAR_output_s3_object_key, and TF_VAR_tfstate_s3_bucket_name to Github Env"
 fi
 
-# #!/bin/bash
+# ----- OLD VERSION THAT TAKES IN AWS PROFILE AS AN ARGUMENT -----
 
 # # Create a ECR repository for use by the infrastructure created by Terraform (e.g. Docker images). 
 # # This script is run before terraform plan/apply to ensure that certain stack resources (ECR repository, S3 buckets, etc)

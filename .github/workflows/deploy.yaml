@@ -30,7 +30,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
+      - name: Print AWS Profiles
+        run: aws configure list-profiles
       - name: Setup Static Buckets
         shell: bash
         env:
@@ -43,16 +44,28 @@ jobs:
           source sh/setup_static_buckets.sh "$AWS_ACCOUNT_NUMBER" "$OUTPUT_S3_BUCKET" "$TFSTATE_S3_BUCKET" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
 
       - name: Create ECR Repo
+        shell: bash
+        env:
+          AWS_ACCOUNT_NUMBER: ${{ secrets.AWS_ACCOUNT_NUMBER }}
+          ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          RUNNING_ON_GITHUB_ACTIONS: "true"
         run: |
-          source sh/create_ecr_repo.sh ${{ secrets.AWS_ACCOUNT_NUMBER }} ${{ secrets.ECR_REPO_NAME }} ${{ secrets.AWS_REGION }} ${{ secrets.AWS_PROFILE }} "true"
+          source sh/create_ecr_repo.sh "$AWS_ACCOUNT_NUMBER" "$ECR_REPO_NAME" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
 
       - name: Package Lambdas
+        shell: bash
+        env:
+          RUNNING_ON_GITHUB_ACTIONS: "true"
         run: |
-          source sh/package_lambdas.sh ${{ github.workspace }} "true"
+          source sh/package_lambdas.sh ${GITHUB_WORKSPACE} "$RUNNING_ON_GITHUB_ACTIONS"
 
       - name: Export Environment Variables
+        shell: bash
+        env:
+          RUNNING_ON_GITHUB_ACTIONS: "true"
         run: |
-          source sh/export_env_vars.sh ${{ secrets.AWS_PROFILE }} ${{ github.sha }} "true"
+          source sh/export_env_vars.sh ${{ github.sha }} "$RUNNING_ON_GITHUB_ACTIONS"
 
       - name: Print Exported Environment Variables
         run: |
