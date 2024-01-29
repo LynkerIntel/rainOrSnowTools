@@ -26,8 +26,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Source build_static_resources.sh
         run: source sh/setup_static_assets.sh ${{ secrets.AWS_ACCOUNT_NUMBER }} ${{ secrets.ECR_REPO_NAME }} ${{ secrets.AWS_REGION }} ${{ secrets.AWS_PROFILE }}
