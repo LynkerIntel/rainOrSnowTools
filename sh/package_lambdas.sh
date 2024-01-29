@@ -109,6 +109,9 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
 
         # Go into the PKG_DIR directory
         cd "$PKG_DIR" 
+        
+        echo "Contents of PKG_DIR directory:"
+        ls -l "$PKG_DIR"
 
         echo "------------------------------------------------"
         echo "Zipping 'PKG_DIR' contents into 'ZIP_FILE'..."
