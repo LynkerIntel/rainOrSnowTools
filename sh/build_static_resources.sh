@@ -189,19 +189,19 @@ if [ "$OS" = "Darwin" ]; then
   echo "Building Docker image with --platform $PLATFORM flag"
 
   # build Docker image
-  docker build -t mros-sqs-consumer-lambda-ecr --platform $PLATFORM lambda_containers/sqs_consumer/
-#   docker build -t $ECR_REPO_NAME --platform $PLATFORM lambda_containers/sqs_consumer/
+  docker build -t mros-sqs-consumer-lambda-ecr --platform $PLATFORM lambda_containers/add_climate_data/
+#   docker build -t $ECR_REPO_NAME --platform $PLATFORM lambda_containers/add_climate_data/
 else
   echo "Building Docker image with no --platform flag"
   # For other operating systems, you can set a default platform or handle it as needed
   # Here, we're setting it to the default platform for Linux
   # build Docker image
-  docker build -t mros-sqs-consumer-lambda-ecr lambda_containers/sqs_consumer/
-#   docker build -t $ECR_REPO_NAME lambda_containers/sqs_consumer/
+  docker build -t mros-sqs-consumer-lambda-ecr lambda_containers/add_climate_data/
+#   docker build -t $ECR_REPO_NAME lambda_containers/add_climate_data/
 fi
 
 # # build Docker image
-# docker build -t $ECR_REPO_NAME --platform linux/amd64 lambda_containers/sqs_consumer/
+# docker build -t $ECR_REPO_NAME --platform linux/amd64 lambda_containers/add_climate_data/
 
 # tag Docker image
 docker tag mros-sqs-consumer-lambda-ecr:latest "$AWS_ACCOUNT_NUMBER.dkr.ecr.$AWS_REGION.amazonaws.com/mros-sqs-consumer-lambda-ecr:latest"

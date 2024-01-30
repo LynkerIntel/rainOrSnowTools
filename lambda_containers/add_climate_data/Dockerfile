@@ -42,7 +42,7 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN installGithub.r LynkerIntel/rainOrSnowTools@cicd_pipeline
 
 RUN mkdir /lambda
-COPY sqs_consumer.R /lambda
+COPY add_climate_data.R /lambda
 
 # Environment variable defaults
 ENV NASA_DATA_USER=default_user
@@ -101,13 +101,13 @@ RUN cd /lambda && Rscript -e ' \
 # # Create .dodsrc file
 # RUN cd /lambda && Rscript -e 'climateR::writeDodsrc()' && cd -
 
-# Set ${LAMBDA_TASK_ROOT}/sqs_consumer.R as the designated script file
+# Set ${LAMBDA_TASK_ROOT}/add_climate_data.R as the designated script file
 RUN chmod 755 -R /lambda \
-    && printf "#!/bin/sh\ncd /lambda\nRscript sqs_consumer.R" > /var/runtime/bootstrap \
+    && printf "#!/bin/sh\ncd /lambda\nRscript add_climate_data.R" > /var/runtime/bootstrap \
     && chmod +x /var/runtime/bootstrap
 
 # Just the function name from the above script
-CMD ["sqs_consumer"]
+CMD ["add_climate_data_to_sqs_message"]
 
 
 ############## GOOD TO GO ISH BELOW HERE ############
@@ -151,7 +151,7 @@ CMD ["sqs_consumer"]
 # RUN installGithub.r SnowHydrology/rainOrSnowTools@cicd_pipeline
 
 # RUN mkdir /lambda
-# COPY sqs_consumer.R /lambda
+# COPY add_climate_data.R /lambda
 
 # # Environment variable defaults
 # ENV NASA_DATA_USER=default_user
@@ -210,10 +210,10 @@ CMD ["sqs_consumer"]
 # # # Create .dodsrc file
 # # RUN cd /lambda && Rscript -e 'climateR::writeDodsrc()' && cd -
 
-# # Set ${LAMBDA_TASK_ROOT}/sqs_consumer.R as the designated script file
+# # Set ${LAMBDA_TASK_ROOT}/add_climate_data.R as the designated script file
 # RUN chmod 755 -R /lambda \
-#     && printf "#!/bin/sh\ncd /lambda\nRscript sqs_consumer.R" > /var/runtime/bootstrap \
+#     && printf "#!/bin/sh\ncd /lambda\nRscript add_climate_data.R" > /var/runtime/bootstrap \
 #     && chmod +x /var/runtime/bootstrap
 
 # # Just the function name from the above script
-# CMD ["sqs_consumer"]
+# CMD ["add_climate_data"]

@@ -262,7 +262,7 @@ data "aws_iam_policy_document" "lambda_s3_policy_doc" {
 
 }
 
-# Make an IAM policy from the IAM policy document for S3/SQS permissions for sqs_consumer lambda
+# Make an IAM policy from the IAM policy document for S3/SQS permissions for mros_add_climate_data lambda
 resource "aws_iam_policy" "lambda_s3_policy" {
   name_prefix = "mros-lambda-s3-policy"
   description = "IAM Policy for MROS Lambdas (mros_airtable_to_sqs and mros_stage_to_prod) to interact with S3"
@@ -281,12 +281,12 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_policy_attachment" {
 
 
 ###############################################################
-# Lambda Logging Policy (mros-airtable-processor-logging-policy) 
+# Lambda Logging Policy (mros-airtable-to-sqs-logging-policy) 
 # - Allow Lambda to send logs to CloudWatch Logs #
 ###############################################################
 
 resource "aws_iam_policy" "logging_policy" {
-  name_prefix   = "mros-airtable-processor-logging-policy"
+  name_prefix   = "mros-airtable-to-sqs-logging-policy"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -359,7 +359,7 @@ data "aws_iam_policy_document" "sqs_consumer_lambda_assume_role" {
 
 # Create an IAM role for the sqs_consumer lambda to assume role
 resource "aws_iam_role" "sqs_consumer_lambda_role" {
-  name_prefix               = "mros-sqs-consumer-lambda-role"
+  name_prefix               = "mros-add-climate-data-lambda-role"
   assume_role_policy = data.aws_iam_policy_document.sqs_consumer_lambda_assume_role.json
   tags = {
     name              = local.name_tag
@@ -484,7 +484,7 @@ data "aws_iam_policy_document" "sqs_consumer_lambda_policy_doc" {
 
 # Make an IAM policy from the IAM policy document for S3/SQS permissions for sqs_consumer lambda
 resource "aws_iam_policy" "sqs_consumer_lambda_policy" {
-  name        = "mros-sqs-consumer-lambda-policy"
+  name        = "mros-add-climate-data-lambda-policy"
   description = "MROS Policy for sqs consumer Lambda to interact with S3 and SQS queue"
   policy      = data.aws_iam_policy_document.sqs_consumer_lambda_policy_doc.json
   tags = {
@@ -510,7 +510,7 @@ resource "aws_iam_role_policy_attachment" "sqs_consumer_lambda_basic_exec_policy
 
 # # IAM Policy for sqs_consumer Lambda to interact with S3 and SQS queue
 # resource "aws_iam_policy" "sqs_consumer_lambda_policy" {
-#   name = "mros-sqs-consumer-lambda-policy"
+#   name = "mros-add-climate-data-lambda-policy"
 #   # name        = "mros_r_lambda_sqs_policy"
 #   description = "MROS Policy for sqs_consumer Lambda to interact with S3 and SQS queue"
 #   policy = jsonencode({

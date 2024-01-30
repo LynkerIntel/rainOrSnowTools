@@ -50,6 +50,13 @@ variable "airtable_api_token" {
 # ---- Lambda function variables ----
 # -----------------------------------
 
+# For each Lambda function in the Terraform configuration, we need to provide the following variables:
+# 1. Name of the Lambda zip file
+# 2. Name of the Lambda function
+
+# NOTE:
+# - For Lambda functions that use a container image, we do NOT need to provide the zip file name.
+
 variable "mros_airtable_to_sqs_lambda_zip_file_name" {
     description = "Name of the Lambda zip file."
     type        = string
@@ -74,8 +81,9 @@ variable "mros_stage_to_prod_lambda_function_name" {
     sensitive   = true
 }
 
-variable "sqs_consumer_lambda_function_name" {
-    description = "Name of the Lambda function."
+# Lambda function uses a container image (thus no zip file variable here)
+variable "mros_add_climate_data_lambda_function_name" {
+    description = "Name of the Lambda function that adds climate data to the MROS data."
     type        = string
     sensitive   = true
 }
@@ -92,13 +100,13 @@ variable "mros_append_daily_data_lambda_function_name" {
     sensitive   = true
 }
 
-variable "insert_into_dynamodb_lambda_zip_file_name" {
+variable "mros_insert_into_dynamodb_lambda_zip_file_name" {
     description = "Name of the zip file thats contains the lambda function that inserts MROS data into DynamoDB."
     type        = string
     sensitive   = true
 }
 
-variable "insert_into_dynamodb_lambda_function_name" {
+variable "mros_insert_into_dynamodb_lambda_function_name" {
     description = "Name of the Lambda function that inserts MROS data into DynamoDB."
     type        = string
     sensitive   = true
@@ -141,12 +149,6 @@ variable "sqs_prod_to_output_queue_name" {
 
 variable "lambda_bucket_name" {
     description = "Name of the S3 bucket to store the Lambda code."
-    type        = string
-    sensitive   = true
-}
-
-variable "airtable_s3_bucket_name" {
-    description = "Name of the S3 bucket to store the Airtable data."
     type        = string
     sensitive   = true
 }

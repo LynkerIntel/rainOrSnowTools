@@ -23,6 +23,9 @@ RUNNING_ON_GITHUB_ACTION=${2:-"false"}
 # Export ECR image tag as Terraform variable
 export "TF_VAR_mros_ecr_image_tag"="$ECR_REPO_TAG"
 
+# Lambda function names
+export "TF_VAR_mros_add_climate_data_lambda_function_name"="mros-add-climate-data"
+
 # DynamoDB table name
 export "TF_VAR_dynamodb_table_name"="mros-observations-table"
 
@@ -56,6 +59,9 @@ if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
     # ECR image tag
     echo "TF_VAR_mros_ecr_image_tag=$ECR_REPO_TAG" >> $GITHUB_ENV
 
+    # Lambda function names
+    echo "TF_VAR_mros_add_climate_data_lambda_function_name=mros-add-climate-data" >> $GITHUB_ENV
+    
     # DynamoDB table name
     echo "TF_VAR_dynamodb_table_name=mros-observations-table" >> $GITHUB_ENV
 

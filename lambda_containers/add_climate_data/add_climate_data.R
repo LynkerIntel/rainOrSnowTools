@@ -1,4 +1,17 @@
-# # R script to be run in Docker container and on AWS Lambda 
+# Author: Angus Watters
+# Date: 2024-01-30
+# AWS Lambda function to enrich MRoS Airtable observation data with climate data and write the output data as a JSON to an S3 bucket
+
+# The function consumes messages from an AWS SQS queue, with each message containing an Airtable observation (row of the Airtable data)
+# The function then retrieves climate and geographic data for each observation and writes the output data as a JSON to an S3 bucket
+# enriches the data with climate/geographic data, and then writes the output data as a JSON to an S3 bucket 
+# The R code here is designed to be Containerized and run as an AWS Lambda function
+# When updates are made to the rainOrSnowTools package, the changes to the R package
+#  will be realized within this script and the changes will propogate to the AWS data pipeline
+
+# NOTE: 
+# - Currently NASA GPM IMERG appears to be only avaliable after a 5 day delay, meaning that 
+# the most recent data is NOT avaliable and this function should only be run to retrieve data from 5 days ago or further back in time
 
 # # # install with the below code
 # devtools::install_github("SnowHydrology/rainOrSnowTools",
@@ -25,8 +38,8 @@ AWS_REGION = Sys.getenv("AWS_REGION")
 
 message("=====================================")
 message("Environment variables:")
-message("- NASA_DATA_USER: ", NASA_DATA_USER)
-message("- NASA_DATA_PASSWORD: ", NASA_DATA_PASSWORD)
+# message("- NASA_DATA_USER: ", NASA_DATA_USER)
+# message("- NASA_DATA_PASSWORD: ", NASA_DATA_PASSWORD)
 message("- SQS_QUEUE_NAME: ", SQS_QUEUE_NAME)
 message("- SQS_QUEUE_URL: ", SQS_QUEUE_URL)
 message("- S3_BUCKET_NAME: ", S3_BUCKET_NAME)
@@ -96,11 +109,8 @@ get_imerg3 <- function(datetime_utc,
   # library(sf)
 
   # datetime_utc = "2024-01-18 UTC"
-  # datetime_utc = "2023-11-21 UTC"
-  # version = 6
   # datetime_utc = datetime
   # datetime_utc = "2024-01-26 UTC"
-
 
   #############################
 
@@ -309,9 +319,27 @@ get_imerg3 <- function(datetime_utc,
   })
 }
 
-# Take in the above Event, this is approximately what i can expect a single row from 
-# the S3 CSV to look like when it enters this lambda function code
-sqs_consumer <- function(Records = NULL) {
+# Takes in an SQS Message that contains an Airtable observation (row of the Airtable data)
+# and enriches it with climate/geographic data and then writes the output data as a JSON to an S3 bucket 
+# Example input:
+  # msg_body = '{
+  #         "id": "xxxxd",
+  #         "timestamp": "1706147159.0",
+  #         "createdtime": "2024-01-25T01:45:59.000Z",
+  #         "name": "Rain",
+  #         "latitude": "39.5",
+  #         "user": "user_xxxxd",
+  #         "longitude": "-120.5",
+  #         "submitted_time": "01:45:58",
+  #         "local_time": "17:45:58",
+  #         "submitted_date": "01/25/24",
+  #         "local_date": "1/24/24",
+  #         "comment": "nan",
+  #         "time": "2024-01-25T01:45:59.000Z",
+  #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
+  #         "duplicate_count": "1"
+  #     }'
+add_climate_data <- function(Records = NULL) {
     ############  ############
     # UNCOMMENT BELOW HERE
     ############  ############
@@ -616,8 +644,8 @@ sqs_consumer <- function(Records = NULL) {
 #    return(output_json)
 }
 
-# sqs_consumer <- function(event) { 
-#   sqs_consumer(event) 
+# add_climate_data <- function(event) { 
+#   add_climate_data(event) 
 #   }
 
 lambdr::start_lambda(config = lambdr::lambda_config(

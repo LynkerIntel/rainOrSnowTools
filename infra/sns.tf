@@ -63,9 +63,9 @@ resource "aws_sns_topic_subscription" "sqs_prod_to_output_sns_subscription" {
 # Subscribe Lambda function (Insert into DynamoDB) to SNS topic, so that 
 # SNS triggers Lambda function each time S3 event notification comes in and 
 # the CSV that was created in the S3 bucket gets processed and inserted into DynamoDB
-resource "aws_sns_topic_subscription" "lambda_insert_into_dynamodb_sns_subscription" {
+resource "aws_sns_topic_subscription" "lambda_mros_insert_into_dynamodb_sns_subscription" {
   topic_arn = aws_sns_topic.sns_output_data_topic.arn
   protocol  = "lambda"
-  endpoint  = aws_lambda_function.insert_into_dynamodb_lambda_function.arn
+  endpoint  = aws_lambda_function.mros_insert_into_dynamodb_lambda_function.arn
 }
 

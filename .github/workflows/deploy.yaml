@@ -91,22 +91,28 @@ jobs:
         working-directory: ./infra
         id: plan
         env:
-          aws_profile: ${{ secrets.TF_VAR_aws_profile }}
-          aws_account_number: ${{ secrets.TF_VAR_aws_account_number }}
-          aws_region: ${{ secrets.TF_VAR_aws_region }}
-          airtable_secret_prefix: ${{ secrets.TF_VAR_airtable_secret_prefix }}
-          airtable_base_id: ${{ secrets.TF_VAR_airtable_base_id }}
-          airtable_table_id: ${{ secrets.TF_VAR_airtable_table_id }}
           airtable_api_token: ${{ secrets.TF_VAR_airtable_api_token }}
+          airtable_base_id: ${{ secrets.TF_VAR_airtable_base_id }}
+          airtable_secret_prefix: ${{ secrets.TF_VAR_airtable_secret_prefix }}
+          airtable_table_id: ${{ secrets.TF_VAR_airtable_table_id }}
+          aws_account_number: ${{ secrets.TF_VAR_aws_account_number }}
+          aws_profile: ${{ secrets.TF_VAR_aws_profile }}
+          aws_region: ${{ secrets.TF_VAR_aws_region }}
+          nasa_data_password_env_var: ${{ secrets.TF_VAR_nasa_data_password_env_var }}
+          nasa_data_user_env_var: ${{ secrets.TF_VAR_nasa_data_user_env_var }}
+          tfstate_s3_object_key: ${{ secrets.TF_VAR_tfstate_s3_object_key }}
         run: |
           terraform plan \
-            -var "aws_profile=${aws_profile}" \
-            -var "aws_account_number=${aws_account_number}" \
-            -var "aws_region=${aws_region}" \
-            -var "airtable_secret_prefix=${airtable_secret_prefix}" \
-            -var "airtable_base_id=${airtable_base_id}" \
-            -var "airtable_table_id=${airtable_table_id}" \
             -var "airtable_api_token=${airtable_api_token}" \
+            -var "airtable_base_id=${airtable_base_id}" \
+            -var "airtable_secret_prefix=${airtable_secret_prefix}" \
+            -var "airtable_table_id=${airtable_table_id}" \
+            -var "aws_account_number=${aws_account_number}" \
+            -var "aws_profile=${aws_profile}" \
+            -var "aws_region=${aws_region}" \
+            -var "nasa_data_password_env_var=${nasa_data_password_env_var}" \
+            -var "nasa_data_user_env_var=${nasa_data_user_env_var}" \
+            -var "tfstate_s3_object_key=${tfstate_s3_object_key}"
         continue-on-error: true
 
     #   - name: Terraform Apply
@@ -128,8 +134,8 @@ jobs:
     #       sqs_consumer_lambda_function_name: ${{ secrets.TF_VAR_sqs_consumer_lambda_function_name }}
     #       mros_append_daily_data_lambda_zip_file_name: ${{ secrets.TF_VAR_mros_append_daily_data_lambda_zip_file_name }}
     #       mros_append_daily_data_lambda_function_name: ${{ secrets.TF_VAR_mros_append_daily_data_lambda_function_name }}
-    #       insert_into_dynamodb_lambda_zip_file_name: ${{ secrets.TF_VAR_insert_into_dynamodb_lambda_zip_file_name }}
-    #       insert_into_dynamodb_lambda_function_name: ${{ secrets.TF_VAR_insert_into_dynamodb_lambda_function_name }}
+    #       mros_insert_into_dynamodb_lambda_zip_file_name: ${{ secrets.TF_VAR_mros_insert_into_dynamodb_lambda_zip_file_name }}
+    #       mros_insert_into_dynamodb_lambda_function_name: ${{ secrets.TF_VAR_mros_insert_into_dynamodb_lambda_function_name }}
     #       dynamodb_table_name: ${{ secrets.TF_VAR_dynamodb_table_name }}
     #       sqs_queue_name: ${{ secrets.TF_VAR_sqs_queue_name }}
     #       sqs_stage_queue_name: ${{ secrets.TF_VAR_sqs_stage_queue_name }}
@@ -164,8 +170,8 @@ jobs:
     #         -var "sqs_consumer_lambda_function_name=${sqs_consumer_lambda_function_name}" \
     #         -var "mros_append_daily_data_lambda_zip_file_name=${mros_append_daily_data_lambda_zip_file_name}" \
     #         -var "mros_append_daily_data_lambda_function_name=${mros_append_daily_data_lambda_function_name}" \
-    #         -var "insert_into_dynamodb_lambda_zip_file_name=${insert_into_dynamodb_lambda_zip_file_name}" \
-    #         -var "insert_into_dynamodb_lambda_function_name=${insert_into_dynamodb_lambda_function_name}" \
+    #         -var "mros_insert_into_dynamodb_lambda_zip_file_name=${mros_insert_into_dynamodb_lambda_zip_file_name}" \
+    #         -var "mros_insert_into_dynamodb_lambda_function_name=${mros_insert_into_dynamodb_lambda_function_name}" \
     #         -var "dynamodb_table_name=${dynamodb_table_name}" \
     #         -var "sqs_queue_name=${sqs_queue_name}" \
     #         -var "sqs_stage_queue_name=${sqs_stage_queue_name}" \

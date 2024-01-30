@@ -156,7 +156,7 @@ resource "aws_dynamodb_table" "mros_dynamodb_table" {
 #   policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
 # }
 
-# data "aws_iam_policy_document" "sqs_consumer_lambda_s3_policy" {
+# data "aws_iam_policy_document" "mros_add_climate_data_lambda_s3_policy" {
 #   statement {
 #     sid = "Enable S3 Read/Write Permissions"
     
@@ -191,7 +191,7 @@ resource "aws_dynamodb_table" "mros_dynamodb_table" {
 #   }
 # }
 
-# data "aws_iam_policy_document" "sqs_consumer_lambda_sqs_policy" {
+# data "aws_iam_policy_document" "mros_add_climate_data_lambda_sqs_policy" {
 #   statement {
 #     sid = "SQS Read/Delete Permissions"
     

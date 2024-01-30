@@ -8,16 +8,6 @@ data "aws_s3_bucket" "terraform_state_s3_bucket" {
   bucket = var.tfstate_s3_bucket_name
 }
 
-
-# ###############################
-# # S3 bucket for airtable data #
-# ###############################
-
-# # s3 bucket for lambda code
-# resource "aws_s3_bucket" "airtable_s3_bucket" {
-#   bucket = var.airtable_s3_bucket_name
-# }
-
 ###############################
 # S3 Staging JSON data #
 ###############################
@@ -54,7 +44,6 @@ resource "aws_s3_bucket" "lambda_bucket" {
   bucket = var.lambda_bucket_name
 }
 
-
 #####################################
 # S3 Objects (Lambda function code) #
 #####################################
@@ -87,9 +76,9 @@ resource "aws_s3_object" "prod_to_output_lambda_code_object" {
 }
 
 # s3 object for lambda code mros_append_daily_data lambda function
-resource "aws_s3_object" "insert_into_dynamodb_lambda_code_object" {
+resource "aws_s3_object" "mros_insert_into_dynamodb_lambda_code_object" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
-  key    = var.insert_into_dynamodb_lambda_zip_file_name
+  key    = var.mros_insert_into_dynamodb_lambda_zip_file_name
   source = local.mros_insert_into_dynamodb_zip
   etag   = filemd5(local.mros_insert_into_dynamodb_zip)
 }

@@ -135,7 +135,7 @@ resource "aws_lambda_function" "staging_lambda_function" {
 # }
 
 ################################################
-# Lambda (sqs_consumer) SQS Event Source Mapping
+# Lambda (staging_lambda_function) SQS Event Source Mapping
 ################################################
 
 # Lambda SQS Event Source Mapping
@@ -163,12 +163,14 @@ resource "aws_lambda_permission" "allow_sqs_invoke_stage_to_prod_lambda" {
 ################################
 # Lambda SQS consumer R function
 ################################
-
+# mros_add_climate_data
+# sqs_consumer_lambda_function
+# mros_add_climate_data_lambda_function
 # Create Lambda function for R Docker image
-resource "aws_lambda_function" "sqs_consumer_lambda_function" {
-  function_name    = var.sqs_consumer_lambda_function_name
+resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
+  function_name    = var.mros_add_climate_data_lambda_function_name
   # role             = aws_iam_role.lambda_role.arn
-  # handler          = "sqs_consumer.sqs_consumer"
+  # handler          = "add_climate_data.add_climate_data"
   # runtime          = "provided.al2"
 
   # image_uri        = "${var.mros_ecr_repo_url}:latest"
@@ -192,7 +194,7 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
     # Attach the Lambda function to the CloudWatch Logs group
   environment {
     variables = {
-        CW_LOG_GROUP = aws_cloudwatch_log_group.sqs_consumer_lambda_log_group.name,
+        CW_LOG_GROUP = aws_cloudwatch_log_group.mros_add_climate_data_lambda_log_group.name,
         NASA_DATA_USER = var.nasa_data_user_env_var,
         NASA_DATA_PASSWORD = var.nasa_data_password_env_var,
         SQS_QUEUE_NAME = aws_sqs_queue.mros_sqs_queue.name,
@@ -205,7 +207,7 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
     data.aws_ecr_repository.r_ecr_repository,
     aws_iam_role_policy_attachment.sqs_consumer_lambda_basic_exec_policy_attachment,
     aws_iam_role_policy_attachment.sqs_consumer_lambda_policy_attachment,
-    aws_cloudwatch_log_group.sqs_consumer_lambda_log_group,
+    aws_cloudwatch_log_group.mros_add_climate_data_lambda_log_group,
     aws_sqs_queue.mros_sqs_queue,
   ]
   tags = {
@@ -219,12 +221,12 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
 ################################################
 
 # Lambda SQS Event Source Mapping
-resource "aws_lambda_event_source_mapping" "sqs_consumer_lambda_event_source_mapping" {
+resource "aws_lambda_event_source_mapping" "mros_add_climate_data_lambda_event_source_mapping" {
   event_source_arn = aws_sqs_queue.mros_sqs_queue.arn
-  function_name    = aws_lambda_function.sqs_consumer_lambda_function.function_name
+  function_name    = aws_lambda_function.mros_add_climate_data_lambda_function.function_name
   batch_size       = 1
   depends_on = [
-    aws_lambda_function.sqs_consumer_lambda_function,
+    aws_lambda_function.mros_add_climate_data_lambda_function,
     aws_sqs_queue.mros_sqs_queue,
   ]
 }
@@ -338,15 +340,15 @@ resource "aws_lambda_permission" "allow_sqs_invoke_prod_to_output_lambda" {
 
 # lambda function triggered when a CSV file is uploaded to the Prod S3 bucket (ObjectCreated)
 # Function downloads the new CSV file and the stationary CSV file from the OUTPUT bucket and then concatenates them
-resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
+resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
   s3_bucket        = aws_s3_bucket.lambda_bucket.bucket
-  s3_key           = var.insert_into_dynamodb_lambda_zip_file_name
+  s3_key           = var.mros_insert_into_dynamodb_lambda_zip_file_name
   s3_object_version = aws_s3_object.prod_to_output_lambda_code_object.version_id
-  source_code_hash = var.insert_into_dynamodb_lambda_zip_file_name
+  source_code_hash = var.mros_insert_into_dynamodb_lambda_zip_file_name
   # source_code_hash = filebase64sha256(local.recipe_scraper_lambda_zip)
   # source_code_hash = aws_s3_object.recipe_scraper_lambda_code_object.etag
 
-  function_name    = var.insert_into_dynamodb_lambda_function_name
+  function_name    = var.mros_insert_into_dynamodb_lambda_function_name
   handler          = "mros_insert_into_dynamodb.mros_insert_into_dynamodb.mros_insert_into_dynamodb"
   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.11"
@@ -369,17 +371,17 @@ resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
   # Attach the Lambda function to the CloudWatch Logs group
   environment {
     variables = {
-        CW_LOG_GROUP         = aws_cloudwatch_log_group.insert_into_dynamodb_lambda_log_group.name,
+        CW_LOG_GROUP         = aws_cloudwatch_log_group.mros_insert_into_dynamodb_lambda_log_group.name,
         DYNAMODB_TABLE       = aws_dynamodb_table.mros_dynamodb_table.name,
   }
   }
 
   depends_on = [
     aws_s3_bucket.lambda_bucket,
-    aws_s3_object.insert_into_dynamodb_lambda_code_object,
+    aws_s3_object.mros_insert_into_dynamodb_lambda_code_object,
     # aws_s3_bucket_notification.raw_s3_bucket_notification,
     aws_iam_role_policy_attachment.lambda_logs_policy_attachment,
-    aws_cloudwatch_log_group.insert_into_dynamodb_lambda_log_group,
+    aws_cloudwatch_log_group.mros_insert_into_dynamodb_lambda_log_group,
     aws_dynamodb_table.mros_dynamodb_table,
   ]
   
@@ -403,14 +405,14 @@ resource "aws_lambda_function" "insert_into_dynamodb_lambda_function" {
 ####### ADD BACK THE BELOW CODE ##############
 
 # #################################################################################################
-# # Lambda SNS permission (allow SNS topic to invoke insert_into_dynamodb_lambda lambda function) #
+# # Lambda SNS permission (allow SNS topic to invoke mros_insert_into_dynamodb_lambda lambda function) #
 # #################################################################################################
 
-# Allow the "sns_output_data_topic" SNS topic to invoke the insert_into_dynamodb_lambda Lambda function
-resource "aws_lambda_permission" "allow_sns_invoke_insert_into_dynamodb_lambda" {
+# Allow the "sns_output_data_topic" SNS topic to invoke the mros_insert_into_dynamodb_lambda Lambda function
+resource "aws_lambda_permission" "allow_sns_invoke_mros_insert_into_dynamodb_lambda" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.insert_into_dynamodb_lambda_function.arn}"
+  function_name = "${aws_lambda_function.mros_insert_into_dynamodb_lambda_function.arn}"
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.sns_output_data_topic.arn
 }
