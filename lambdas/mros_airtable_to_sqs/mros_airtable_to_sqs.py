@@ -1,5 +1,5 @@
 # Description: This script will pull data from Airtable and save it to S3 as a parquet file
-# Usage: python airtable_to_sqs.py
+# Usage: python mros_airtable_to_sqs.py
 # Author: Angus Watters
 
 # general utility libraries
@@ -22,7 +22,7 @@ import boto3
 import s3fs
 
 # import the environment variables from the config.py file
-# import lambdas.airtable_to_sqs.config
+# import lambdas.mros_airtable_to_sqs.config
 # from config import Config
 
 # environemnt variables
@@ -191,7 +191,7 @@ def records_to_dataframe(records_list):
 # Lambda handler function
 # Uses the date from the event to query data from Airtable API for the two previous days and send each record to SQS
 # Lambda is triggered by an EventBridge rule that runs on a schedule (probably daily)
-def airtable_to_sqs(event, context):
+def mros_airtable_to_sqs(event, context):
 
     curr_time = event['time']
 
@@ -326,7 +326,7 @@ def airtable_to_sqs(event, context):
     return
 
 # # lambda handler function (version 1)
-# def airtable_to_sqs(event, context):
+# def mros_airtable_to_sqs(event, context):
 
 #     curr_time = event['time']
 #     # curr_time = "2023-11-21T00:00:00Z"

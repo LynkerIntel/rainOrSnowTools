@@ -50,25 +50,25 @@
 # # ---- Lambda function variables ----
 # # -----------------------------------
 
-# variable "airtable_to_sqs_lambda_zip_file_name" {
+# variable "mros_airtable_to_sqs_lambda_zip_file_name" {
 #     description = "Name of the Lambda zip file."
 #     type        = string
 #     sensitive   = true
 # }
 
-# variable "airtable_to_sqs_lambda_function_name" {
+# variable "mros_airtable_to_sqs_lambda_function_name" {
 #     description = "Name of the Lambda function."
 #     type        = string
 #     sensitive   = true
 # }
 
-# variable "stage_s3_to_prod_s3_lambda_zip_file_name" {
+# variable "mros_stage_to_prod_lambda_zip_file_name" {
 #     description = "Name of the Lambda zip file."
 #     type        = string
 #     sensitive   = true
 # }
 
-# variable "stage_s3_to_prod_s3_lambda_function_name" {
+# variable "mros_stage_to_prod_lambda_function_name" {
 #     description = "Name of the Lambda function."
 #     type        = string
 #     sensitive   = true

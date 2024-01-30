@@ -90,10 +90,10 @@ jobs:
     #       airtable_base_id: ${{ secrets.TF_VAR_airtable_base_id }}
     #       airtable_table_id: ${{ secrets.TF_VAR_airtable_table_id }}
     #       airtable_api_token: ${{ secrets.TF_VAR_airtable_api_token }}
-    #       airtable_to_sqs_lambda_zip_file_name: ${{ secrets.TF_VAR_airtable_to_sqs_lambda_zip_file_name }}
-    #       airtable_to_sqs_lambda_function_name: ${{ secrets.TF_VAR_airtable_to_sqs_lambda_function_name }}
-    #       stage_s3_to_prod_s3_lambda_zip_file_name: ${{ secrets.TF_VAR_stage_s3_to_prod_s3_lambda_zip_file_name }}
-    #       stage_s3_to_prod_s3_lambda_function_name: ${{ secrets.TF_VAR_stage_s3_to_prod_s3_lambda_function_name }}
+    #       mros_airtable_to_sqs_lambda_zip_file_name: ${{ secrets.TF_VAR_mros_airtable_to_sqs_lambda_zip_file_name }}
+    #       mros_airtable_to_sqs_lambda_function_name: ${{ secrets.TF_VAR_mros_airtable_to_sqs_lambda_function_name }}
+    #       mros_stage_to_prod_lambda_zip_file_name: ${{ secrets.TF_VAR_mros_stage_to_prod_lambda_zip_file_name }}
+    #       mros_stage_to_prod_lambda_function_name: ${{ secrets.TF_VAR_mros_stage_to_prod_lambda_function_name }}
     #       sqs_consumer_lambda_function_name: ${{ secrets.TF_VAR_sqs_consumer_lambda_function_name }}
     #       mros_append_daily_data_lambda_zip_file_name: ${{ secrets.TF_VAR_mros_append_daily_data_lambda_zip_file_name }}
     #       mros_append_daily_data_lambda_function_name: ${{ secrets.TF_VAR_mros_append_daily_data_lambda_function_name }}
@@ -126,10 +126,10 @@ jobs:
     #         -var "airtable_base_id=${airtable_base_id}" \
     #         -var "airtable_table_id=${airtable_table_id}" \
     #         -var "airtable_api_token=${airtable_api_token}" \
-    #         -var "airtable_to_sqs_lambda_zip_file_name=${airtable_to_sqs_lambda_zip_file_name}" \
-    #         -var "airtable_to_sqs_lambda_function_name=${airtable_to_sqs_lambda_function_name}" \
-    #         -var "stage_s3_to_prod_s3_lambda_zip_file_name=${stage_s3_to_prod_s3_lambda_zip_file_name}" \
-    #         -var "stage_s3_to_prod_s3_lambda_function_name=${stage_s3_to_prod_s3_lambda_function_name}" \
+    #         -var "mros_airtable_to_sqs_lambda_zip_file_name=${mros_airtable_to_sqs_lambda_zip_file_name}" \
+    #         -var "mros_airtable_to_sqs_lambda_function_name=${mros_airtable_to_sqs_lambda_function_name}" \
+    #         -var "mros_stage_to_prod_lambda_zip_file_name=${mros_stage_to_prod_lambda_zip_file_name}" \
+    #         -var "mros_stage_to_prod_lambda_function_name=${mros_stage_to_prod_lambda_function_name}" \
     #         -var "sqs_consumer_lambda_function_name=${sqs_consumer_lambda_function_name}" \
     #         -var "mros_append_daily_data_lambda_zip_file_name=${mros_append_daily_data_lambda_zip_file_name}" \
     #         -var "mros_append_daily_data_lambda_function_name=${mros_append_daily_data_lambda_function_name}" \

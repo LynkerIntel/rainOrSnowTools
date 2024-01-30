@@ -1,6 +1,6 @@
 # Description: Lambda function runs when new messages appear in SQS queue and takes the S3 event notification info from the message,
 #  downloads the new input dataset, and appends it to the existing stationary CSV file in S3.
-# Usage: python airtable_to_sqs.py
+# Usage: python mros_airtable_to_sqs.py
 # Author: Angus Watters
 
 # general utility libraries

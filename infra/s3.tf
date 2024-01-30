@@ -60,22 +60,22 @@ resource "aws_s3_bucket" "lambda_bucket" {
 #####################################
 
 
-# s3 object for lambda code for airtable_to_sqs function
+# s3 object for lambda code for mros_airtable_to_sqs function
 resource "aws_s3_object" "airtable_lambda_code_object" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
-  key    = var.airtable_to_sqs_lambda_zip_file_name
-  source = local.airtable_to_sqs_zip
-  etag   = filemd5(local.airtable_to_sqs_zip)
-  # source = var.airtable_to_sqs_zip
-  # etag   = filemd5(var.airtable_to_sqs_zip)
+  key    = var.mros_airtable_to_sqs_lambda_zip_file_name
+  source = local.mros_airtable_to_sqs_zip
+  etag   = filemd5(local.mros_airtable_to_sqs_zip)
+  # source = var.mros_airtable_to_sqs_zip
+  # etag   = filemd5(var.mros_airtable_to_sqs_zip)
 }
 
 # s3 object for lambda code process_staging function
 resource "aws_s3_object" "staging_lambda_code_object" {
   bucket = aws_s3_bucket.lambda_bucket.bucket
-  key    = var.stage_s3_to_prod_s3_lambda_zip_file_name
-  source = local.stage_s3_to_prod_s3_zip
-  etag   = filemd5(local.stage_s3_to_prod_s3_zip)
+  key    = var.mros_stage_to_prod_lambda_zip_file_name
+  source = local.mros_stage_to_prod_zip
+  etag   = filemd5(local.mros_stage_to_prod_zip)
 }
 
 # s3 object for lambda code mros_append_daily_data lambda function

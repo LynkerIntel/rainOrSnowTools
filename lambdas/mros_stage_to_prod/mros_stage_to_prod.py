@@ -1,5 +1,5 @@
 # Description: This script will pull data from Airtable and save it to S3 as a parquet file
-# Usage: python airtable_to_sqs.py
+# Usage: python mros_stage_to_prod.py
 # Author: Angus Watters
 
 # general utility libraries
@@ -21,7 +21,7 @@ import boto3
 import s3fs
 
 # import the environment variables from the config.py file
-# import lambdas.stage_s3_to_prod_s3.config
+# import lambdas.mros_stage_to_prod.config
 # from .config import Config
 
 # Environment variables
@@ -370,7 +370,7 @@ def upload_dataframes_by_date_key(df):
     return
 
 # lambda handler function
-def stage_s3_to_prod_s3(event, context):
+def mros_stage_to_prod(event, context):
 
     print(f"=====================")
     print(f'---->\n Value of event: {event}')
@@ -440,7 +440,7 @@ def stage_s3_to_prod_s3(event, context):
     return sqs_batch_response
 
 # # lambda handler function
-# def stage_s3_to_prod_s32(event, context):
+# def mros_stage_to_prod2(event, context):
 
 #     print(f"=====================")
 #     print(f'---->\n Value of event: {event}')
@@ -538,7 +538,7 @@ def stage_s3_to_prod_s3(event, context):
 #     return sqs_batch_response
 
 # # lambda handler function
-# def stage_s3_to_prod_s3(event, context):
+# def mros_stage_to_prod(event, context):
 
 #     # print(f"event: {event}")
 #     print(f"- S3_BUCKET: {S3_BUCKET}")

@@ -96,6 +96,7 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
             --implementation cp \
             --python-version 3.11 \
             --only-binary=:all: --upgrade \
+            -q \
             -r "$SUBDIR/requirements.txt"
 
 
@@ -113,6 +114,23 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
         # echo "Contents of PKG_DIR directory:"
         # ls -l "$PKG_DIR"
 
+        # Count the number of files in the directory
+        file_count=$(find "$PKG_DIR" -type f | wc -l)
+
+        echo "Number of files in the directory: $file_count"
+
+        # Check if the directory is empty
+        if [ "$file_count" -eq 0 ]; then
+            echo "PKG_DIR directory is empty"
+        else
+            echo "PKG_DIR directory is NOT empty."
+        fi
+
+        echo "Adding simple JSON file to make sure directory is NOT empty."
+            
+        # Create an empty JSON file with the file count to make sure the directory is NOT empty
+        echo "{\"$DIR_NAME\": $file_count}" > "$PKG_DIR/file_count.json"
+
         echo "------------------------------------------------"
         echo "Zipping 'PKG_DIR' contents into 'ZIP_FILE'..."
 
@@ -122,7 +140,7 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
         echo "------------------------------------------------"
 
         # Create the initial ZIP file with the Python packages
-        zip -r9 "$ZIP_FILE" .
+        zip -r9 -q "$ZIP_FILE" .
 
         # Go back to the original directory
         cd "$BASE_DIR/$APP_DIR/"
@@ -141,75 +159,75 @@ for SUBDIR in "$BASE_DIR/$APP_DIR"/*; do
         # remove the PKG_DIR directory
         rm -rf "$PKG_DIR"
         
-        # # -----------------------------------------------------------
-        # # --- Create Terraform variables for each lambda function ---
-        # # -----------------------------------------------------------
+        # -----------------------------------------------------------
+        # --- Create Terraform variables for each lambda function ---
+        # -----------------------------------------------------------
 
-        # # Create a TF variable name from the directory name
-        # TF_VAR_LOCAL_ZIP_PATH="${DIR_NAME%.zip}_zip"
+        # Create a TF variable name from the directory name
+        TF_VAR_LOCAL_ZIP_PATH="${DIR_NAME%.zip}_zip"
 
-        # # Export the relative zip file path as an environment variable with TF_VAR_<DIR_NAME>
-        # export "TF_VAR_$TF_VAR_LOCAL_ZIP_PATH"="$RELATIVE_ZIP_FILE"
+        # Export the relative zip file path as an environment variable with TF_VAR_<DIR_NAME>
+        export "TF_VAR_$TF_VAR_LOCAL_ZIP_PATH"="$RELATIVE_ZIP_FILE"
 
-        # echo "Exported TF_VAR_$TF_VAR_LOCAL_ZIP_PATH: $RELATIVE_ZIP_FILE"
+        echo "Exported TF_VAR_$TF_VAR_LOCAL_ZIP_PATH: $RELATIVE_ZIP_FILE"
 
-        # # Check if the string starts with "mros", if it doesn't, append "mros" to the front
-        # # Then replace any underscores with hypens
-        # if [[ $DIR_NAME != mros* ]]; then
-        #     # If it doesn't start with "mros", append "mros" to the front
-        #     LAMBDA_FUNCTION_NAME="mros_$DIR_NAME"
-        #     LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME//_/\-}
-        # else
-        #     LAMBDA_FUNCTION_NAME="$DIR_NAME"
-        #     LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME//_/\-}
+        # Check if the string starts with "mros", if it doesn't, append "mros" to the front
+        # Then replace any underscores with hypens
+        if [[ $DIR_NAME != mros* ]]; then
+            # If it doesn't start with "mros", append "mros" to the front
+            LAMBDA_FUNCTION_NAME="mros_$DIR_NAME"
+            LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME//_/\-}
+        else
+            LAMBDA_FUNCTION_NAME="$DIR_NAME"
+            LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME//_/\-}
 
-        # fi
+        fi
         
-        # echo "LAMBDA_FUNCTION_NAME: $LAMBDA_FUNCTION_NAME"
+        echo "LAMBDA_FUNCTION_NAME: $LAMBDA_FUNCTION_NAME"
 
-        # # ---- NAME TO USAE FOR THE LAMBDA FUNCTION ON AWS exported as: ----
-        # # ---- "TF_VAR_<DIR_NAME>_lambda_function_name" = "$LAMBDA_FUNCTION_NAME" ----
+        # ---- NAME TO USAE FOR THE LAMBDA FUNCTION ON AWS exported as: ----
+        # ---- "TF_VAR_<DIR_NAME>_lambda_function_name" = "$LAMBDA_FUNCTION_NAME" ----
         
-        # # Create a TF variable name from the directory name
-        # TF_VAR_FUNCTION_NAME="${DIR_NAME}_lambda_function_name"
+        # Create a TF variable name from the directory name
+        TF_VAR_FUNCTION_NAME="${DIR_NAME}_lambda_function_name"
 
-        # echo "TF_VAR_FUNCTION_NAME: $TF_VAR_FUNCTION_NAME"
+        echo "TF_VAR_FUNCTION_NAME: $TF_VAR_FUNCTION_NAME"
 
-        # export "TF_VAR_$TF_VAR_FUNCTION_NAME"="$LAMBDA_FUNCTION_NAME"
+        export "TF_VAR_$TF_VAR_FUNCTION_NAME"="$LAMBDA_FUNCTION_NAME"
 
-        # echo "Exported TF_VAR_$TF_VAR_FUNCTION_NAME: $LAMBDA_FUNCTION_NAME"
+        echo "Exported TF_VAR_$TF_VAR_FUNCTION_NAME: $LAMBDA_FUNCTION_NAME"
 
-        # # ---- NAME OF THE ZIP FILE FOR THE LAMBDA FUNCTION exported as: ----
-        # # ---- "TF_VAR_<DIR_NAME>_lambda_zip_file_name" = "$DIR_NAME.zip" ----
+        # ---- NAME OF THE ZIP FILE FOR THE LAMBDA FUNCTION exported as: ----
+        # ---- "TF_VAR_<DIR_NAME>_lambda_zip_file_name" = "$DIR_NAME.zip" ----
 
-        # # Create a TF variable name from the directory name
-        # TF_VAR_FUNCTION_ZIP_FILENAME="${DIR_NAME}_lambda_zip_file_name"
+        # Create a TF variable name from the directory name
+        TF_VAR_FUNCTION_ZIP_FILENAME="${DIR_NAME}_lambda_zip_file_name"
 
-        # echo "TF_VAR_FUNCTION_ZIP_FILENAME: $TF_VAR_FUNCTION_ZIP_FILENAME"
+        echo "TF_VAR_FUNCTION_ZIP_FILENAME: $TF_VAR_FUNCTION_ZIP_FILENAME"
 
-        # export "TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME"="${DIR_NAME}.zip"
+        export "TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME"="${DIR_NAME}.zip"
 
-        # echo "Exported TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME: ${DIR_NAME}.zip"
+        echo "Exported TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME: ${DIR_NAME}.zip"
 
-        # # Check if the script is running on GitHub Actions (RUNNING_ON_GITHUB_ACTION=true), if so
-        # # then export the environment variables to $GITHUB_ENV so they are made available to
-        # # the next steps in the workflow
-        # if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
+        # Check if the script is running on GitHub Actions (RUNNING_ON_GITHUB_ACTION=true), if so
+        # then export the environment variables to $GITHUB_ENV so they are made available to
+        # the next steps in the workflow
+        if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
 
-        #     echo "Running on GitHub Actions, exporting environment variables to Github Env..."
+            echo "Running on GitHub Actions, exporting environment variables to Github Env..."
             
-        #     # Export the environment variables to $GITHUB_ENV
-        #     # Lambda function name
-        #     echo "TF_VAR_$TF_VAR_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME" >> $GITHUB_ENV
+            # Export the environment variables to $GITHUB_ENV
+            # Lambda function name
+            echo "TF_VAR_$TF_VAR_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME" >> $GITHUB_ENV
 
-        #     # Lambda function ZIP file name
-        #     echo "TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME=${DIR_NAME}.zip" >> $GITHUB_ENV
+            # Lambda function ZIP file name
+            echo "TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME=${DIR_NAME}.zip" >> $GITHUB_ENV
 
-        #     # Lambda function local ZIP path
-        #     echo "TF_VAR_$TF_VAR_LOCAL_ZIP_PATH=$RELATIVE_ZIP_FILE" >> $GITHUB_ENV
+            # Lambda function local ZIP path
+            echo "TF_VAR_$TF_VAR_LOCAL_ZIP_PATH=$RELATIVE_ZIP_FILE" >> $GITHUB_ENV
 
-        #     echo "Exported TF_VAR_$TF_VAR_FUNCTION_NAME, TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME, and TF_VAR_$TF_VAR_LOCAL_ZIP_PATH to Github Env"
-        # fi
+            echo "Exported TF_VAR_$TF_VAR_FUNCTION_NAME, TF_VAR_$TF_VAR_FUNCTION_ZIP_FILENAME, and TF_VAR_$TF_VAR_LOCAL_ZIP_PATH to Github Env"
+        fi
 
         # --- Change directories back to the BASE_DIR ---
         cd "$BASE_DIR"

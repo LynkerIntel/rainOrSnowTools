@@ -7,10 +7,10 @@
 resource "aws_lambda_function" "airtable_lambda_function" {
   s3_bucket        = aws_s3_bucket.lambda_bucket.bucket
   s3_object_version = aws_s3_object.airtable_lambda_code_object.version_id
-  s3_key           = var.airtable_to_sqs_lambda_zip_file_name
-  source_code_hash = var.airtable_to_sqs_lambda_zip_file_name
-  function_name    = var.airtable_to_sqs_lambda_function_name
-  handler          = "airtable_to_sqs.airtable_to_sqs.airtable_to_sqs"
+  s3_key           = var.mros_airtable_to_sqs_lambda_zip_file_name
+  source_code_hash = var.mros_airtable_to_sqs_lambda_zip_file_name
+  function_name    = var.mros_airtable_to_sqs_lambda_function_name
+  handler          = "mros_airtable_to_sqs.mros_airtable_to_sqs.mros_airtable_to_sqs"
   # handler          = "function.name/handler.process_csv_lambda"
   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.11"
@@ -78,10 +78,10 @@ resource "aws_lambda_permission" "cloudwatch_invoke_lambda_permission" {
 resource "aws_lambda_function" "staging_lambda_function" {
   s3_bucket        = aws_s3_bucket.lambda_bucket.bucket
   s3_object_version = aws_s3_object.staging_lambda_code_object.version_id
-  s3_key           = var.stage_s3_to_prod_s3_lambda_zip_file_name
-  source_code_hash = var.stage_s3_to_prod_s3_lambda_zip_file_name
-  function_name    = var.stage_s3_to_prod_s3_lambda_function_name
-  handler          = "stage_s3_to_prod_s3.stage_s3_to_prod_s3.stage_s3_to_prod_s3"
+  s3_key           = var.mros_stage_to_prod_lambda_zip_file_name
+  source_code_hash = var.mros_stage_to_prod_lambda_zip_file_name
+  function_name    = var.mros_stage_to_prod_lambda_function_name
+  handler          = "mros_stage_to_prod.mros_stage_to_prod.mros_stage_to_prod"
   
   # Lambda role (with permissions for SQS)   
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
@@ -173,7 +173,7 @@ resource "aws_lambda_function" "sqs_consumer_lambda_function" {
 
   # image_uri        = "${var.mros_ecr_repo_url}:latest"
   image_uri        = "${var.mros_ecr_repo_url}:${var.mros_ecr_image_tag}"
-  
+
 #   image_uri = data.aws_ecr_image.repo_image.image_uri
   
   # image_uri        = "${data.aws_ecr_repository.r_ecr_repository.repository_url}:latest"

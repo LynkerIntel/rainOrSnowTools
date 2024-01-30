@@ -265,7 +265,7 @@ data "aws_iam_policy_document" "lambda_s3_policy_doc" {
 # Make an IAM policy from the IAM policy document for S3/SQS permissions for sqs_consumer lambda
 resource "aws_iam_policy" "lambda_s3_policy" {
   name_prefix = "mros-lambda-s3-policy"
-  description = "IAM Policy for MROS Lambdas (airtable_to_sqs and stage_s3_to_prod_s3) to interact with S3"
+  description = "IAM Policy for MROS Lambdas (mros_airtable_to_sqs and mros_stage_to_prod) to interact with S3"
   policy      = data.aws_iam_policy_document.lambda_s3_policy_doc.json
   tags = {
     name              = local.name_tag

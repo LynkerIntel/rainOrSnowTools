@@ -1,24 +1,24 @@
 ######################################
-# Lambda Log Group (airtable_to_sqs) #
+# Lambda Log Group (mros_airtable_to_sqs) #
 ######################################
 
-# Cloudwatch log group for 'airtable_to_sqs' Python lambda function
+# Cloudwatch log group for 'mros_airtable_to_sqs' Python lambda function
 resource "aws_cloudwatch_log_group" "airtable_lambda_log_group" {
-  name              = "/aws/lambda/${var.airtable_to_sqs_lambda_function_name}"
-#   name_prefix              = "/aws/lambda/${var.airtable_to_sqs_lambda_function_name}"
+  name              = "/aws/lambda/${var.mros_airtable_to_sqs_lambda_function_name}"
+#   name_prefix              = "/aws/lambda/${var.mros_airtable_to_sqs_lambda_function_name}"
   retention_in_days = 14
   skip_destroy = false
 #   skip_destroy = true
 }
 
 ##########################################
-# Lambda Log Group (stage_s3_to_prod_s3) #
+# Lambda Log Group (mros_stage_to_prod) #
 ##########################################
 
-# Cloudwatch log group for 'stage_s3_to_prod_s3' Python lambda function
+# Cloudwatch log group for 'mros_stage_to_prod' Python lambda function
 resource "aws_cloudwatch_log_group" "staging_lambda_log_group" {
-  name              = "/aws/lambda/${var.stage_s3_to_prod_s3_lambda_function_name}"
-#   name_prefix              = "/aws/lambda/${var.stage_s3_to_prod_s3_lambda_function_name}"
+  name              = "/aws/lambda/${var.mros_stage_to_prod_lambda_function_name}"
+#   name_prefix              = "/aws/lambda/${var.mros_stage_to_prod_lambda_function_name}"
   retention_in_days = 14
   skip_destroy = false
 #   skip_destroy = true
