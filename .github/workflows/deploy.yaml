@@ -77,8 +77,8 @@ jobs:
           echo "Environment Variables in \$GITHUB_ENV:"
           cat $GITHUB_ENV
 
-    #   - name: Terraform Init
-    #     run: terraform init -backend-config="bucket=${{ secrets.TFSTATE_BUCKET }}" -backend-config="profile=${{ secrets.AWS_PROFILE }}" -backend-config="region=${{ secrets.AWS_REGION }}"
+      - name: Terraform Init
+        run: terraform init -backend-config="bucket=${{ secrets.TFSTATE_BUCKET }}" -backend-config="profile=${{ secrets.AWS_PROFILE }}" -backend-config="region=${{ secrets.AWS_REGION }}"
 
     #   - name: Terraform Plan
     #     id: plan
