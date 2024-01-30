@@ -446,12 +446,16 @@ add_climate_data <- function(Records = NULL) {
     lat_obs  = as.numeric(data$latitude)
     datetime = as.POSIXct(as.character(data$time), tz = "UTC")
     id       = as.character(data$id)
+    
+    # get current date for logging
+    current_date = as.character(Sys.Date())
 
     message("========= Message variables ==========")
     message("- lon_obs: ", lon_obs)
     message("- lat_obs: ", lat_obs)
     message("- datetime: ", datetime)
     message("- id: ", id)
+    message("- current_date: ", current_date)
     message("======================================")
 
     message("Getting elevation data...")

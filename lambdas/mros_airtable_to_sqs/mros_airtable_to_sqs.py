@@ -198,7 +198,7 @@ def mros_airtable_to_sqs(event, context):
     # curr_time = "2023-11-21T00:00:00Z"
     # curr_time = "2024-01-25T00:00:00Z"
     # curr_time = "2024-01-28T00:00:00Z"
-
+    # curr_time = "2024-01-30T00:00:00Z"
 
     # 2018-09-19 17:47:12
     print(f"curr_time: {curr_time}")
@@ -236,10 +236,10 @@ def mros_airtable_to_sqs(event, context):
     # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
     # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
 
-    # New method of getting DATE_LIST for 5 days ago (or any number of days with 'n' argument)
-    DATE_LIST = get_dates_before(curr_time, 5)
+    # New method of getting DATE_LIST for 7 days ago (or any number of days with 'n' argument)
+    DATE_LIST = get_dates_before(curr_time, 7)
 
-    # temporarily set DATE_LIST to the last two dates in the list 
+    # temporarily set DATE_LIST to the last two dates in the list ( 6 and 7 days ago )
     # Theorizing that GPM PLP data has some sort of 5 day lag on when the data is 
     # properly uploaded and ready to be accessed
     DATE_LIST = DATE_LIST[-2:]
@@ -285,7 +285,7 @@ def mros_airtable_to_sqs(event, context):
             # Loop through the dataframe and send each record to SQS
             
             # for i in range(0, len(df)):
-            for i in range(0, 3):
+            for i in range(0, 10):
 
                 print(f"Adding record {i} to SQS queue")
 
