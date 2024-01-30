@@ -77,6 +77,31 @@ jobs:
           echo "Environment Variables in \$GITHUB_ENV:"
           cat $GITHUB_ENV
 
+      # Log in to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+
+      # Build, tag, and push new Docker image to Amazon ECR (Lambda function that runs add_climate_data.R)
+      # - This is the build step that will propagate any updates/changes to rainOrSnowTools R package)
+      # - Updates to the rainOrSnowTools R package will be pushed to the ECR repository and
+      # - any code changes in add_climate_data.R will be reflected in the mros_add_climate_data Lambda function that
+      # - adds climate data to the MROS Airtable data
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        working-directory: ./lambda_containers/add_climate_data
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
       # Initialize terraform and configure S3 backend
       - name: Terraform Init
         working-directory: ./infra

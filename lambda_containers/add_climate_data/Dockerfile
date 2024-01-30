@@ -107,7 +107,7 @@ RUN chmod 755 -R /lambda \
     && chmod +x /var/runtime/bootstrap
 
 # Just the function name from the above script
-CMD ["add_climate_data_to_sqs_message"]
+CMD ["add_climate_data"]
 
 
 ############## GOOD TO GO ISH BELOW HERE ############

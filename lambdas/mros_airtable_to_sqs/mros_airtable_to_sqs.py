@@ -283,8 +283,9 @@ def mros_airtable_to_sqs(event, context):
             print(f"Number of columns in df: {len(df.columns)}")
 
             # Loop through the dataframe and send each record to SQS
-            for i in range(0, 3):
+            
             # for i in range(0, len(df)):
+            for i in range(0, 3):
 
                 print(f"Adding record {i} to SQS queue")
 
