@@ -76,10 +76,16 @@ jobs:
         run: |
           echo "Environment Variables in \$GITHUB_ENV:"
           cat $GITHUB_ENV
+
       # Initialize terraform and configure S3 backend
       - name: Terraform Init
         working-directory: ./infra
-        run: terraform init -backend-config="bucket=${{ secrets.TFSTATE_BUCKET }}" -backend-config="profile=${{ secrets.AWS_PROFILE }}" -backend-config="region=${{ secrets.AWS_REGION }}"
+        env:
+          TFSTATE_S3_BUCKET: ${{ secrets.TFSTATE_S3_BUCKET }}
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: terraform init -backend-config="bucket=${TFSTATE_S3_BUCKET}" -backend-config="profile=${AWS_PROFILE}" -backend-config="region=${AWS_REGION}"
+
       # Create terraform plan
       - name: Terraform Plan
         working-directory: ./infra
