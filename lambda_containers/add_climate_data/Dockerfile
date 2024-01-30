@@ -1,4 +1,6 @@
-FROM rocker/geospatial:4.3
+FROM rocker/geospatial@sha256:d574731e9436748683f001fb40c391a9d3358135de1f4c8285ae99fb07b39c41
+# FROM ghcr.io/rocker-org/geospatial@sha256:d574731e9436748683f001fb40c391a9d3358135de1f4c8285ae99fb07b39c41
+# FROM rocker/geospatial:4.3
 
 # # Specifiying x86_64
 COPY --from=public.ecr.aws/lambda/provided:al2.2023.05.13.00-x86_64 /lambda-entrypoint.sh /lambda-entrypoint.sh
