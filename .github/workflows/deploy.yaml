@@ -112,7 +112,7 @@ jobs:
           context: ./lambda_containers/add_climate_data
           # private registry
           registry: ${{ steps.login-ecr.outputs.registry }}
-          image_name: ${ECR_REPO}:${IMAGE_TAG}
+          image_name: ${{ secrets.ECR_REPO_NAME }}
 
     #   # Initialize terraform and configure S3 backend
     #   - name: Terraform Init
