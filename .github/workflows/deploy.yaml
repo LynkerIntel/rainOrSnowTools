@@ -76,10 +76,35 @@ jobs:
         run: |
           echo "Environment Variables in \$GITHUB_ENV:"
           cat $GITHUB_ENV
-
+      # Initialize terraform and configure S3 backend
       - name: Terraform Init
+        working-directory: ./infra
         run: terraform init -backend-config="bucket=${{ secrets.TFSTATE_BUCKET }}" -backend-config="profile=${{ secrets.AWS_PROFILE }}" -backend-config="region=${{ secrets.AWS_REGION }}"
+      # Create terraform plan
+      - name: Terraform Plan
+        working-directory: ./infra
+        id: plan
+        env:
+          aws_profile: ${{ secrets.TF_VAR_aws_profile }}
+          aws_account_number: ${{ secrets.TF_VAR_aws_account_number }}
+          aws_region: ${{ secrets.TF_VAR_aws_region }}
+          airtable_secret_prefix: ${{ secrets.TF_VAR_airtable_secret_prefix }}
+          airtable_base_id: ${{ secrets.TF_VAR_airtable_base_id }}
+          airtable_table_id: ${{ secrets.TF_VAR_airtable_table_id }}
+          airtable_api_token: ${{ secrets.TF_VAR_airtable_api_token }}
+        run: |
+          terraform plan \
+            -var "aws_profile=${aws_profile}" \
+            -var "aws_account_number=${aws_account_number}" \
+            -var "aws_region=${aws_region}" \
+            -var "airtable_secret_prefix=${airtable_secret_prefix}" \
+            -var "airtable_base_id=${airtable_base_id}" \
+            -var "airtable_table_id=${airtable_table_id}" \
+            -var "airtable_api_token=${airtable_api_token}" \
+        continue-on-error: true
 
+    #   - name: Terraform Apply
+    #     run: terraform apply -auto-approve
     #   - name: Terraform Plan
     #     id: plan
     #     env:
