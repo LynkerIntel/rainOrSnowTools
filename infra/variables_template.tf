@@ -184,7 +184,7 @@ variable "nasa_data_password_env_var" {
 }
 
 # ----------------------------
-# ---- SQS variables ----
+# ---- ECR variables ----
 # ----------------------------
 
 variable "mros_ecr_repo_name" {
@@ -195,6 +195,13 @@ variable "mros_ecr_repo_name" {
 variable "mros_ecr_repo_url" {
     description = "URL of the ECR repo to store the Docker image"
     type        = string
+}
+
+variable "mros_ecr_image_tag" {
+    description = "Tag of the ECR repo to store the Docker image"
+    type        = string
+    default     = "latest"
+    # sensitive   = true
 }
 
 # ----------------------------

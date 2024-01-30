@@ -98,6 +98,7 @@ jobs:
           aws_account_number: ${{ secrets.TF_VAR_aws_account_number }}
           aws_profile: ${{ secrets.TF_VAR_aws_profile }}
           aws_region: ${{ secrets.TF_VAR_aws_region }}
+          mros_ecr_repo_name: ${{ secrets.ECR_REPO_NAME }}
           nasa_data_password_env_var: ${{ secrets.TF_VAR_nasa_data_password_env_var }}
           nasa_data_user_env_var: ${{ secrets.TF_VAR_nasa_data_user_env_var }}
           tfstate_s3_object_key: ${{ secrets.TF_VAR_tfstate_s3_object_key }}
@@ -110,6 +111,7 @@ jobs:
             -var "aws_account_number=${aws_account_number}" \
             -var "aws_profile=${aws_profile}" \
             -var "aws_region=${aws_region}" \
+            -var "mros_ecr_repo_name=${mros_ecr_repo_name}" \
             -var "nasa_data_password_env_var=${nasa_data_password_env_var}" \
             -var "nasa_data_user_env_var=${nasa_data_user_env_var}" \
             -var "tfstate_s3_object_key=${tfstate_s3_object_key}"
