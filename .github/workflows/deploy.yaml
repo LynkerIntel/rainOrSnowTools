@@ -156,5 +156,5 @@ jobs:
             -out tfplan
         continue-on-error: true
 
-    #   - name: Terraform Apply
-    #     run: terraform apply "tfplan"
+      - name: Terraform Apply
+        run: terraform apply "tfplan"
