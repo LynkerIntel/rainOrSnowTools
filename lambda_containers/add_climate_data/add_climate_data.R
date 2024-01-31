@@ -624,6 +624,7 @@ add_climate_data <- function(Records = NULL) {
     #             as.list(dplyr::select(processed, -id))
     #             ),
     #  )
+    
     message("Generating hash of message body...")
     msg_hash <- digest::digest(msg_body, algo = "sha256")
 

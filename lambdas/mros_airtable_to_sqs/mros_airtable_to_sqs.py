@@ -283,11 +283,11 @@ def mros_airtable_to_sqs(event, context):
             print(f"Number of columns in df: {len(df.columns)}")
 
             # Loop through the dataframe and send each record to SQS
-            
-            # for i in range(0, len(df)):
-            for i in range(0, 10):
+            print(f"Adding {len(df)} records to SQS queue")
+            for i in range(0, len(df)):
+            # for i in range(0, 10):
 
-                print(f"Adding record {i} to SQS queue")
+                # print(f"Adding record {i} to SQS queue")
 
                 # Construct the message body
                 message_body = {
@@ -310,10 +310,11 @@ def mros_airtable_to_sqs(event, context):
                     # Add other fields as needed
                 }
 
-                print(f"message_body: {message_body}")
+                # print(f"message_body: {message_body}")
 
                 # try to send the message to SQS
                 try:
+                    print(f"- Sending message {i} to SQS queue")
                     # Send the message to SQS
                     sqs.send_message(
                         QueueUrl    = SQS_QUEUE_URL,

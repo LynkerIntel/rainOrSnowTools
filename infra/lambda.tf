@@ -32,8 +32,14 @@ resource "aws_lambda_function" "airtable_lambda_function" {
   }
 
   # timeout in seconds
-  timeout         = 300
-  
+  timeout         = 900 # 15 minutes (max time possible to allow lambda to run)
+
+  # memory in MB
+  memory_size     = 200
+
+  # Only allow for a maximum of 2 Lambdas to be run concurrently
+  reserved_concurrent_executions = 2
+
   depends_on = [
     aws_s3_bucket.lambda_bucket,
     aws_s3_object.airtable_lambda_code_object,
@@ -111,7 +117,13 @@ resource "aws_lambda_function" "staging_lambda_function" {
 
   # timeout in seconds
   timeout         = 300
-  
+
+  # memory in MB
+  memory_size     = 256
+
+  # Only allow for a maximum of 8 Lambdas to be run concurrently
+  reserved_concurrent_executions = 1
+
   depends_on = [
     aws_s3_bucket.lambda_bucket,
     aws_s3_object.staging_lambda_code_object,
@@ -181,9 +193,9 @@ resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
   # image_uri        = "${data.aws_ecr_repository.r_ecr_repository.repository_url}:latest"
   # image_uri        = data.aws_ecr_repository.r_ecr_repository.repository_url
   package_type     = "Image"
-  memory_size      = 800
+  memory_size      = 600
   # memory_size      = 3009
-  timeout          = 600     # timeout in seconds
+  timeout          = 900     # timeout in seconds (use max amount of time = 15 minutes)
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
@@ -261,7 +273,7 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   timeout         = 750
 
   # memory in MB
-  memory_size     = 1024
+  memory_size     = 400
 
   # Only allow for a maximum of 8 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
@@ -363,7 +375,7 @@ resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
   timeout         = 750
 
   # memory in MB
-  memory_size     = 1024
+  memory_size     = 325
 
   # Only allow for a maximum of 5 Lambdas to be run concurrently
   reserved_concurrent_executions = 5
