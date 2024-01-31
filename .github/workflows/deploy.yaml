@@ -157,4 +157,6 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Apply
+        working-directory: ./infra
+        id: apply
         run: terraform apply -auto-approve ${{ github.sha }}.plan
