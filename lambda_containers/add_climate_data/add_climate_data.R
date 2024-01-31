@@ -646,10 +646,12 @@ add_climate_data <- function(Records = NULL) {
                             )
 
     message(
-      paste0("Calling S3 PutObject:\n- '", file_name, 
-    "'\n- Object location: ", paste0("/tmp/", file_name)),
-    "'\n- S3_OUTPUT_OBJECT_KEY: '",S3_OUTPUT_OBJECT_KEY, "'")
-    )
+      paste0(
+        "Calling S3 PutObject:\n- '", file_name, 
+        "'\n- Object location: ", paste0("/tmp/", file_name),  
+        "'\n- S3_OUTPUT_OBJECT_KEY: '",S3_OUTPUT_OBJECT_KEY, "'"
+        )
+      )
     # jsonlite::read_json(paste0("/tmp/", file_name))
 
     # #### COMMENTING OUT FOR TESTING #######
