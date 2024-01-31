@@ -363,8 +363,10 @@ add_climate_data <- function(Records = NULL) {
     # make sure a .netrc file exists, if not, create one
     if(!climateR::checkNetrc(netrcFile = "/tmp/.netrc")){
         message("Writting a '.netrc' file...")
-        message("- login: ", NASA_DATA_USER)
-        message("- password: ", NASA_DATA_PASSWORD)
+
+        # message("- login: ", NASA_DATA_USER)
+        # message("- password: ", NASA_DATA_PASSWORD)
+
         # climateR::writeNetrc(login = Sys.getenv("NASA_DATA_USER"), password = Sys.getenv("NASA_DATA_PASSWORD"))
         climateR::writeNetrc(login = NASA_DATA_USER, password = NASA_DATA_PASSWORD, netrcFile =  "/tmp/.netrc")
     }
@@ -380,36 +382,35 @@ add_climate_data <- function(Records = NULL) {
     #             # Output the modified .netrc file
     #             cat "$NETRC_FILE"'
     # )
-
+    message("Adding a log message to confirm GitHub Actions is working...")
     ############  ############
     # UNCOMMENT BELOW HERE
     ############  ############
 
+    message("Connecting to AWS S3 bucket...")
+    # message("AWS_REGION: ", AWS_REGION)
+
     # connect to AWS S3 bucket
-    s3 <- paws::s3(region = AWS_REGION)
+    s3 <- paws::s3()
+    # s3 <- paws::s3(region = AWS_REGION)
 
     # # # # Extract message body
     msg_body = Records[[3]]
+
     ############  ############
     # UNCOMMENT ABOVE HERE
     ############  ############
-
     ############  ############
-    
     # # Connect to AWS SQS queue client 
     # sqs = paws::sqs(region = AWS_REGION, endpoint = SQS_QUEUE_URL)
-
     # # # Receive message from SQS queue
     # msg = sqs$receive_message(
     #     QueueUrl            = sqs$get_queue_url(QueueName = SQS_QUEUE_NAME),
-    #     MaxNumberOfMessages = 1
-    # )
-
+    #     MaxNumberOfMessages = 1)
     # # Extract message body
     # msg_body = msg$Messages[[1]]$Body
-
     # ############  ############
-    #     # remove msg_body BELOW
+    # # remove msg_body BELOW
     ############  ############
         # msg_body = '{
         #         "id": "xxxxd",
@@ -428,7 +429,6 @@ add_climate_data <- function(Records = NULL) {
         #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
         #         "duplicate_count": "1"
         #     }'
-
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -509,11 +509,12 @@ add_climate_data <- function(Records = NULL) {
 
         # if plp is empty, set to 9999 default value (this is a placeholder for now)
         plp_val <- ifelse(is.null(plp_val), 9999, plp_val)
+
     }
 
     # if("probabilityLiquidPrecipitation" %in% names(plp)) { } 
 
-    message("---> Final plp_val: ", plp_val)
+    message("---> FINAL plp_val: ", plp_val)
 
     message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
 
@@ -624,24 +625,23 @@ add_climate_data <- function(Records = NULL) {
     # #### COMMENTING OUT FOR TESTING #######
     # #### COMMENTING OUT FOR TESTING #######
     # #### COMMENTING OUT FOR TESTING #######
-    # # Try and upload file to s3
-    # tryCatch({
-    #         s3$put_object(
-    #             Body   = paste0("/tmp/", file_name),
-    #             # Body   = paste0("./tmp/", file_name),
-    #             Bucket = S3_BUCKET_NAME,
-    #             Key    = file_name
-    #             )
-    #     },
-    #     error = function(e) {
-    #         message("Error: ", e)
-    #     }
-    # )
+    # Try and upload file to s3
+    tryCatch({
+            s3$put_object(
+                Body   = paste0("/tmp/", file_name),
+                # Body   = paste0("./tmp/", file_name),
+                Bucket = S3_BUCKET_NAME,
+                Key    = file_name
+                )
+        },
+        error = function(e) {
+            message("Error: ", e)
+        }
+    )
 
     # #### COMMENTING OUT FOR TESTING #######
     # #### COMMENTING OUT FOR TESTING #######
     # #### COMMENTING OUT FOR TESTING #######
-
 
     # s3$put_object(
     #     Body   = paste0("/tmp/", file_name),
