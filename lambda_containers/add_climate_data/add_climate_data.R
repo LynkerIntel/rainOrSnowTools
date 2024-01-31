@@ -319,6 +319,125 @@ get_imerg3 <- function(datetime_utc,
   })
 }
 
+# TODO: Move this properly into the rainOrSnowTools package as a function
+add_qaqc_flags = function(df,
+                          snow_max_tair = 10,
+                          rain_max_tair = -5,
+                          rh_min = 30,
+                          max_avgdist_station = 2e5,
+                          max_closest_station = 3e4,
+                          min_n_station = 5,
+                          pval_max = 0.05
+                          ){
+
+        # ####################################
+        # ####################################
+        # df = processed
+        # snow_max_tair = 10
+        # rain_max_tair = -5
+        # rh_min = 30
+        # max_avgdist_station = 2e5
+        # max_closest_station = 3e4
+        # min_n_station = 5
+        # pval_max = 0.05
+        # ####################################
+        # ####################################
+
+  # Add data flags
+  temp_air_snow_max = snow_max_tair
+  temp_air_rain_min = rain_max_tair
+  rh_thresh = rh_min
+  avgdist_thresh = max_avgdist_station
+  closest_thresh = max_closest_station
+  nstation_thresh = min_n_station
+  pval_thresh = pval_max
+
+  qaqc <- 
+    df %>%
+    dplyr::mutate(
+      temp_air_flag = dplyr::case_when(
+        temp_air_idw_lapse_var >= temp_air_snow_max &
+          name == "Snow"                              ~ "WarmSnow",
+        temp_air_idw_lapse_var <= temp_air_rain_min &
+          name == "Rain"                              ~ "CoolRain",
+        is.na(temp_air_idw_lapse_var)                  ~ "NoMet",
+        TRUE                                           ~ "Pass"
+        ),
+      rh_flag = dplyr::case_when(
+        rh < rh_thresh ~ "LowRH",
+        is.na(rh)      ~ "NoMet",
+        TRUE           ~ "Pass"
+        ),
+      dist_temp_air_flag = dplyr::case_when(
+        temp_air_avg_dist >= avgdist_thresh  ~ "TooFar",
+        is.na(temp_dew_avg_dist)             ~ "NoMet",
+        TRUE                                 ~ "Pass"
+        ),
+      dist_temp_dew_flag = dplyr::case_when(
+        temp_dew_avg_dist >= avgdist_thresh ~ "TooFar",
+        is.na(temp_dew_avg_dist)            ~ "NoMet",
+        TRUE                                ~ "Pass"
+        ),
+      closest_temp_air_flag = dplyr::case_when(
+        temp_air_nearest_dist >= closest_thresh ~ "TooFar",
+        is.na(temp_air_nearest_dist)            ~ "NoMet",
+        TRUE                                    ~ "Pass"
+        ),
+      closest_temp_dew_flag = dplyr::case_when(
+        temp_dew_nearest_dist >= closest_thresh ~ "TooFar",
+        is.na(temp_dew_nearest_dist)            ~ "NoMet",
+        TRUE                                    ~ "Pass"
+        ),
+      nstation_temp_air_flag = dplyr::case_when(
+        temp_air_n_stations < nstation_thresh   ~ "FewStations",
+        is.na(temp_air_n_stations)              ~ "NoMet",
+        TRUE                                    ~ "Pass"
+        ),
+      nstation_temp_dew_flag = dplyr::case_when(
+        temp_dew_n_stations < nstation_thresh   ~ "FewStations",
+        is.na(temp_dew_n_stations)              ~ "NoMet",
+        TRUE                                    ~ "Pass"
+        ),
+      pval_temp_air_flag = dplyr::case_when(
+        temp_air_lapse_var_pval > pval_thresh ~ "PoorLapse",
+        is.na(temp_air_lapse_var_pval)        ~ "NoMet",
+        TRUE                                  ~ "Pass"
+        ),
+      pval_temp_dew_flag = dplyr::case_when(
+        temp_dew_lapse_var_pval > pval_thresh   ~ "PoorLapse",
+        is.na(temp_dew_lapse_var_pval)          ~ "NoMet",
+        TRUE                                    ~ "Pass"
+        )
+    )  %>% 
+    dplyr::mutate(
+      # Checks for phase observations (if it does not )
+      phase_flag = dplyr::case_when(
+        name == "Rain"     ~ "Pass",
+        name == "Mix"      ~ "Pass",
+        name == "Snow"     ~ "Pass",
+        TRUE               ~ "NoPhase"
+        )
+    ) %>%
+    dplyr::mutate(
+      # Checks for if the observation is within CONUS (study boundary)
+      CONUS = dplyr::case_when(
+        state == "Alaska"                                       ~ "NoCONUS",
+        state == "character(0)" | state == "invalid_location"   ~ "NoData",
+        TRUE                                                    ~ "Pass"
+        )
+    )
+
+#   # Note data that have 'NoMet' as part of flag
+#   # Input into another file for further manual review
+#   nomets <- 
+#     qaqc %>%
+#     dplyr::filter_all(dplyr::any_vars(. %in% "NoMet"))
+
+  # Store all this in a list for QAQC'ed outputs
+  return(qaqc)
+
+}
+
 # Takes in an SQS Message that contains an Airtable observation (row of the Airtable data)
 # and enriches it with climate/geographic data and then writes the output data as a JSON to an S3 bucket 
 # Example input:
@@ -609,9 +728,14 @@ add_climate_data <- function(Records = NULL) {
     for (i in 1:length(data)) {
         processed[names(data[i])] = data[i]
     }
+    
+    message("Adding QA/QC flags to processed data...")
 
+    # Add QA/QC flags to processed data
+    processed <- add_qaqc_flags(df = processed)
+    
     # reorder columns so that "data" columns are first
-    processed = 
+    processed <-
         processed %>% 
         dplyr::relocate(names(data), .before = 1) 
 
@@ -624,7 +748,7 @@ add_climate_data <- function(Records = NULL) {
     #             as.list(dplyr::select(processed, -id))
     #             ),
     #  )
-    
+
     message("Generating hash of message body...")
     msg_hash <- digest::digest(msg_body, algo = "sha256")
 
