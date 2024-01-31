@@ -382,7 +382,7 @@ add_climate_data <- function(Records = NULL) {
     #             # Output the modified .netrc file
     #             cat "$NETRC_FILE"'
     # )
-    message("Adding a log message to confirm GitHub Actions is working...")
+    message("Adding a log message to confirm GitHub Actions is working v2...")
     ############  ############
     # UNCOMMENT BELOW HERE
     ############  ############
@@ -429,6 +429,7 @@ add_climate_data <- function(Records = NULL) {
         #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
         #         "duplicate_count": "1"
         #     }'
+
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -451,14 +452,26 @@ add_climate_data <- function(Records = NULL) {
     datetime = as.POSIXct(as.character(data$time), tz = "UTC")
     id       = as.character(data$id)
     
-    # get current date for logging
-    current_date = as.character(Sys.Date())
+    # # get current date for logging
+    current_date  = as.character(Sys.Date())
+    # current_year  = as.character(format(Sys.Date(), "%Y"))
+    # current_month = as.character(format(Sys.Date(), "%m"))
+    # current_day   = as.character(format(Sys.Date(), "%d"))
+
+    # convert submitted_date to Date object
+    observation_date <- as.Date(data[["submitted_date"]], format = "%m/%d/%y")
+
+    # Extract year, month, and day of the observation
+    year  <- format(observation_date, "%Y")
+    month <- format(observation_date, "%m")
+    day   <- format(observation_date, "%d")
 
     message("========= Message variables ==========")
     message("- lon_obs: ", lon_obs)
     message("- lat_obs: ", lat_obs)
     message("- datetime: ", datetime)
     message("- id: ", id)
+    message("- observation_date: ", observation_date)
     message("- current_date: ", current_date)
     message("======================================")
 
@@ -479,7 +492,6 @@ add_climate_data <- function(Records = NULL) {
 
     message("Getting state data...")
 
-
     # STEP 4: GET STATE
     state = rainOrSnowTools:::get_state(lon_obs, lat_obs)
 
@@ -494,27 +506,28 @@ add_climate_data <- function(Records = NULL) {
     # plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
 
     # Check if plp is NA, get_imerg_v2() returns NA if there is no data for the given datetime or an error occurs
-    if(is.na(plp)) {
-        message("plp is NA, giving default value of 9999...")
+    if(is.na(plp) || is.null(plp)) {
+        message("plp is NA or NULL, giving default value of 9999...")
         # if plp is empty, set to 9999 default value (this is a placeholder for now)
-        plp_val <- 9999
+        # plp_val <- 9999
+        plp <- 9999
 
-    } else {
-        message("plp is not NA, extracting plp value...")
+    } 
+    #     message("plp is not NA, extracting plp value...")
 
-        # extract plp value from the dataframe
-        plp_val <- plp[['probabilityLiquidPrecipitation']][1]
+    #     # extract plp value from the dataframe
+    #     plp_val <- plp[['probabilityLiquidPrecipitation']][1]
 
-        message("Extracted plp value: ", plp_val, " from plp dataframe")
+    #     message("Extracted plp value: ", plp_val, " from plp dataframe")
 
-        # if plp is empty, set to 9999 default value (this is a placeholder for now)
-        plp_val <- ifelse(is.null(plp_val), 9999, plp_val)
+    #     # if plp is empty, set to 9999 default value (this is a placeholder for now)
+    #     plp_val <- ifelse(is.null(plp_val), 9999, plp_val)
 
-    }
+    # }
 
     # if("probabilityLiquidPrecipitation" %in% names(plp)) { } 
 
-    message("---> FINAL plp_val: ", plp_val)
+    message("---> FINAL plp: ", plp)
 
     message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
 
@@ -584,7 +597,7 @@ add_climate_data <- function(Records = NULL) {
                     )
 
     # Add placeholder for PLP data
-    processed$plp_data = plp_val
+    processed$plp_data = plp
 
     # Add placeholder for state data
     processed$state = state_str
@@ -611,15 +624,32 @@ add_climate_data <- function(Records = NULL) {
     #             as.list(dplyr::select(processed, -id))
     #             ),
     #  )
+    message("Generating hash of message body...")
+    msg_hash <- digest::digest(msg_body, algo = "sha256")
 
     # write JSON to file
-    file_name = paste0("mros_staging_", id, "_",  gsub("/", "_", data[["submitted_date"]]), ".json") 
+    file_name = paste0("mros_staging_", msg_hash, "_", gsub("-", "_", observation_date) , ".json")
+    # file_name = paste0("mros_staging_", msg_hash, "_",  gsub("/", "_", data[["submitted_date"]]), ".json") 
+    # file_name = paste0("mros_staging_", id, "_",  gsub("/", "_", data[["submitted_date"]]), ".json") 
 
     # write JSON to file in tmp directory in lambda container
     jsonlite::write_json(output_json, paste0("/tmp/", file_name))
     # jsonlite::write_json(output_json, paste0("./tmp/", file_name))
-    
-    message(paste0("Calling S3 PutObject:\n- '", file_name, "'\n- S3 Object: ", paste0("/tmp/", file_name)))
+
+    # Create S3 object key for the output file
+    S3_OUTPUT_OBJECT_KEY = paste0(
+                            year, "/",
+                            month, "/",
+                            day, "/",
+                            gsub("-", "_", current_date), "/",  # day the function was run
+                            file_name
+                            )
+
+    message(
+      paste0("Calling S3 PutObject:\n- '", file_name, 
+    "'\n- Object location: ", paste0("/tmp/", file_name)),
+    "'\n- S3_OUTPUT_OBJECT_KEY: '",S3_OUTPUT_OBJECT_KEY, "'")
+    )
     # jsonlite::read_json(paste0("/tmp/", file_name))
 
     # #### COMMENTING OUT FOR TESTING #######
@@ -631,7 +661,8 @@ add_climate_data <- function(Records = NULL) {
                 Body   = paste0("/tmp/", file_name),
                 # Body   = paste0("./tmp/", file_name),
                 Bucket = S3_BUCKET_NAME,
-                Key    = file_name
+                Key    = S3_OUTPUT_OBJECT_KEY
+                # Key    = file_name
                 )
         },
         error = function(e) {
