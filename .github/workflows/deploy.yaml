@@ -153,8 +153,8 @@ jobs:
             -var "nasa_data_password_env_var=${nasa_data_password_env_var}" \
             -var "nasa_data_user_env_var=${nasa_data_user_env_var}" \
             -var "tfstate_s3_object_key=${tfstate_s3_object_key}" \
-            -out tfplan
+            -out=${{ github.sha }}.plan
         continue-on-error: true
 
       - name: Terraform Apply
-        run: terraform apply "tfplan"
+        run: terraform apply -auto-approve ${{ github.sha }}.plan
