@@ -299,8 +299,8 @@ def process_stage_messages(message):
     # add the date_key to the json_data
     json_data["date_key"] = date_key
     
-    # Create a hash value for all of the data in the json_data dictionary
-    json_data["record_hash"] = hash_dictionary(json_data)
+    # # Create a hash value for all of the data in the json_data dictionary
+    # json_data["record_hash"] = hash_dictionary(json_data)
     
     # # use hash_pandas_object to generate a hash value for all the values in each row
     # df['record_hash'] = pd.util.hash_pandas_object(df, index=False)
@@ -430,6 +430,11 @@ def mros_stage_to_prod(event, context):
 
     print(f"Succesfully converted JSON list to DataFrame!")
     print(f"Uploading dataframe in groups by 'date_key' to S3...")
+    
+    print("Moving 'record_hash' column to the last position in the DataFrame...")
+    
+    # move the 'record_hash' column to the last position
+    df.insert(len(df.columns)-1, 'record_hash', df.pop('record_hash'))
 
     # upload the dataframes to S3 by date_key column (year_month_day, e.g. 2021_01_01)
     upload_dataframes_by_date_key(df)

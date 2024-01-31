@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 import time
+import hashlib
 # import uuid
 
 # pandas and json_normalize for flattening JSON data
@@ -187,7 +188,34 @@ def records_to_dataframe(records_list):
             
             # return df.to_dict(orient='records')
             return df
-        
+
+# function to create a hash value of a Python dictionary
+def hash_dictionary(dictionary, hash_type="sha256"):
+    """
+    Create a hash of all the values in a Python dictionary.
+
+    Parameters:
+    dictionary (dict): Input dictionary.
+    hash_type (str): Hash type to use. Default is "sha256". Other options include "md5". 
+            If an invalid hash_type is provided, "sha256" will be used.
+
+    Returns:
+    str: Hash value.
+
+    """
+    # Convert dictionary to a string representation
+    dict_str = str(dictionary)
+
+    # Generate hash value of the string representation
+    if hash_type == "sha256":
+        hash_value = hashlib.sha256(dict_str.encode('utf-8')).hexdigest()
+    elif hash_type == "md5":
+        hash_value = hashlib.md5(dict_str.encode('utf-8')).hexdigest()
+    else:
+        hash_value = hashlib.sha256(dict_str.encode('utf-8')).hexdigest()
+
+    return hash_value
+
 # Lambda handler function
 # Uses the date from the event to query data from Airtable API for the two previous days and send each record to SQS
 # Lambda is triggered by an EventBridge rule that runs on a schedule (probably daily)
@@ -286,7 +314,7 @@ def mros_airtable_to_sqs(event, context):
             print(f"Adding {len(df)} records to SQS queue")
             for i in range(0, len(df)):
             # for i in range(0, 10):
-
+                
                 # print(f"Adding record {i} to SQS queue")
 
                 # Construct the message body
@@ -309,12 +337,18 @@ def mros_airtable_to_sqs(event, context):
                     'duplicate_count': str(df["duplicate_count"].iloc[i])
                     # Add other fields as needed
                 }
+                
+                # create a hash of the message body
+                message_hash = hash_dictionary(message_body)
+
+                # add the hash to the message body
+                message_body['record_hash'] = message_hash
 
                 # print(f"message_body: {message_body}")
 
                 # try to send the message to SQS
                 try:
-                    print(f"- Sending message {i} to SQS queue")
+                    # print(f"- Sending message {i} to SQS queue")
                     # Send the message to SQS
                     sqs.send_message(
                         QueueUrl    = SQS_QUEUE_URL,
