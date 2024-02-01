@@ -147,7 +147,7 @@ qaqc_processed = function(data = data,
 }
 
 #' Add QAQC data flags to MROS observation data
-#' 
+#'
 #' @param df Dataframe of processed observation data
 #' @param snow_max_tair Max tair in °C for snow
 #' @param rain_max_tair Min tair in °C for rain
@@ -211,7 +211,7 @@ add_qaqc_flags = function(df,
   nstation_thresh = min_n_station
   pval_thresh = pval_max
 
-  qaqc <- 
+  qaqc <-
     df %>%
     dplyr::mutate(
       temp_air_flag = dplyr::case_when(
@@ -267,7 +267,7 @@ add_qaqc_flags = function(df,
         is.na(temp_dew_lapse_var_pval)          ~ "NoMet",
         TRUE                                    ~ "Pass"
         )
-    )  %>% 
+    )  %>%
     dplyr::mutate(
       # Checks for phase observations (if it does not )
       phase_flag = dplyr::case_when(
@@ -288,7 +288,7 @@ add_qaqc_flags = function(df,
 
 #   # Note data that have 'NoMet' as part of flag
 #   # Input into another file for further manual review
-#   nomets <- 
+#   nomets <-
 #     qaqc %>%
 #     dplyr::filter_all(dplyr::any_vars(. %in% "NoMet"))
 

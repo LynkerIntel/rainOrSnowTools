@@ -2,9 +2,10 @@
 % Please edit documentation in R/citsci_preprocess.R
 \name{get_imerg}
 \alias{get_imerg}
-\title{Download GPM IMERG data}
+\title{Download GPM IMERG data
+Get GPM IMERG PLP data for a specified Lat/lon and date timestamp}
 \usage{
-get_imerg(datetime_utc = NULL, lon_obs = NULL, lat_obs = NULL)
+get_imerg(datetime_utc = NULL, lon_obs = NULL, lat_obs = NULL, verbose = FALSE)
 }
 \arguments{
 \item{datetime_utc}{Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.}
@@ -12,12 +13,15 @@ get_imerg(datetime_utc = NULL, lon_obs = NULL, lat_obs = NULL)
 \item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
 
 \item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
+
+\item{verbose}{logical, whether to print messages or not. Default is FALSE}
 }
 \value{
 a dataframe of GPM data for each observation
 }
 \description{
 Download GPM IMERG data
+Get GPM IMERG PLP data for a specified Lat/lon and date timestamp
 }
 \examples{
 \dontrun{
