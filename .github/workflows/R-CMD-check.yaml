@@ -5,7 +5,7 @@ name: R-CMD-check
 on:
   push:
     branches:
-      - cicd_pipeline
+      - main
 
 jobs:
   R-CMD-check:
