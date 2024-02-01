@@ -41,7 +41,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           RUNNING_ON_GITHUB_ACTIONS: "true"
         run: |
-          source sh/setup_static_buckets.sh "$AWS_ACCOUNT_NUMBER" "$OUTPUT_S3_BUCKET" "$TFSTATE_S3_BUCKET" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
+          source sh/create_static_buckets.sh "$AWS_ACCOUNT_NUMBER" "$OUTPUT_S3_BUCKET" "$TFSTATE_S3_BUCKET" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
 
       - name: Create ECR Repo
         shell: bash

@@ -11,7 +11,7 @@
 # Terraform state S3 bucket name
 # AWS region
 # RUNNING_ON_GITHUB_ACTION
-# Example: source sh/setup_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region "false"
+# Example: source sh/create_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region "false"
 
 # AWS Account Number
 AWS_ACCOUNT_NUMBER=$1
@@ -62,7 +62,7 @@ temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stat
 temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,\
 temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,\
 temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,\
-temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,state,temp_air_flag,rh_flag,dist_temp_air_flag,dist_temp_dew_flag,closest_temp_air_flag,\
+temp_wet,hads_counts,lcd_counts,wcc_counts,plp,elevation,eco_level3,eco_level4,state,temp_air_flag,rh_flag,dist_temp_air_flag,dist_temp_dew_flag,closest_temp_air_flag,\
 closest_temp_dew_flag,nstation_temp_air_flag,nstation_temp_dew_flag,pval_temp_air_flag,pval_temp_dew_flag,phase_flag,CONUS,\
 geohash5,geohash12,date_key,record_hash"
 # CSV_CONTENT="id,timestamp,createdtime,name,latitude,user,longitude,submitted_time,local_time,submitted_date,local_date,comment,time,temp_air_idw_lapse_const,temp_air_idw_lapse_var,temp_air_nearest_site_const,temp_air_nearest_site_var,temp_air_avg_obs,temp_air_min_obs,temp_air_max_obs,temp_air_lapse_var,temp_air_lapse_var_r2,temp_air_lapse_var_pval,temp_air_n_stations,temp_air_avg_time_gap,temp_air_avg_dist,temp_air_nearest_id,temp_air_nearest_elev,temp_air_nearest_dist,temp_air_nearest,temp_dew_idw_lapse_const,temp_dew_idw_lapse_var,temp_dew_nearest_site_const,temp_dew_nearest_site_var,temp_dew_avg_obs,temp_dew_min_obs,temp_dew_max_obs,temp_dew_lapse_var,temp_dew_lapse_var_r2,temp_dew_lapse_var_pval,temp_dew_n_stations,temp_dew_avg_time_gap,temp_dew_avg_dist,temp_dew_nearest_id,temp_dew_nearest_elev,temp_dew_nearest_dist,temp_dew_nearest,rh,temp_wet,hads_counts,lcd_counts,wcc_counts,plp_data,date_key"
@@ -173,7 +173,7 @@ fi
 # # AWS region
 # # AWS profile
 # # RUNNING_ON_GITHUB_ACTION
-# # Example: source sh/setup_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region aws-profile false
+# # Example: source sh/create_static_buckets.sh 123456789 outputs-bucket-name tfstate-s3-bucket-name aws-region aws-profile false
 
 # # AWS Account Number
 # AWS_ACCOUNT_NUMBER=$1

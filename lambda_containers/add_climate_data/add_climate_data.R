@@ -47,34 +47,49 @@ message("- AWS_REGION: ", AWS_REGION)
 message("=====================================")
 
 # Get the dap paths from the XML catalog.xml file
-get_final_urls <- function(url) {
-
+# Description:
+  # This function reads the catalog.xml file from the hyrax GPM IMERG catalog.xml URL and
+  # extracts the "dap" service files, and returns them as a character vector
+# Parameters:
+  # url: character string URL to the catalog.xml file
+  # verbose: logical value to print out messages
+# Returns: vector of final URLs
+get_final_urls <- function(url, verbose = TRUE) {
+  
   # read the catalog.xml file from the url
   xml_data <- xml2::read_xml(url)
-  message("Length of xml_data: ", length(xml_data))
+
+  if(verbose) {
+    message("Length of xml_data: ", length(xml_data))
+  }
 
   # get all the thredds dataset xpaths
   dap_xmls <- 
     xml_data %>% 
     xml2::xml_find_all(glue::glue('////thredds:dataset'))
 
-  message("Number of thredds:dataset nodees: ", length(dap_xmls))
+  if(verbose) {
+    message("Number of thredds:dataset nodees: ", length(dap_xmls))
+  }
   
   # extract only the "dap" service files
   dap_xmls <- 
     dap_xmls %>%         
     xml2::xml_find_all(glue::glue('///thredds:access[contains(@serviceName, "dap")]'))
 
-  message("Number of thredds:dataset DAP nodes: ", length(dap_xmls))
-
-  message("Extracting attributes from dap_xmls...")
+  if(verbose) {
+    message("Number of thredds:dataset DAP nodes: ", length(dap_xmls))
+    message("Extracting attributes from dap_xmls...")
+  }
 
   # extract the attributes from all of the dap_xmls
   dap_attrs <- xml2::xml_attrs(dap_xmls)
   
-  message("Extracting URL paths from attributes...")
+  if(verbose) {
+    message("Extracting URL paths from attributes...")
+  }
 
-  # contruct final URLs vector
+  # construct final URLs vector
   dap_paths <- sapply(dap_attrs, function(x) {
     paste0("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax", x[["urlPath"]])
   })
@@ -95,9 +110,266 @@ get_final_urls <- function(url) {
 
 }
 
+# Construct the product name of GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
+# date_of_interest - character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
+# returns - character GPM IMERG product name for the given date
+construct_gpm_product <- function(date_of_interest) {
+
+      # date_of_interest = "2024-01-26T17:16:43.000Z"
+      # final_urls
+
+      # expected_output = c(
+      #   "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06/2024/026/3B-HHR-L.MS.MRG.3IMERG.20240126-S170000-E172959.1020.V06E.HDF5",
+      # "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06/2024/026/3B-HHR-L.MS.MRG.3IMERG.20240126-S173000-E175959.1050.V06E.HDF5"
+      # )
+
+      # Define URL structure
+      base <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+      product <- '3B-HHR-L.MS.MRG.3IMERG'
+      url_trim <- "{base}/{year}/{julian}/"
+      product_pattern <- "{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{minutes_diff}."
+      
+      # # Convert date_of_interest to POSIXct
+      dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
+    
+      # Extract necessary date components
+      julian  <- format(dateTime, "%j")
+      year    <- format(dateTime, "%Y")
+      month   <- format(dateTime, "%m")
+      day     <- format(dateTime, "%d")
+      hour    <- sprintf("%02s", format(dateTime, "%H"))
+      minTime <- sprintf("%02d", plyr::round_any(as.numeric(format(dateTime, "%M")), 30, f = floor))
+      
+      # Calculate additional time components
+      origin_time <- as.POSIXct(paste0(format(dateTime, "%Y-%m-%d"), "00:00"), tz = "UTC")
+      rounded_time <- as.POSIXct(paste0(format(dateTime, "%Y-%m-%d"), hour, ":", minTime), tz = "UTC")
+      
+      # Calculate the NASA time components
+      nasa_time <- rounded_time + (29 * 60) + 59
+      nasa_time_minute <- format(nasa_time, "%M")
+      nasa_time_second <- format(nasa_time, "%S")
+
+      # Calculate the time difference
+      minutes_diff <- sprintf("%04d", difftime(rounded_time, origin_time,  units = 'min'))
+      
+      # Generate base URL and product name
+      url_0 <- glue::glue(url_trim)
+      product_info <- as.character(glue::glue(product_pattern))
+
+      # # Construct the final URL
+      # output_url <- paste0(url_0, product_info)
+
+      # Return the constructed product name
+      return(product_info)
+    }
+
+# Construct the base URL for GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
+# date_of_interest - character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
+# returns - character GPM IMERG base URL for the given date
+construct_gpm_base_url <- function(date_of_interest) {
+
+      # date_of_interest = "2024-01-26T17:16:43.000Z"
+
+      # Define URL structure
+      base     <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+      
+      # character to insert values into via glue::glue()
+      url_trim <- "{base}/{year}/{julian}/"
+
+      # Convert date_of_interest to POSIXct (YYYY-MM-DDTHH:MM:SS.000Z format UTC time)
+      dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
+    
+      # Extract necessary date components
+      julian  <- format(dateTime, "%j")
+      year    <- format(dateTime, "%Y")
+
+      # Generate base URL and product name
+      base_url <- as.character(glue::glue(url_trim))
+
+      # Return the GPM base_url
+      return(base_url)
+    
+    }
+
+# Get the closest URL to the "match_string" string
+# Description:
+  # Uses the Levenshtein distance to find the closest URL to the "match_string", 
+  # match string is the "product name" string determined by the construct_gpm_product() function
+# Parameters:
+  # urls: vector of URLs
+  # match_string: string to match
+# Returns: closest URL to the "match_string"
+get_closest_url <- function(urls, match_string) {
+  # Calculate Levenshtein distances between the "match_string" and "urls"
+  string_distances <- sapply(urls, function(url) {
+    adist(match_string, url)
+  })
+
+  # Get the index of the minimum distance
+  min_index <- which.min(string_distances)
+
+  # Return the closest URL
+  return(urls[min_index])
+}
+
+# TODO: Add this version of get IMERG (get_imerg_latest()) into final version of rainOrSnowTools package to replace the current get_imerg() function
+# Final version of get_imerg4() function
+# Uses construct_gpm_base_url(), construct_gpm_product(), get_final_urls(), and get_closest_url() functions 
+# to construct the correct GPM IMERG product and URL and then uses climateR::dap() to retrieve the GPM data
+# Parameters:
+  # datetime_utc: character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
+  # lon_obs: numeric longitude value
+  # lat_obs: numeric latitude value
+  # verbose: logical value to print out messages
+# Returns: GPM IMERG data for the given date and location. 
+#         If the data is not found or the climateR::dap() errors out, returns NA
+get_imerg_latest <- function(
+  datetime_utc,
+  lon_obs,
+  lat_obs,
+  verbose = FALSE
+  ) {
+
+  #############################
+  # # # Example inputs
+  # library(climateR)
+  # library(dplyr)
+  # library(plyr)
+  # library(glue)
+  # library(sf)
+
+  # datetime_utc = timestamp
+  # datetime_utc = "2024-01-26T17:16:43.000Z"
+  # datetime_utc = "2024-01-26 UTC"
+  # verbose = TRUE
+  #############################
+
+  # check for valid inputs
+  if(is.null(datetime_utc)) {
+    stop("Missing 'datetime_utc' argument input, 'datetime_utc' must be in format: YYYY-MM-DD HH:MM:SS")
+  }
+
+  # check for valid lon_obs input
+  if(is.null(lon_obs)) {
+    stop("Missing 'lon_obs' argument input, 'lon_obs' must be a numeric LONGITUDE value in CRS 4326")
+  }
+
+  # check for valid lat_obs input
+  if(is.null(lat_obs)) {
+    stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
+  }
+
+  # Assign GPM variable
+  var = 'probabilityLiquidPrecipitation'
+
+  # Observation data is converted into shapefile format
+  data = sf::st_as_sf(
+    data.frame(datetime_utc, lon_obs, lat_obs),
+    coords = c("lon_obs", "lat_obs"),
+    crs  = 4326
+  )
+
+  # get GPM base URL
+  gpm_base_url <- construct_gpm_base_url(datetime_utc)
+
+  # Catalog XML string for base URL
+  gpm_catalog <- paste0(gpm_base_url, "catalog.xml")
+
+  # Construct the GPM URL
+  gpm_product <- construct_gpm_product(datetime_utc)
+
+  # Get the dap paths from the XML catalog.xml file (gpm_catalog)
+  final_urls <- get_final_urls(gpm_catalog)
+
+  # Print out the GPM base URL, product, and catalog XML
+  if(verbose) {
+    message("GPM Base URL: ", gpm_base_url)
+    message("GPM Product: ", gpm_product)
+    message("GPM Catalog XML: ", gpm_catalog)
+    message("Number of URLs on GPM catalog.xml: ", length(final_urls))
+  }
+
+  # get the index of the final_urls that CONTAINS (via grepl()) the "gpm_product" string
+  products_index <- grepl(gpm_product, final_urls)
+
+  # If there is a final_urls that contain the "gpm_product" string, then index the final_urls and use the first one
+  # Otherwise, if there is NOT a URL that contains the "gpm_product" string, attempt
+  #  to get the closest URL (Levenshtein distance) via the get_closest_url() function
+  if (any(products_index)) {
+    message("Found a URL that contains the 'gpm_product' string, getting the FIRST URL...")
+
+    # Get the first URL that contains the "gpm_product" string
+    product_url <- final_urls[products_index][1]
+
+  } else {
+
+    message("No final URLs found that contain the 'gpm_product' string, attempting to get the CLOSEST URL...")
+
+    # Get the closest URL to the "gpm_product" string
+    product_url <- get_closest_url(final_urls, gpm_product)
+
+  }
+  # Print out the GPM base URL, product, and catalog XML
+  if(verbose) {
+    message("GPM Product URL : ", product_url)
+  }
+
+  # Try to get the GPM data using climateR::dap()
+  tryCatch({
+      
+      # Get Data
+      gpm_obs =
+        climateR::dap(
+          URL     = product_url,
+          varname = var,
+          AOI     = data,
+          verbose = TRUE
+        )
+
+      message("Succesfully retrieved GPM data using climateR::dap()")
+      message("GPM data column names: ", paste0(names(gpm_obs), collapse = ", "))
+      
+      # drop geometry column to make it dataframe
+      gpm_obs = sf::st_drop_geometry(gpm_obs) 
+
+      # try to use all_of() function to select the variable
+      gpm_obs <- tryCatch({
+                      message("Trying to use all_of() function")
+  
+                      gpm_obs %>%
+                      dplyr::select(dplyr::all_of((var)))  %>% 
+                      .[[var]]
+  
+                  }, error = function(e) {
+                      message("Error using all_of() function", e)
+                      message("gpm_obs: ", gpm_obs)
+  
+                      gpm_obs %>%
+                      dplyr::select(probabilityLiquidPrecipitation)  %>% 
+                      .$probabilityLiquidPrecipitation
+  
+                  })
+
+      return(gpm_obs)
+  
+    }, error = function(er) {
+        message("Error FAILED to get GPM data using climateR::dap() returning NA value...")
+        message("Original error message:")
+        message(conditionMessage(er))
+
+      # Choose a return value in case of error
+      return(NA)
+  
+    })
+
+  }
+
+# Latest version of get IMERG that uses dplyr dataframes to construct the GPM IMERG product and URL 
 get_imerg3 <- function(datetime_utc,
                         lon_obs,
-                        lat_obs) {
+                        lat_obs, 
+                        verbose = FALSE
+                        ) {
 
   #############################
 
@@ -110,6 +382,8 @@ get_imerg3 <- function(datetime_utc,
 
   # datetime_utc = "2024-01-18 UTC"
   # datetime_utc = datetime
+  # datetime_utc = timestamp
+  # datetime_utc = "2024-01-26T17:16:43.000Z"
   # datetime_utc = "2024-01-26 UTC"
 
   #############################
@@ -144,12 +418,15 @@ get_imerg3 <- function(datetime_utc,
       base = 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
       product = '3B-HHR-L.MS.MRG.3IMERG'
       url_trim = '{base}/{year}/{julian}/'
-      product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.'
+      product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{minutes_diff}.'
+      # product_pattern = '{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{min}.'
+      ###################
 
       ## Build URLs
       data = 
         data %>%
-        dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+        # dplyr::mutate(dateTime = as.POSIXct(datetime_utc)) %>%
+        dplyr::mutate(dateTime = as.POSIXct(datetime_utc, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")) %>% 
         dplyr::mutate(
           julian  = format(dateTime, "%j"),
           year    = format(dateTime, "%Y"),
@@ -157,23 +434,23 @@ get_imerg3 <- function(datetime_utc,
           day     = format(dateTime, "%d"),
           hour    = sprintf("%02s", format(dateTime, "%H")),
           minTime = sprintf("%02d", plyr::round_any(as.numeric(
-            format(dateTime, "%M")
-          ), 30, f = floor)),
+                      format(dateTime, "%M")
+                    ), 30, f = floor)),
           origin_time  = as.POSIXct(paste0(
-            format(dateTime, "%Y-%m-%d"), "00:00"
-          ), tz = "UTC"),
+                            format(dateTime, "%Y-%m-%d"), "00:00"
+                          ), tz = "UTC"),
           rounded_time = as.POSIXct(paste0(
             format(dateTime, "%Y-%m-%d"), hour, ":", minTime
           ), tz = "UTC"),
-          nasa_time = rounded_time + (29 * 60) + 59,
+          nasa_time        = rounded_time + (29 * 60) + 59,
           nasa_time_minute = format(nasa_time, "%M"),
           nasa_time_second = format(nasa_time, "%S"),
-          min = sprintf(
-            "%04d",
-            difftime(rounded_time, origin_time,  units = 'min')
-          ),
-          url_0 = glue::glue(url_trim),
-          product_info = glue::glue(product_pattern)
+          minutes_diff     = sprintf(
+                                "%04d",
+                                difftime(rounded_time, origin_time,  units = 'min')
+                              ),
+          url_0            = glue::glue(url_trim),
+          product_info     = glue::glue(product_pattern)
         ) %>%
         dplyr::select(dplyr::any_of(c(
           'datetime_utc', 'url_0', 'product_info'
@@ -191,97 +468,38 @@ get_imerg3 <- function(datetime_utc,
       # Get the dap paths from the XML catalog.xml file
       final_urls <- get_final_urls(url_base)
 
-      message(glue::glue("{length(final_urls)} total resources found at:\n - '{url_base}'"))
+      # Print out the GPM base URL, product, and catalog XML
+      if(verbose) {
+        message("GPM Base URL: ", data$url_0)
+        message("GPM Product: ", data$product_info)
+        message("GPM Catalog XML: ", url_base)
+        message("Number of URLs on GPM catalog.xml: ", length(final_urls))
+      }
 
-      ## Get Data for the first URL (temporarily, may end up looping through all of them, 
-      # and stopping when data is returned)
+      # find the final_urls that contains the data$product_info
+      product_index <- grep(data$product_info, final_urls)
+
+      # Get the first URL that contains the "product_info" string
+      product_url <- final_urls[product_index][1]
+
+      # Print out the GPM base URL, product, and catalog XML
+      if(verbose) {
+        message("GPM Product URL : ", product_url)
+      }
+
+      message(glue::glue("{length(final_urls)} total resources found at:\n - '{url_base}'"))
+  
+      ## Get GPM IMERG PLP Data from the "product_url" 
       gpm_obs =
         climateR::dap(
-          URL = final_urls[1],
+          URL     = product_url,
           varname = var,
-          # startDate=as.Date(datetime_utc),
-          # endDate=as.Date(datetime_utc),
-          AOI = data[1,],
+          AOI     = data,
           verbose = TRUE
         )
 
-      # # Loop through each final_url and try to get the data and stop when it works
-      # for (i in 1:length(final_urls)) {
-      #   message(glue::glue("Final url: {final_urls[i]}"))
-      #   message(glue::glue("Trying final_url {i} of {length(final_urls)}..."))
-      #   # Try to get the data
-      #   gpm_obs <- tryCatch({
-      #       climateR::dap(
-      #       # gpm_obs <- climateR::dap(
-      #       URL = final_urls[i],
-      #       varname = var,
-      #       AOI = data[1,],
-      #       verbose = TRUE
-      #     )
-      #   }, error = function(e) {
-      #     message("Error getting data from final_url: ", e)
-      #     message("Trying next final_url...")
-      #   })
-
-      #   # Check if gpm_obs is a dataframe
-      #   if(is.data.frame(gpm_obs)) {
-      #     message("gpm_obs is a dataframe, breaking loop...")
-      #     break
-      #   }
-      # }
-
-
-      #######################     #######################
-      #######################     #######################
-
-      # #######################     #######################
-      # # Get the dap paths from the XML catalog.xml file #
-      # # OLD version - uncomment BELOW to use
-      # #######################     #######################
-
-      # prod <- data$product_info
-      # message("prod: ", prod)
-      # message("Getting XML data from url base '", url_base, "'")
-
-      # xml_data <- 
-      #   xml2::read_xml(url_base) %>%
-      #   xml2::xml_find_all(glue::glue('///thredds:dataset[contains(@name, "{prod}")]'))
-
-      # message("Length of xml_data: ", length(xml_data))
-
-      # message("Getting name attribute from xml_data...")
-
-      # prod_name <- xml2::xml_attrs(xml_data[[1]])[["name"]]
-      # message("Extracted name from xml (prod_name): ", prod_name)
-
-      # # Create URL
-      # final_url = paste0(data$url_0, prod_name)
-      # message("final_url: ", final_url)
-
-      # message("Trying to get GPM data using climateR::dap()")
-      
-      # ## Get Data
-      # gpm_obs =
-      #   climateR::dap(
-      #     URL = final_url,
-      #     varname = var,
-      #     # startDate=as.Date(datetime_utc),
-      #     # endDate=as.Date(datetime_utc),
-      #     AOI = data[1,],
-      #     verbose = TRUE
-      #   )
-
-      # #######################     #######################
-      # # OLD version - uncomment ABOVE to use
-      # #######################     #######################
-
-      message("Succesfully got GPM data using climateR::dap()")
-      message("gpm_obs: ", gpm_obs)
-
-    # gpm_obs = 
-    # gpm_obs %>%
-    #   sf::st_drop_geometry() %>% # drop geometry column to make it dataframe
-    #   dplyr::select(dplyr::all_of((var)))
+      message("Succesfully retrieved GPM data using climateR::dap()")
+      message("GPM data column names: ", paste0(names(gpm_obs), collapse = ", "))
 
     # drop geometry column to make it dataframe
     gpm_obs = sf::st_drop_geometry(gpm_obs) 
@@ -314,7 +532,7 @@ get_imerg3 <- function(datetime_utc,
       message(conditionMessage(er))
 
     # Choose a return value in case of error
-    NA
+    return(NA)
 
   })
 }
@@ -539,10 +757,11 @@ add_climate_data <- function(Records = NULL) {
     degree_filter = 1
 
     # extract observation data from JSON event 
-    lon_obs  = as.numeric(data$longitude)
-    lat_obs  = as.numeric(data$latitude)
-    datetime = as.POSIXct(as.character(data$time), tz = "UTC")
-    id       = as.character(data$id)
+    lon_obs   = as.numeric(data$longitude)
+    lat_obs   = as.numeric(data$latitude)
+    datetime  = as.POSIXct(as.character(data$time), tz = "UTC")
+    timestamp = as.character(data$time)
+    id        = as.character(data$id)
     
     # # get current date for logging
     current_date  = as.character(Sys.Date())
@@ -562,6 +781,7 @@ add_climate_data <- function(Records = NULL) {
     message("- lon_obs: ", lon_obs)
     message("- lat_obs: ", lat_obs)
     message("- datetime: ", datetime)
+    message("- timestamp: ", timestamp)
     message("- id: ", id)
     message("- observation_date: ", observation_date)
     message("- current_date: ", current_date)
@@ -576,7 +796,7 @@ add_climate_data <- function(Records = NULL) {
     
     # STEP 2: GET ECO LEVEL 3
     eco_level3 = rainOrSnowTools:::get_eco_level3(lon_obs, lat_obs)
-    
+
     message("Getting eco level 4 data...")
 
     # STEP 3: GET ECO LEVEL 4
@@ -587,15 +807,13 @@ add_climate_data <- function(Records = NULL) {
     # STEP 4: GET STATE
     state = rainOrSnowTools:::get_state(lon_obs, lat_obs)
 
-    # if state is empty, set to "invalid_location" (this is a placeholder for now)
-    state_str = ifelse(state == "character(0)", "invalid_location", state)
-
     message("Getting GPM PLP data...")
 
     # STEP 5: GET GPM PLP
-    plp = get_imerg3(datetime, lon_obs, lat_obs)
-    # plp = rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
-    # plp = rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
+    plp  <- get_imerg_latest(timestamp, lon_obs, lat_obs, verbose = TRUE)
+    # plp <- get_imerg3(timestamp, lon_obs, lat_obs, verbose = TRUE)
+    # plp <- rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
+    # plp <- rainOrSnowTools::get_imerg(datetime, lon_obs, lat_obs)
 
     # Check if plp is NA, get_imerg_v2() returns NA if there is no data for the given datetime or an error occurs
     if(is.na(plp) || is.null(plp)) {
@@ -674,10 +892,31 @@ add_climate_data <- function(Records = NULL) {
                     station_counts
                     )
 
-    # Add placeholder for PLP data
-    processed$plp_data = plp
+    message("Adding plp, elevation, eco level 3, eco level 4, and state data to output data...")
 
-    # Add placeholder for state data
+    # Add placeholder for PLP data
+    processed$plp = plp
+
+    # round elevation to 2 decimal places
+    elev_rounded = round(elev, 2)
+    message("- Elevation (rounded): ", elev_rounded)
+
+    # if eco_level3 is empty, set to "invalid_eco_level3" (this is a placeholder for now)
+    eco_level3_str = ifelse(eco_level4 == "character(0)", "invalid_eco_level3", eco_level3)
+    message("- Eco Level 3: ", eco_level3_str)
+
+    # if eco_level4 is empty, set to "invalid_eco_level4" (this is a placeholder for now)
+    eco_level4_str = ifelse(eco_level4 == "character(0)", "invalid_eco_level4", eco_level4)
+    message("- Eco Level 4: ", eco_level4_str)
+
+    # if state is empty, set to "invalid_location" (this is a placeholder for now)
+    state_str = ifelse(state == "character(0)", "invalid_location", state)
+    message("- State: ", state_str)
+
+    # Add elevation, eco level 3, eco level 4, and state data to processed data
+    processed$elevation  = elev_rounded
+    processed$eco_level3 = eco_level3_str
+    processed$eco_level4 = eco_level4_str
     processed$state = state_str
 
     # drop id column
