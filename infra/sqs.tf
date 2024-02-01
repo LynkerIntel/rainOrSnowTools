@@ -1,6 +1,6 @@
-#########################################
+# ---------------------------------------
 # SQS queue for Lambda to put data into #
-#########################################
+# ---------------------------------------
 
 # SQS queue for lambda to put data into 
 resource "aws_sqs_queue" "mros_sqs_queue" {
@@ -35,12 +35,10 @@ resource "aws_sqs_queue_policy" "lambda_sqs_policy" {
     ]
   })
 }
-# ##############################################################
-# # SQS Queue for S3 event notifications from the STAGE bucket #
-# ##############################################################
 
-# sqs_process_staged_queue
-# sqs_s3_event_queue_stage
+# --------------------------------------------------------------
+# # SQS Queue for S3 event notifications from the STAGE bucket #
+# --------------------------------------------------------------
 
 # SQS Queue takes in JSON upload events created from the staging S3 Bucket
 resource "aws_sqs_queue" "sqs_stage_queue" {
@@ -76,12 +74,9 @@ resource "aws_sqs_queue_policy" "sqs_stage_queue_policy" {
   })
 }
 
-# #############################################################################################
+# ---------------------------------------------------------------------------------------------
 # # SQS Queue for subscribed to SNS topic that sends event notifications from the PROD bucket #
-# #############################################################################################
-
-# sqs_process_staged_queue
-# sqs_s3_event_queue_stage
+# ---------------------------------------------------------------------------------------------
 
 # SQS queue subscribed to SNS topic that sends out S3 upload events from the production S3 bucket
 resource "aws_sqs_queue" "sqs_prod_to_output_queue" {
@@ -123,24 +118,3 @@ resource "aws_sqs_queue_policy" "sqs_prod_to_output_queue_policy" {
   queue_url = aws_sqs_queue.sqs_prod_to_output_queue.id
   policy    = data.aws_iam_policy_document.sqs_prod_to_output_queue_policy_doc.json
 }
-
-# # SQS queue policy to allow lambda to write to queue
-# resource "aws_sqs_queue_policy" "sqs_prod_to_output_queue_policy" {
-#   queue_url = aws_sqs_queue.sqs_prod_to_output_queue.id
-#   policy    = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow",
-#         Principal = "*",
-#         Action = "sqs:SendMessage",
-#         Resource = aws_sqs_queue.sqs_prod_to_output_queue.arn,
-#         Condition = {
-#           ArnEquals = {
-#             "aws:SourceArn" = aws_s3_bucket.prod_s3_bucket.arn
-#           }
-#         }
-#       }
-#     ]
-#   })
-# }

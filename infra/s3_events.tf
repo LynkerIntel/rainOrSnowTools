@@ -1,5 +1,5 @@
 # Create S3 event notification to send messages to SQS queue 
-# when a JSON file is uploaded to the STAGE S3 bucket (scraped data)
+# when a JSON file is uploaded to the STAGE S3 bucket (Observations from airtable + climate data)
 resource "aws_s3_bucket_notification" "stage_s3_bucket_notification" {
   bucket = aws_s3_bucket.staging_s3_bucket.id
 

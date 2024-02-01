@@ -175,9 +175,7 @@ resource "aws_lambda_permission" "allow_sqs_invoke_stage_to_prod_lambda" {
 ################################
 # Lambda SQS consumer R function
 ################################
-# mros_add_climate_data
-# sqs_consumer_lambda_function
-# mros_add_climate_data_lambda_function
+
 # Create Lambda function for R Docker image
 resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
   function_name    = var.mros_add_climate_data_lambda_function_name
@@ -255,8 +253,6 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   s3_key           = var.mros_append_daily_data_lambda_zip_file_name
   s3_object_version = aws_s3_object.prod_to_output_lambda_code_object.version_id
   source_code_hash = var.mros_append_daily_data_lambda_zip_file_name
-  # source_code_hash = filebase64sha256(local.recipe_scraper_lambda_zip)
-  # source_code_hash = aws_s3_object.recipe_scraper_lambda_code_object.etag
 
   function_name    = var.mros_append_daily_data_lambda_function_name
   handler          = "mros_append_daily_data.mros_append_daily_data.mros_append_daily_data"
@@ -265,8 +261,8 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
 
-  # # # Pandas lambda layer
-  # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
+  # # Pandas lambda layer
+  layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
   
   # # Pandas lambda layer
   # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:4"]
@@ -304,15 +300,6 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
     resource_category = "lambda"
   }
 }
-
-# # Allow S3 to invoke the Lambda function
-# resource "aws_lambda_permission" "allow_s3_invoke" {
-#   statement_id  = "AllowS3Invoke"
-#   action        = "lambda:InvokeFunction"
-#   function_name = "${aws_lambda_function.recipe_scraper_lambda_function.arn}"
-#   principal = "s3.amazonaws.com"
-#   source_arn = "${aws_s3_bucket.raw_s3_bucket.arn}"
-# }
 
 ####### ADD BACK THE BELOW CODE ##############
 ####### ADD BACK THE BELOW CODE ##############
@@ -360,8 +347,6 @@ resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
   s3_key           = var.mros_insert_into_dynamodb_lambda_zip_file_name
   s3_object_version = aws_s3_object.prod_to_output_lambda_code_object.version_id
   source_code_hash = var.mros_insert_into_dynamodb_lambda_zip_file_name
-  # source_code_hash = filebase64sha256(local.recipe_scraper_lambda_zip)
-  # source_code_hash = aws_s3_object.recipe_scraper_lambda_code_object.etag
 
   function_name    = var.mros_insert_into_dynamodb_lambda_function_name
   handler          = "mros_insert_into_dynamodb.mros_insert_into_dynamodb.mros_insert_into_dynamodb"
@@ -405,15 +390,6 @@ resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
     resource_category = "lambda"
   }
 }
-
-# # Allow S3 to invoke the Lambda function
-# resource "aws_lambda_permission" "allow_s3_invoke" {
-#   statement_id  = "AllowS3Invoke"
-#   action        = "lambda:InvokeFunction"
-#   function_name = "${aws_lambda_function.recipe_scraper_lambda_function.arn}"
-#   principal = "s3.amazonaws.com"
-#   source_arn = "${aws_s3_bucket.raw_s3_bucket.arn}"
-# }
 
 ####### ADD BACK THE BELOW CODE ##############
 ####### ADD BACK THE BELOW CODE ##############
