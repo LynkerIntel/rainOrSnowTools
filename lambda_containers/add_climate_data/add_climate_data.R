@@ -330,19 +330,6 @@ add_qaqc_flags = function(df,
                           pval_max = 0.05
                           ){
 
-        # ####################################
-        # ####################################
-        # df = processed
-        # snow_max_tair = 10
-        # rain_max_tair = -5
-        # rh_min = 30
-        # max_avgdist_station = 2e5
-        # max_closest_station = 3e4
-        # min_n_station = 5
-        # pval_max = 0.05
-        # ####################################
-        # ####################################
-
   # Add data flags
   temp_air_snow_max = snow_max_tair
   temp_air_rain_min = rain_max_tair
@@ -464,9 +451,6 @@ add_climate_data <- function(Records = NULL) {
     # UNCOMMENT BELOW HERE
     ############  ############
 
-    # Records = 1
-    
-
     message("SQS Records: ", Records)
 
     tryCatch({
@@ -490,18 +474,7 @@ add_climate_data <- function(Records = NULL) {
         climateR::writeNetrc(login = NASA_DATA_USER, password = NASA_DATA_PASSWORD, netrcFile =  "/tmp/.netrc")
     }
 
-    # message("Updating .netrc file with NASA data credentials...")
-    # # update the .netrc file with the NASA data credentials
-    # update_netrc <- paste0('#!/bin/bash
-    #             # Path to the .netrc file
-    #             NETRC_FILE="/lambda/.netrc"
-    #             # Replace placeholders with environment variables
-    #             sed -i "s/default_user/', NASA_DATA_USER, '/g" "$NETRC_FILE"
-    #             sed -i "s/default_password/', NASA_DATA_PASSWORD, '/g" "$NETRC_FILE"
-    #             # Output the modified .netrc file
-    #             cat "$NETRC_FILE"'
-    # )
-    message("Adding a log message to confirm GitHub Actions is working v2...")
+    message("Adding a log message to confirm GitHub Actions is working v3...")
     ############  ############
     # UNCOMMENT BELOW HERE
     ############  ############
@@ -628,23 +601,9 @@ add_climate_data <- function(Records = NULL) {
     if(is.na(plp) || is.null(plp)) {
         message("plp is NA or NULL, giving default value of 9999...")
         # if plp is empty, set to 9999 default value (this is a placeholder for now)
-        # plp_val <- 9999
         plp <- 9999
 
     } 
-    #     message("plp is not NA, extracting plp value...")
-
-    #     # extract plp value from the dataframe
-    #     plp_val <- plp[['probabilityLiquidPrecipitation']][1]
-
-    #     message("Extracted plp value: ", plp_val, " from plp dataframe")
-
-    #     # if plp is empty, set to 9999 default value (this is a placeholder for now)
-    #     plp_val <- ifelse(is.null(plp_val), 9999, plp_val)
-
-    # }
-
-    # if("probabilityLiquidPrecipitation" %in% names(plp)) { } 
 
     message("---> FINAL plp: ", plp)
 
@@ -742,24 +701,16 @@ add_climate_data <- function(Records = NULL) {
         
     # convert processed data to JSON
     output_json = jsonlite::toJSON(processed, pretty = TRUE)
-    
-    # output_json = jsonlite::toJSON(
-    #             c(data,
-    #             as.list(dplyr::select(processed, -id))
-    #             ),
-    #  )
 
     message("Generating hash of message body...")
     msg_hash <- digest::digest(msg_body, algo = "sha256")
 
     # write JSON to file
     file_name = paste0("mros_staging_", msg_hash, "_", gsub("-", "_", observation_date) , ".json")
-    # file_name = paste0("mros_staging_", msg_hash, "_",  gsub("/", "_", data[["submitted_date"]]), ".json") 
-    # file_name = paste0("mros_staging_", id, "_",  gsub("/", "_", data[["submitted_date"]]), ".json") 
+    # file_name = paste0("mros_staging_", msg_hash, "_",  gsub("/", "_", data[["submitted_date"]]), ".json")
 
     # write JSON to file in tmp directory in lambda container
     jsonlite::write_json(output_json, paste0("/tmp/", file_name))
-    # jsonlite::write_json(output_json, paste0("./tmp/", file_name))
 
     # Create S3 object key for the output file
     S3_OUTPUT_OBJECT_KEY = paste0(
@@ -780,8 +731,6 @@ add_climate_data <- function(Records = NULL) {
     # jsonlite::read_json(paste0("/tmp/", file_name))
 
     # #### COMMENTING OUT FOR TESTING #######
-    # #### COMMENTING OUT FOR TESTING #######
-    # #### COMMENTING OUT FOR TESTING #######
     # Try and upload file to s3
     tryCatch({
             s3$put_object(
@@ -798,21 +747,10 @@ add_climate_data <- function(Records = NULL) {
     )
 
     # #### COMMENTING OUT FOR TESTING #######
-    # #### COMMENTING OUT FOR TESTING #######
-    # #### COMMENTING OUT FOR TESTING #######
 
-    # s3$put_object(
-    #     Body   = paste0("/tmp/", file_name),
-    #     Bucket = S3_BUCKET_NAME,
-    #     Key    = file_name
-    # )
     message("Done!")
 #    return(output_json)
 }
-
-# add_climate_data <- function(event) { 
-#   add_climate_data(event) 
-#   }
 
 lambdr::start_lambda(config = lambdr::lambda_config(
     environ    = parent.frame()
