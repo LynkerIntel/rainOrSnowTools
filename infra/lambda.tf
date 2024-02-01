@@ -265,8 +265,8 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
 
-  # # Pandas lambda layer
-  layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
+  # # # Pandas lambda layer
+  # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
   
   # # Pandas lambda layer
   # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:4"]
