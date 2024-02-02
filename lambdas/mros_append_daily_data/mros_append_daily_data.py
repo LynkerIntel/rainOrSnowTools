@@ -120,10 +120,8 @@ def mros_append_daily_data(event, context):
     UPDATED_S3_CSV_URI = f"s3://{OUTPUT_S3_BUCKET}/{OUTPUT_OBJECT_KEY}"
     UPDATED_S3_PARQUET_URI = f"s3://{OUTPUT_S3_BUCKET}/{OUTPUT_OBJECT_KEY.replace('.csv', '.parquet')}"
 
-    print(f"- UPDATED_S3_CSV_URI: {UPDATED_S3_CSV_URI}")
-    print(f"- UPDATED_S3_PARQUET_URI: {UPDATED_S3_PARQUET_URI}")
     print(f"Saving dataframe as CSV to {UPDATED_S3_CSV_URI}")
-    print(f"Saving dataframe as PARQUET to {UPDATED_S3_PARQUET_URI}")
+    print(f"- UPDATED_S3_CSV_URI: {UPDATED_S3_CSV_URI}")
 
     # write the dataframe to S3 as CSV
     try:
@@ -136,17 +134,22 @@ def mros_append_daily_data(event, context):
         print(f"- Problem UPDATED_S3_CSV_URI: {UPDATED_S3_CSV_URI}")
         print(f"-----> RAISING EXCEPTION ON CSV UPLOAD TO S3 <-----")
         raise e
-    
+
+    print(f"Converting all dataframe columns to strings...")
+
+    # convert all of the dataframe columns to strings
+    output_df = output_df.astype(str)
+
+    print(f"Saving dataframe as PARQUET to {UPDATED_S3_PARQUET_URI}")
+    print(f"- UPDATED_S3_PARQUET_URI: {UPDATED_S3_PARQUET_URI}")
+
     # write the dataframe to S3 as Parquet
     try:
         # # save the dataframe as a parquet to S3
         wr.s3.to_parquet(output_df, UPDATED_S3_PARQUET_URI, index = False)
-        # wr.s3.to_parquet(output_df, UPDATED_S3_PARQUET_URI, index = False, boto3_session=boto_session)
-
     except Exception as e:
         print(f"Exception saving dataframe to S3: {e}")
         print(f"- Problem INPUT_S3_URI: {INPUT_S3_URI}")
-        print(f"- Problem OUTPUT_S3_URI: {OUTPUT_S3_URI}")
         print(f"- Problem UPDATED_S3_PARQUET_URI: {UPDATED_S3_PARQUET_URI}")
         print(f"-----> RAISING EXCEPTION ON PARQUET UPLOAD TO S3 <-----")
         raise e

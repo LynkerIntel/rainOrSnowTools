@@ -13,7 +13,7 @@ name: Deploy Infrastructure
 on:
   push:
     branches:
-      - main
+      - cicd_pipeline
 
 jobs:
   deploy:

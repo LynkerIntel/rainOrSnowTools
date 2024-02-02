@@ -810,7 +810,7 @@ add_climate_data <- function(Records = NULL) {
 
     message("Getting GPM PLP data...")
 
-    message("Logging that package has been updated on 02/01/2024 @ 2:55 PM PST...")
+    message("Logging that package has been updated on 02/02/2024 @ 8:08 AM PST...")
     
     # STEP 5: GET GPM PLP
     plp  <- rainOrSnowTools::get_imerg(

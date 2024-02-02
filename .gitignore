@@ -75,3 +75,6 @@ sh/test_empty_csv.sh
 dev.conf
 lambdas/mros_csv_to_parquet/
 lambdas/mros_csv_to_parquet/*
+runners/
+runners/*
+runners/send_to_sqs.py
