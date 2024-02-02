@@ -14,8 +14,10 @@
 ^\\lambda_containers$
 ^\\deploy$
 ^\\sh$
+^\\runners$
 ^lambdas/.*$
 ^lambda_containers/.*$
 ^deploy/.*$
 ^sh/.*$
+^runners/.*$
 ^tmp_empty_output.csv$
