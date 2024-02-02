@@ -194,6 +194,10 @@ resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
   memory_size      = 600
   # memory_size      = 3009
   timeout          = 900     # timeout in seconds (use max amount of time = 15 minutes)
+
+  # Only allow for a maximum of 1 Lambdas to be run concurrently
+  reserved_concurrent_executions = 20
+
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
@@ -274,7 +278,7 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   # memory in MB
   memory_size     = 400
 
-  # Only allow for a maximum of 8 Lambdas to be run concurrently
+  # Only allow for a maximum of 1 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
   
   # Attach the Lambda function to the CloudWatch Logs group
