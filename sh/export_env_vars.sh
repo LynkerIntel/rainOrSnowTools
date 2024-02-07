@@ -26,6 +26,10 @@ export "TF_VAR_mros_ecr_image_tag"="$ECR_REPO_TAG"
 # Lambda function names
 export "TF_VAR_mros_add_climate_data_lambda_function_name"="mros-add-climate-data"
 
+# IAM users/group/policy names
+export "TF_VAR_iam_group_name"="mros-group"
+export "TF_VAR_iam_group_policy_name"="mros-group-policy"
+
 # DynamoDB table name
 export "TF_VAR_dynamodb_table_name"="mros-observations-table"
 
@@ -62,6 +66,10 @@ if [[ "$RUNNING_ON_GITHUB_ACTION" == "true" ]]; then
     # Lambda function names
     echo "TF_VAR_mros_add_climate_data_lambda_function_name=mros-add-climate-data" >> $GITHUB_ENV
     
+    # IAM users/group/policy names
+    echo "TF_VAR_iam_group_name=mros-group" >> $GITHUB_ENV
+    echo "TF_VAR_iam_group_policy_name=mros-group-policy" >> $GITHUB_ENV
+
     # DynamoDB table name
     echo "TF_VAR_dynamodb_table_name=mros-observations-table" >> $GITHUB_ENV
 

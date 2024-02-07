@@ -1,6 +1,131 @@
-#######################
+
+# ---------------------------------------------------------
+# Create IAM Users and IAM Group Policy to access outputs #
+# ---------------------------------------------------------
+
+# Define a variable for the list of IAM user names
+variable "user_names" {
+  type    = list(string)
+  default = ["keith", "nayoung", "dillon"]
+}
+
+# # Define a variable for the name of the S3 bucket
+# variable "bucket_name" {
+#   type    = string
+#   default = "example-bucket"
+# }
+
+# Create IAM users based on the list of names provided
+resource "aws_iam_user" "iam_user_list" {
+  count = length(var.user_names)
+  name  = "user-${var.user_names[count.index]}"
+}
+
+# Create an IAM group for the IAM users
+resource "aws_iam_group" "iam_group" {
+  name = var.iam_group_name
+}
+
+# Add the IAM users to the IAM group
+resource "aws_iam_group_membership" "iam_group_membership" {
+  name  = aws_iam_group.iam_group.name
+  users = aws_iam_user.iam_user_list[*].name
+}
+
+# # IAM policy allowing users in the IAM group:
+# # 1. GetObject output S3 bucket 
+# # 2. Access the DynamoDB table
+# resource "aws_iam_policy" "iam_group_policy" {
+#   name        = var.iam_group_policy_name
+#   description = "Policy to apply to the MROS IAM group to access the output S3 bucket and DynamoDB table"
+
+#   policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Effect": "Allow",
+#       "Action": "s3:GetObject",
+#       "Resource": "arn:aws:s3:::${var.output_s3_bucket_name}/*"
+#     },
+#     {
+#       "Effect": "Allow",
+#       "Action": [
+#         "dynamodb:GetItem",
+#         "dynamodb:Scan",
+#         "dynamodb:Query",
+#         "dynamodb:BatchGetItem"
+#       ],
+#       "Resource": "arn:aws:dynamodb:*:*:table/${var.dynamodb_table_name}"
+#     }
+#   ]
+# }
+# EOF
+# }
+
+# IAM policy document allowing users in the MROS IAM group to:
+# 1. GetObject output S3 bucket 
+# 2. Access the DynamoDB table
+data "aws_iam_policy_document" "iam_group_policy_doc" {
+  statement {
+    sid = "MROSAllowReadAndListToOutputS3Bucket"
+    
+    effect = "Allow"
+
+    actions = [
+     "s3:GetObject", 
+     "s3:ListBucket"
+    ]
+
+    resources = [
+      data.aws_s3_bucket.output_s3_bucket.arn,
+      "${data.aws_s3_bucket.output_s3_bucket.arn}/*",
+    ]
+  }
+
+  statement {
+    sid = "MROSAllowDynamoDBRead"
+    
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:Scan",
+      "dynamodb:Query",
+      "dynamodb:BatchGetItem"
+    ]
+
+    resources = [
+      aws.dynamodb_table.mros_dynamodb_table.arn
+      ]
+
+
+  }
+}
+
+# Create an IAM policy for the IAM group from the IAM policy document
+resource "aws_iam_policy" "iam_group_policy" {
+  name        = var.iam_group_policy_name
+  description = "Policy to apply to the MROS IAM group to access the output S3 bucket and DynamoDB table"
+  policy      = data.aws_iam_policy_document.iam_group_policy_doc.json
+}
+
+# Attach the IAM policy to the IAM group
+resource "aws_iam_policy_attachment" "iam_group_policy_attachment" {
+  name       = "Attach IAM group policy to IAM group"
+  groups     = [aws_iam_group.iam_group.name]
+  policy_arn = aws_iam_policy.iam_group_policy.arn
+}
+
+# # Generate access keys for each IAM user
+# resource "aws_iam_access_key" "user_access_key" {
+#   for_each = toset(var.user_names)
+#   user     = aws_iam_user.iam_user_list[each.value].name
+# }
+
+# ---------------------
 # S3 Policy Documents #
-#######################
+# ---------------------
 
 # # S3 bucket policy (RAW)
 # data "aws_iam_policy_document" "s3_bucket_policy_document" {

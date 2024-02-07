@@ -112,6 +112,22 @@ variable "mros_insert_into_dynamodb_lambda_function_name" {
     sensitive   = true
 }
 
+# ----------------------------
+# ---- IAM variables ----
+# ----------------------------
+
+variable "iam_group_name" {
+    description = "Name of the IAM group for list of users."
+    type        = string
+    sensitive   = true
+}
+
+variable "iam_group_policy_name" {
+    description = "Name of the IAM group policy for list of users."
+    type        = string
+    sensitive   = true
+}
+
 # -----------------------------
 # ---- DynamoDB  variables ----
 # -----------------------------
