@@ -30,6 +30,7 @@ resource "aws_iam_group" "iam_group" {
 resource "aws_iam_group_membership" "iam_group_membership" {
   name  = aws_iam_group.iam_group.name
   users = aws_iam_user.iam_user_list[*].name
+  group = aws_iam_group.iam_group.name
 }
 
 # # IAM policy allowing users in the IAM group:
@@ -96,7 +97,7 @@ data "aws_iam_policy_document" "iam_group_policy_doc" {
     ]
 
     resources = [
-      aws.dynamodb_table.mros_dynamodb_table.arn
+      aws_dynamodb_table.mros_dynamodb_table.arn
       ]
 
 
