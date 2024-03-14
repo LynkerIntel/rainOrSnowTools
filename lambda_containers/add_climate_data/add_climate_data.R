@@ -25,8 +25,6 @@ library(lambdr)
 library(dplyr)
 # library(sf)
 # library(rainOrSnowTools)
-# library(climateR)
-
 
 # Environment variables
 NASA_DATA_USER = Sys.getenv("NASA_DATA_USER")
@@ -66,6 +64,7 @@ message("=====================================")
   #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
   #         "duplicate_count": "1"
   #     }'
+
 add_climate_data <- function(Records = NULL) {
 
     ############  ############
