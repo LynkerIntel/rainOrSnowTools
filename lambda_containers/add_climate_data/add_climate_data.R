@@ -376,6 +376,11 @@ add_climate_data <- function(Records = NULL) {
         deg_filter = degree_filter
     )
 
+    # Take out the closest station data
+    st_meteo <- 
+        st_meteo %>%
+        dplyr::filter(id != random_id)
+
     # QC the random stations meteo data
     random_meteo_qc <- rainOrSnowTools::qc_meteo(st_meteo)
 
@@ -469,7 +474,6 @@ add_climate_data <- function(Records = NULL) {
         st_meteo2 %>%
         dplyr::filter(id != random_id2)
 
-    
     # QC the random stations meteo data
     random_meteo_qc2 <- rainOrSnowTools::qc_meteo(st_meteo2)
 
