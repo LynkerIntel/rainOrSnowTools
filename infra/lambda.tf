@@ -273,10 +273,10 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   # # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python39:14"]
 
   # timeout in seconds
-  timeout         = 750
+  timeout         = 900
 
   # memory in MB
-  memory_size     = 400
+  memory_size     = 1000
 
   # Only allow for a maximum of 1 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
