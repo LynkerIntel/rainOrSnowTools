@@ -276,7 +276,7 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   timeout         = 900
 
   # memory in MB
-  memory_size     = 1500
+  memory_size     = 1200
 
   # Only allow for a maximum of 1 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
