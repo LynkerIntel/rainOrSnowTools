@@ -261,16 +261,44 @@ get_final_urls <- function(url, verbose = TRUE) {
 #' Construct the product name of GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
 #'
 #' @param date_of_interest character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
+#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
 #' @importFrom glue glue
 #' @importFrom plyr round_any
 #' @return character GPM IMERG product name for the given date
-construct_gpm_product <- function(date_of_interest) {
+construct_gpm_product <- function(date_of_interest, product_version = "GPM_3IMERGHHL.06") {
 
   # date_of_interest = "2024-01-26T17:16:43.000Z"
 
+    # Catalog XML string for base URL
+  # gpm_catalog <- paste0(gpm_base_url, "catalog.xml")
+  # date_of_interest = datetime_utc
+
+  # # Construct the GPM URL
+  # gpm_product <- construct_gpm_product(datetime_utc)
+  # product_version = "GPM_3IMERGHH.07"
+
+  versions = list(
+    "GPM_3IMERGHHL.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06", "3B-HHR-L.MS.MRG.3IMERG"),
+    "GPM_3IMERGHHE.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06", "3B-HHR-E.MS.MRG.3IMERG"),
+    "GPM_3IMERGHH.07"  = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07", "3B-HHR.MS.MRG.3IMERG")
+  )
+
+  # throw an error if the product_version is not in the versions list
+  if(!product_version %in% names(versions)) {
+    stop("Invalid 'product_version' argument, must be one of:\n > ", paste(paste0("'", names(versions), "'"), collapse = "\n > "))
+  }
+
   # Define URL structure
-  base <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
-  product <- '3B-HHR-L.MS.MRG.3IMERG'
+  # TODO: new methode...
+  base_and_product <- versions[[product_version]]
+  base    <- base_and_product[1]
+  product <- base_and_product[2]
+
+  # TODO: old method
+  # base <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+  # product <- '3B-HHR-L.MS.MRG.3IMERG'
+  
   url_trim <- "{base}/{year}/{julian}/"
   product_pattern <- "{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{minutes_diff}."
 
@@ -308,14 +336,37 @@ construct_gpm_product <- function(date_of_interest) {
 #' Construct the base URL for GPM IMERG data for a given date timestamp
 #'
 #' @param date_of_interest character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
+##' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
 #' @importFrom glue glue
 #' @return character GPM IMERG base URL for the given date
-construct_gpm_base_url <- function(date_of_interest) {
+construct_gpm_base_url <- function(date_of_interest, product_version = "GPM_3IMERGHHL.06") {
 
+  ##############################
+  # date_of_interest = datetime_utc
+  # date_of_interest = "2024-01-25T01:45:59.000Z"
   # date_of_interest = "2024-01-26T17:16:43.000Z"
+  # product_version = product_version
+  # product_version = "GPM_3IMERGHHE.06"
+  ##############################
 
   # Define URL structure
-  base     <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+
+  # list of avaliable GPM IMERG product versions
+  versions = list(
+    "GPM_3IMERGHHL.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
+    "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
+    "GPM_3IMERGHH.07"  = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
+  )
+
+  # throw an error if the product_version is not in the versions list
+  if(!product_version %in% names(versions)) {
+    stop("Invalid 'product_version' argument, must be one of:\n > ", paste(paste0("'", names(versions), "'"), collapse = "\n > "))
+  }
+
+  base     <- versions[[product_version]]
+  # base     <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
+
 
   # character to insert values into via glue::glue()
   url_trim <- "{base}/{year}/{julian}/"
@@ -359,6 +410,8 @@ get_closest_url <- function(urls, match_string) {
 #' @param datetime_utc Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
 #' @param verbose logical, whether to print messages or not. Default is FALSE
 #' @return a dataframe of GPM data for each observation
 #' @importFrom sf st_as_sf st_drop_geometry
@@ -381,8 +434,19 @@ get_imerg <- function(
   datetime_utc = NULL,
   lon_obs      = NULL,
   lat_obs      = NULL,
+  product_version = "GPM_3IMERGHHL.06",
   verbose      = FALSE
   ) {
+  
+  ####################################
+  # datetime_utc    = "2024-04-06T01:45:59.000Z"
+  # # lon_obs         = -120.5
+  # # lat_obs         = 39.5
+  # lat_obs = 39.094364
+  # lon_obs = -105.237502
+  # product_version = "GPM_3IMERGHHE.06"
+  # verbose         = TRUE
+  ####################################
 
   # check for valid inputs
   if(is.null(datetime_utc)) {
@@ -399,6 +463,18 @@ get_imerg <- function(
     stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
   }
 
+  # list of avaliable GPM IMERG product versions
+  versions = list(
+      "GPM_3IMERGHHL.06"= "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
+      "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
+      "GPM_3IMERGHH.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
+      )
+
+  # throw an error if the product_version is not in the versions list
+  if(!product_version %in% names(versions)) {
+    stop("Invalid 'product_version' argument, must be one of:\n > ", paste(paste0("'", names(versions), "'"), collapse = "\n > "))
+  }
+
   # Assign GPM variable
   var = 'probabilityLiquidPrecipitation'
 
@@ -410,13 +486,14 @@ get_imerg <- function(
   )
 
   # get GPM base URL
-  gpm_base_url <- construct_gpm_base_url(datetime_utc)
+  # gpm_base_url <- construct_gpm_base_url(datetime_utc, product_version = "GPM_3IMERGHHL.06")
+  gpm_base_url <- construct_gpm_base_url(datetime_utc, product_version = product_version)
 
   # Catalog XML string for base URL
   gpm_catalog <- paste0(gpm_base_url, "catalog.xml")
 
   # Construct the GPM URL
-  gpm_product <- construct_gpm_product(datetime_utc)
+  gpm_product <- construct_gpm_product(datetime_utc, product_version = product_version)
 
   # Get the dap paths from the XML catalog.xml file (gpm_catalog)
   final_urls <- get_final_urls(gpm_catalog)
@@ -449,6 +526,7 @@ get_imerg <- function(
     product_url <- get_closest_url(final_urls, gpm_product)
 
   }
+
   # Print out the GPM base URL, product, and catalog XML
   if(verbose) {
     message("GPM Product URL : ", product_url)
@@ -477,16 +555,17 @@ get_imerg <- function(
                       message("Trying to use all_of() function")
 
                       gpm_obs %>%
-                      dplyr::select(dplyr::all_of((var)))  %>%
-                      .[[var]]
+                        dplyr::select(dplyr::all_of((var)))  %>% # NOTE: this is the strict version which will throw an error if the column does not exist
+                        # dplyr::select(dplyr::any_of((var)))  %>%
+                        .[[var]]
 
                   }, error = function(e) {
                       message("Error using all_of() function", e)
                       message("gpm_obs: ", gpm_obs)
 
                       gpm_obs %>%
-                      dplyr::select(probabilityLiquidPrecipitation)  %>%
-                      .$probabilityLiquidPrecipitation
+                        dplyr::select(probabilityLiquidPrecipitation)  %>%
+                        .$probabilityLiquidPrecipitation
 
                   })
 

@@ -64,9 +64,9 @@ provider "aws" {
 
 locals {
   # airtable_lambda_zip = "../deploy/lambda_function.zip"
-    mros_airtable_to_sqs_zip = "../deploy/mros_airtable_to_sqs.zip"
-    mros_stage_to_prod_zip = "../deploy/mros_stage_to_prod.zip"
-    mros_append_daily_data_zip = "../deploy/mros_append_daily_data.zip"
+    mros_airtable_to_sqs_zip      = "../deploy/mros_airtable_to_sqs.zip"
+    mros_stage_to_prod_zip        = "../deploy/mros_stage_to_prod.zip"
+    mros_append_daily_data_zip    = "../deploy/mros_append_daily_data.zip"
     mros_insert_into_dynamodb_zip = "../deploy/mros_insert_into_dynamodb.zip"
     name_tag = "mros"
 }

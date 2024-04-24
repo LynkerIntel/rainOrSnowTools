@@ -113,17 +113,7 @@ add_climate_data <- function(Records = NULL) {
     # UNCOMMENT ABOVE HERE
     ############  ############
     ############  ############
-    # # Connect to AWS SQS queue client
-    # sqs = paws::sqs(region = AWS_REGION, endpoint = SQS_QUEUE_URL)
-    # # # Receive message from SQS queue
-    # msg = sqs$receive_message(
-    #     QueueUrl            = sqs$get_queue_url(QueueName = SQS_QUEUE_NAME),
-    #     MaxNumberOfMessages = 1)
-    # # Extract message body
-    # msg_body = msg$Messages[[1]]$Body
-    # ############  ############
-    # # remove msg_body BELOW
-    ############  ############
+
         # msg_body = '{
         #         "id": "xxxxd",
         #         "timestamp": "1706147159.0",
@@ -141,7 +131,6 @@ add_climate_data <- function(Records = NULL) {
         #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
         #         "duplicate_count": "1"
         #     }'
-
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -155,8 +144,10 @@ add_climate_data <- function(Records = NULL) {
     # data <- jsonlite::fromJSON(event)
 
     # static inputs
-    met_networks  = "ALL"
-    degree_filter = 1
+    met_networks        = "ALL"
+    degree_filter       = 1
+    gpm_product_version = "GPM_3IMERGHHL.06"   # TODO: This is the product we've been using since this pipeline began around Febraury 2024
+    # gpm_product_version = "GPM_3IMERGHHE.06" # TODO: Potential new product version to use, still has same 5 day delay 
 
     # extract observation data from JSON event
     lon_obs   = as.numeric(data$longitude)
@@ -167,9 +158,6 @@ add_climate_data <- function(Records = NULL) {
 
     # # get current date for logging
     current_date  = as.character(Sys.Date())
-    # current_year  = as.character(format(Sys.Date(), "%Y"))
-    # current_month = as.character(format(Sys.Date(), "%m"))
-    # current_day   = as.character(format(Sys.Date(), "%d"))
 
     # convert submitted_date to Date object
     observation_date <- as.Date(data[["submitted_date"]], format = "%m/%d/%y")
@@ -213,12 +201,13 @@ add_climate_data <- function(Records = NULL) {
 
     message("Logging that package has been updated on 02/02/2024 @ 8:08 AM PST...")
     
-    # STEP 5: GET GPM PLP
+    # STEP 5: GET GPM PLP    
     plp  <- rainOrSnowTools::get_imerg(
-                              datetime_utc = timestamp,
-                              lon_obs      = lon_obs,
-                              lat_obs      = lat_obs,
-                              verbose      = TRUE
+                              datetime_utc    = timestamp,
+                              lon_obs         = lon_obs,
+                              lat_obs         = lat_obs,
+                              product_version = gpm_product_version,
+                              verbose         = TRUE
                               )
     # plp  <- get_imerg_latest(timestamp, lon_obs, lat_obs, verbose = TRUE)
     # plp <- get_imerg3(timestamp, lon_obs, lat_obs, verbose = TRUE)
