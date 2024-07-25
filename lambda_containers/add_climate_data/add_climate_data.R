@@ -114,23 +114,23 @@ add_climate_data <- function(Records = NULL) {
     ############  ############
     ############  ############
 
-        # msg_body = '{
-        #         "id": "xxxxd",
-        #         "timestamp": "1706147159.0",
-        #         "createdtime": "2024-01-25T01:45:59.000Z",
-        #         "name": "Rain",
-        #         "latitude": "39.5",
-        #         "user": "user_xxxxd",
-        #         "longitude": "-120.5",
-        #         "submitted_time": "01:45:58",
-        #         "local_time": "17:45:58",
-        #         "submitted_date": "01/25/24",
-        #         "local_date": "1/24/24",
-        #         "comment": "nan",
-        #         "time": "2024-01-25T01:45:59.000Z",
-        #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
-        #         "duplicate_count": "1"
-        #     }'
+    # msg_body = '{
+    #         "id": "xxxxd",
+    #         "timestamp": "1706147159.0",
+    #         "createdtime": "2024-06-25T01:45:59.000Z",
+    #         "name": "Rain",
+    #         "latitude": "39.5",
+    #         "user": "user_xxxxd",
+    #         "longitude": "-120.5",
+    #         "submitted_time": "01:45:58",
+    #         "local_time": "17:45:58",
+    #         "submitted_date": "06/25/24",
+    #         "local_date": "6/25/24",
+    #         "comment": "nan",
+    #         "time": "2024-06-25T01:45:59.000Z",
+    #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
+    #         "duplicate_count": "1"
+    #     }'
     # ############  ############
 
     message(paste0("Message Body:\n", msg_body))
@@ -199,16 +199,23 @@ add_climate_data <- function(Records = NULL) {
 
     message("Getting GPM PLP data...")
 
-    message("Logging that package has been updated on 02/02/2024 @ 8:08 AM PST...")
-    
-    # STEP 5: GET GPM PLP    
-    plp  <- rainOrSnowTools::get_imerg(
-                              datetime_utc    = timestamp,
-                              lon_obs         = lon_obs,
-                              lat_obs         = lat_obs,
-                              product_version = gpm_product_version,
-                              verbose         = TRUE
-                              )
+    message("Logging that package has been updated on 06/25/2024 @ 2:45 PM PST...")
+
+    # STEP 5: GET GPM PLP
+    plp <- tryCatch({
+                rainOrSnowTools::get_imerg(
+                datetime_utc    = timestamp,
+                lon_obs         = lon_obs,
+                lat_obs         = lat_obs,
+                product_version = gpm_product_version,
+                verbose         = TRUE
+                )
+            }, 
+            error = function(e) {
+                message("An error occurred: ", e$message)
+                9999
+                })
+
     # plp  <- get_imerg_latest(timestamp, lon_obs, lat_obs, verbose = TRUE)
     # plp <- get_imerg3(timestamp, lon_obs, lat_obs, verbose = TRUE)
     # plp <- rainOrSnowTools::get_imerg_v2(datetime, lon_obs, lat_obs, 6)
