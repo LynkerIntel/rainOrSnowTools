@@ -4,10 +4,13 @@
 \alias{construct_gpm_product}
 \title{Construct the product name of GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time}
 \usage{
-construct_gpm_product(date_of_interest)
+construct_gpm_product(date_of_interest, product_version = "GPM_3IMERGHHL.06")
 }
 \arguments{
 \item{date_of_interest}{character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")}
+
+\item{product_version}{character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
+Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"}
 }
 \value{
 character GPM IMERG product name for the given date
