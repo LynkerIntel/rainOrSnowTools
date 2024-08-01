@@ -9,7 +9,7 @@ get_imerg(
   datetime_utc = NULL,
   lon_obs = NULL,
   lat_obs = NULL,
-  product_version = "GPM_3IMERGHHL.06",
+  product_version = NULL,
   verbose = FALSE
 )
 }
@@ -21,7 +21,7 @@ get_imerg(
 \item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
 
 \item{product_version}{character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
-Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"}
+Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07", and "GPM_3IMERGHH.07". Defaults to IMERG Late Run.}
 
 \item{verbose}{logical, whether to print messages or not. Default is FALSE}
 }

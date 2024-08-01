@@ -8,7 +8,7 @@ Description: This package does several things to support analysis for the Mounta
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 LazyData: true
 Imports: 
   tidyselect,
@@ -25,7 +25,8 @@ Imports:
   climateR,
   readr,
   glue,
-  xml2
+  xml2,
+  httr
 Remotes:
   SnowHydrology/humidity,
   mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb

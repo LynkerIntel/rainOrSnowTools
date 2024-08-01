@@ -47,7 +47,7 @@ get_tz <- function(lon_obs, lat_obs){
 
   # Output the timezone
   return(tmp_tz$timezone_lst)
-  # tmp_tz$timezone_lst
+
 }
 
 #' Build a table of timezones and offsets when called from get_tz
@@ -118,7 +118,6 @@ get_eco_level3 <- function(lon_obs, lat_obs){
    sf::sf_use_s2(FALSE)
 
    sf::st_intersection(locs, ecoregions_states) %>%
-   # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
      dplyr::select("Ecoregion" = US_L3NAME) %>%
      sf::st_drop_geometry() %>%
      as.character()
@@ -195,7 +194,6 @@ get_state <- function(lon_obs, lat_obs){
     sf::sf_use_s2(FALSE)
 
     sf::st_intersection(locs, ecoregions_states) %>%
-    # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
       dplyr::select("State" = STATE_NAME) %>%
       sf::st_drop_geometry() %>%
       as.character()
@@ -261,26 +259,39 @@ get_final_urls <- function(url, verbose = TRUE) {
 #' Construct the product name of GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
 #'
 #' @param date_of_interest character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
-#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
-#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
+#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07", and "GPM_3IMERGHH.07". Defaults to IMERG Late Run.
 #' @importFrom glue glue
 #' @importFrom plyr round_any
 #' @return character GPM IMERG product name for the given date
-construct_gpm_product <- function(date_of_interest, product_version = "GPM_3IMERGHHL.06") {
+construct_gpm_product <- function(date_of_interest, product_version = NULL) {
 
-  # date_of_interest = "2024-01-26T17:16:43.000Z"
+  # for testing: date_of_interest = "2024-06-02T17:16:43.000Z"
 
-    # Catalog XML string for base URL
-  # gpm_catalog <- paste0(gpm_base_url, "catalog.xml")
-  # date_of_interest = datetime_utc
+  # Convert date_of_interest to POSIXct
+  dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
 
-  # # Construct the GPM URL
-  # gpm_product <- construct_gpm_product(datetime_utc)
-  # product_version = "GPM_3IMERGHH.07"
+  # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
+  # Grab the right IMERG version based on date
+  # IF the user defines the wrong thing, make the default for them
+  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.06"
+  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
+    product_version <- "GPM_3IMERGHHL.06"
+  } else {
+    product_version <- product_version
+  }
 
   versions = list(
     "GPM_3IMERGHHL.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06", "3B-HHR-L.MS.MRG.3IMERG"),
     "GPM_3IMERGHHE.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06", "3B-HHR-E.MS.MRG.3IMERG"),
+    "GPM_3IMERGHHL.07" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07", "3B-HHR-L.MS.MRG.3IMERG"),
     "GPM_3IMERGHH.07"  = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07", "3B-HHR.MS.MRG.3IMERG")
   )
 
@@ -290,20 +301,13 @@ construct_gpm_product <- function(date_of_interest, product_version = "GPM_3IMER
   }
 
   # Define URL structure
-  # TODO: new methode...
+
   base_and_product <- versions[[product_version]]
   base    <- base_and_product[1]
   product <- base_and_product[2]
 
-  # TODO: old method
-  # base <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
-  # product <- '3B-HHR-L.MS.MRG.3IMERG'
-  
   url_trim <- "{base}/{year}/{julian}/"
   product_pattern <- "{product}.{year}{month}{day}-S{hour}{minTime}00-E{hour}{nasa_time_minute}{nasa_time_second}.{minutes_diff}."
-
-  # # Convert date_of_interest to POSIXct
-  dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
 
   # Extract necessary date components
   julian  <- format(dateTime, "%j")
@@ -336,13 +340,14 @@ construct_gpm_product <- function(date_of_interest, product_version = "GPM_3IMER
 #' Construct the base URL for GPM IMERG data for a given date timestamp
 #'
 #' @param date_of_interest character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")
-##' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
-#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
+##' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07", and "GPM_3IMERGHH.07". Defaults to IMERG Late Run.
 #' @importFrom glue glue
 #' @return character GPM IMERG base URL for the given date
-construct_gpm_base_url <- function(date_of_interest, product_version = "GPM_3IMERGHHL.06") {
+construct_gpm_base_url <- function(date_of_interest, product_version = NULL) {
 
   ##############################
+  # for testing:
   # date_of_interest = datetime_utc
   # date_of_interest = "2024-01-25T01:45:59.000Z"
   # date_of_interest = "2024-01-26T17:16:43.000Z"
@@ -350,12 +355,33 @@ construct_gpm_base_url <- function(date_of_interest, product_version = "GPM_3IME
   # product_version = "GPM_3IMERGHHE.06"
   ##############################
 
+  # Convert date_of_interest to POSIXct (YYYY-MM-DDTHH:MM:SS.000Z format UTC time)
+  dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
+
+  # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
+  # Grab the right IMERG version based on date
+  # IF the user defines the wrong thing, make the default for them
+  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.06"
+  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
+    product_version <- "GPM_3IMERGHHL.06"
+  } else {
+    product_version <- product_version
+  }
+
   # Define URL structure
 
-  # list of avaliable GPM IMERG product versions
+  # list of available GPM IMERG product versions
   versions = list(
     "GPM_3IMERGHHL.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
     "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
+    "GPM_3IMERGHHL.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07",
     "GPM_3IMERGHH.07"  = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
   )
 
@@ -365,14 +391,9 @@ construct_gpm_base_url <- function(date_of_interest, product_version = "GPM_3IME
   }
 
   base     <- versions[[product_version]]
-  # base     <- 'https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06'
-
 
   # character to insert values into via glue::glue()
   url_trim <- "{base}/{year}/{julian}/"
-
-  # Convert date_of_interest to POSIXct (YYYY-MM-DDTHH:MM:SS.000Z format UTC time)
-  dateTime <- as.POSIXct(date_of_interest, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
 
   # Extract necessary date components
   julian  <- format(dateTime, "%j")
@@ -410,8 +431,8 @@ get_closest_url <- function(urls, match_string) {
 #' @param datetime_utc Observation time in UTC format YYYY-MM-DD HH:MM:SS. Default is NULL.
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
-#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").' 
-#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"
+#' @param product_version character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
+#'      Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07", and "GPM_3IMERGHH.07". Defaults to IMERG Late Run.
 #' @param verbose logical, whether to print messages or not. Default is FALSE
 #' @return a dataframe of GPM data for each observation
 #' @importFrom sf st_as_sf st_drop_geometry
@@ -420,6 +441,7 @@ get_closest_url <- function(urls, match_string) {
 #' @importFrom pacman p_load
 #' @importFrom glue glue
 #' @importFrom climateR dap
+#' @importFrom httr status_code GET
 #' @export
 #'
 #' @examples
@@ -434,10 +456,10 @@ get_imerg <- function(
   datetime_utc = NULL,
   lon_obs      = NULL,
   lat_obs      = NULL,
-  product_version = "GPM_3IMERGHHL.06",
+  product_version = NULL,
   verbose      = FALSE
   ) {
-  
+
   ####################################
   # datetime_utc    = "2024-04-06T01:45:59.000Z"
   # # lon_obs         = -120.5
@@ -463,10 +485,32 @@ get_imerg <- function(
     stop("Missing 'lat_obs' argument input, 'lat_obs' must be a numeric LATITUDE value in CRS 4326")
   }
 
+  # Convert date_of_interest to POSIXct (YYYY-MM-DDTHH:MM:SS.000Z format UTC time)
+  dateTime <- as.POSIXct(datetime_utc, format = "%Y-%m-%dT%H:%M:%OS",  tz = "UTC")
+
+  # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
+  # Grab the right IMERG version based on date
+  # IF the user defines the wrong thing, make the default for them
+  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
+    product_version <- "GPM_3IMERGHHL.06"
+  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
+    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
+    product_version <- "GPM_3IMERGHHL.06"
+  } else {
+    product_version <- product_version
+  }
+
+
   # list of avaliable GPM IMERG product versions
   versions = list(
       "GPM_3IMERGHHL.06"= "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
       "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
+      "GPM_3IMERGHHL.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07",
       "GPM_3IMERGHH.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
       )
 
@@ -486,8 +530,13 @@ get_imerg <- function(
   )
 
   # get GPM base URL
-  # gpm_base_url <- construct_gpm_base_url(datetime_utc, product_version = "GPM_3IMERGHHL.06")
   gpm_base_url <- construct_gpm_base_url(datetime_utc, product_version = product_version)
+
+  # if user is using late version, need to ensure the data exists
+  if(httr::status_code(httr::GET(gpm_base_url)) == 404 &
+     product_version == "GPM_3IMERGHH.07" | product_version == "GPM_3IMERGHH.06"){
+    stop("Data for IMERG Final Run for this datetime are not available.")
+  }
 
   # Catalog XML string for base URL
   gpm_catalog <- paste0(gpm_base_url, "catalog.xml")

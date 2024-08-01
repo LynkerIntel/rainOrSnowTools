@@ -4,13 +4,13 @@
 \alias{construct_gpm_base_url}
 \title{Construct the base URL for GPM IMERG data for a given date timestamp}
 \usage{
-construct_gpm_base_url(date_of_interest, product_version = "GPM_3IMERGHHL.06")
+construct_gpm_base_url(date_of_interest, product_version = NULL)
 }
 \arguments{
 \item{date_of_interest}{character string date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time (e.g. "2024-01-26T17:16:43.000Z")}
 
 \item{product_version}{character string of the GPM IMERG product version (e.g. "GPM_3IMERGHHL.06").'
-Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", and "GPM_3IMERGHH.07", default is "GPM_3IMERGHHL.06"}
+Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07", and "GPM_3IMERGHH.07". Defaults to IMERG Late Run.}
 }
 \value{
 character GPM IMERG base URL for the given date
