@@ -65,6 +65,11 @@ def get_dates_before(timestamp, n):
 
 def fetch_airtable_data(date, base_id, table_id, airtable_token):
 
+    # date = DATE_LIST[0]
+    # base_id = BASE_ID 
+    # table_id = TABLE_ID
+    # airtable_token = AIRTABLE_TOKEN
+    
     # Initialize an empty list to store all records
     all_records    = []
     offset         = None
@@ -77,7 +82,10 @@ def fetch_airtable_data(date, base_id, table_id, airtable_token):
 
     while True:
         # Construct the Airtable API endpoint URL with the offset if available
-        url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7BSubmitted%20Date%7D='{date}'"
+        url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
+        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
+        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
+        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7BSubmitted%20Date%7D='{date}'"
 
         if offset:
             print(f"Adding offset to url...")
@@ -140,33 +148,58 @@ def fetch_airtable_data(date, base_id, table_id, airtable_token):
     return all_records
 
 def records_to_dataframe(records_list):
-        
+        # records_list = airtable_data.get(DATE_LIST[0])
         # Check if records_list exist
         if records_list:
+
             # pandas JSON normalize the records data into a pandas dataframe
             df = json_normalize(records_list)
-
-            # make all column names lowercase
-            df.columns = df.columns.str.lower()
-
-            # remove the 'fields' prefix from the column names, and replace any spaces or special characters with underscores
-            clean_cols_names = lambda x: x.split('.', 1)[-1].replace(' ', '_').replace('[^a-zA-Z0-9_]', '')
+            
+            # df.columns
+            name_mapping = {
+                'id' : 'id',
+                'createdTime' : 'createdtime',
+                'fields.phase' : 'name',
+                'fields.latitude' : 'latitude',
+                'fields.user' : 'user',
+                'fields.longitude' : 'longitude',
+                'fields.time_submitted_local' : 'local_time',
+                'fields.date_submitted_local' : 'local_date',
+                'fields.time_submitted_utc' : 'submitted_time',
+                'fields.date_submitted_utc' : 'submitted_date',
+                'fields.comment' : 'comment',
+                'fields.datetime_received_pacific' : 'time'
+            }
 
             # Rename columns using the lambda function
-            df.rename(columns=clean_cols_names, inplace=True)
+            df.rename(columns=name_mapping, inplace=True)
+
+            # df.iloc[0]
+
+            # # make all column names lowercase
+            # df.columns = df.columns.str.lower()
+
+            # # remove the 'fields' prefix from the column names, and replace any spaces or special characters with underscores
+            # clean_cols_names = lambda x: x.split('.', 1)[-1].replace(' ', '_').replace('[^a-zA-Z0-9_]', '')
+
+            # # Rename columns using the lambda function
+            # df.rename(columns=clean_cols_names, inplace=True)
 
             # required columns in output dataframe
             req_columns = ['id', 'createdtime', 'name', 'latitude', 'user', 'longitude',
                            'submitted_time', 'local_time', 'submitted_date', 'local_date', 'comment', 'time']
 
-            # template dataframe with the required columns
-            tmp_df = pd.DataFrame(columns=req_columns)
+            # # template dataframe with the required columns
+            # tmp_df = pd.DataFrame(columns=req_columns)
+            
+            # # df.columns
 
-            # Merge the DataFrames, ensuring that all desired columns are present
-            df = pd.merge(tmp_df, df, how='outer')
+            # # Merge the DataFrames, ensuring that all desired columns are present
+            # df = pd.merge(tmp_df, df, how='outer')
 
             # Reorder the columns
             df = df[req_columns]
+            # df.iloc[0]
 
             # # Replace special characters with underscores in date variable
             # clean_date = re.sub(r'[\W_]+', '_', date)
@@ -226,7 +259,7 @@ def mros_airtable_to_sqs(event, context):
     # curr_time = "2023-11-21T00:00:00Z"
     # curr_time = "2024-01-25T00:00:00Z"
     # curr_time = "2024-01-28T00:00:00Z"
-    # curr_time = "2024-01-30T00:00:00Z"
+    # curr_time = "2024-10-10T00:00:00Z"
 
     # 2018-09-19 17:47:12
     print(f"curr_time: {curr_time}")
@@ -276,7 +309,7 @@ def mros_airtable_to_sqs(event, context):
 
     # Get airtable data for each date in DATE_LIST
     airtable_data = {var: fetch_airtable_data(var, BASE_ID, TABLE_ID, AIRTABLE_TOKEN) for var in DATE_LIST}
-    
+    # {var: fetch_airtable_data(var, BASE_ID, TABLE_ID, AIRTABLE_TOKEN) for var in DATE_LIST} 
     # Make a count of the number of records from each day
     record_counts = [i + ": " + str(len(airtable_data[i])) for i in airtable_data]
     print(f"record_counts: {json.dumps(record_counts)}")
