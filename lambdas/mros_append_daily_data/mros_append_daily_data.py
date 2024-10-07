@@ -135,6 +135,7 @@ def mros_append_daily_data(event, context):
         print(f"-----> RAISING EXCEPTION ON CSV UPLOAD TO S3 <-----")
         raise e
 
+
     print(f"Converting all dataframe columns to strings...")
 
     # convert all of the dataframe columns to strings

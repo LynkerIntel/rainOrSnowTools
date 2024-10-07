@@ -189,6 +189,7 @@ add_climate_data <- function(Records = NULL) {
 
     message("Getting eco level 4 data...")
 
+
     # STEP 3: GET ECO LEVEL 4
     eco_level4 = rainOrSnowTools:::get_eco_level4(lon_obs, lat_obs)
 

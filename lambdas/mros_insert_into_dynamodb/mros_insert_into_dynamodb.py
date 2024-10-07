@@ -123,6 +123,7 @@ def mros_insert_into_dynamodb(event, context):
         print(f"Exception writing dataframe to DynamoDB: {e}")
         raise 
 
+
     # # batch write the dataframe to DynamoDB
     # pandas_to_dynamodb(df, DYNAMODB_TABLE)
 
