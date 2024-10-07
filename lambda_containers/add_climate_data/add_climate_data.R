@@ -176,7 +176,6 @@ add_climate_data <- function(Records = NULL) {
     message("- observation_date: ", observation_date)
     message("- current_date: ", current_date)
     message("======================================")
-
     message("Getting elevation data...")
 
     # STEP 1: GET ELEVATION
