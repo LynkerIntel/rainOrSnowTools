@@ -1,7 +1,18 @@
-# Functions for quality controlling meteorological data
-
-`%>%` <- dplyr::`%>%`
-
+#' Functions for quality controlling meteorological data (qc_meteo)
+#'
+#' @param df data.frame
+#' @param tair_limit_min numeric
+#' @param tair_limit_max numeric
+#' @param twet_limit_min numeric
+#' @param twet_limit_max numeric
+#' @param tdew_limit_min numeric
+#' @param tdew_limit_max numeric
+#' @param rh_limit_min numeric
+#' @param rh_limit_max numeric
+#' @param sd_thresh numeric
+#'
+#' @return data.frame
+#' @export
 qc_meteo <- function(df,
                      tair_limit_min=-30, tair_limit_max=45,
                      twet_limit_min=-40, twet_limit_max=45,
@@ -14,7 +25,7 @@ qc_meteo <- function(df,
   # Check for column names
   if(("temp_air" %in% cols | "temp_wet" %in% cols | "temp_dew" %in% cols |
       "rh" %in% cols) == FALSE) {
-    stop("missing a valid column (temp_air, temp_wet, temp_dew, or rh")
+    warning("missing a valid column (temp_air, temp_wet, temp_dew, or rh)")
   }
 
   # Call the qc functions if the column is present
@@ -44,10 +55,20 @@ qc_meteo <- function(df,
   }
 
   # Return the data frame
-  df
+  return(df)
 
 }
 
+#' Quality control variable internal function
+#'
+#' @param var numeric vector
+#' @param limit_min numeric
+#' @param limit_max numeric
+#' @param sd_threshold numeric
+#'
+#' @return numeric vector that has been quality control checked
+#' @importFrom stats sd
+#' @export
 qc_var <- function(var, limit_min, limit_max, sd_threshold){
 
   # Filter by limits
@@ -57,12 +78,12 @@ qc_var <- function(var, limit_min, limit_max, sd_threshold){
 
   # Filter by standard deviation
   var_mean = mean(var_qc, na.rm = T)
-  var_sd = sd(var_qc, na.rm = T)
+  var_sd = stats::sd(var_qc, na.rm = T)
   var_qc <- ifelse(var_qc < var_mean - (sd_threshold * var_sd) |
                      var_qc > var_mean + (sd_threshold * var_sd),
                    NA,
                    var_qc)
 
   # Return var_qc
-  var_qc
+  return(var_qc)
 }

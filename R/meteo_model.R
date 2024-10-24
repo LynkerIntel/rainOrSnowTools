@@ -1,20 +1,46 @@
-#sdv
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c("dist", "elev", "lat", "lon", "temp_air", "temp_dew", "rh", "weight_raw")
+)
 
-# Get the pipe
-`%>%` <- dplyr::`%>%` # add dplyr pipe
+# # Get the pipe
+# `%>%` <- dplyr::`%>%` # add dplyr pipe
 
-# Assign the constant lapse rate of -0.005 K/m from Girotto et al. (2014)
-t_lapse_const = -0.005
-td_lapse_const = -0.002
+#' Model climate data for an ID, at a location/elevation/time
+#'
+#' @param id character or integer
+#' @param lon_obs numeric, longitude of observation
+#' @param lat_obs numeric, latitude of observation
+#' @param elevation numeric
+#' @param datetime_utc Date or character
+#' @param meteo_df data.frame
+#' @param meta_df data.frame
+#' @param n_station_thresh numeric, number of stations threshold
+#'
+#' @return data.frame, maybe with a unique ID for joining...
+#' @importFrom dplyr left_join filter rowwise mutate arrange pull bind_cols case_when `%>%`
+#' @importFrom stats lm
+#' @importFrom humidity dewpoint relhum wetbulb
+#' @importFrom geosphere distHaversine
+#' @export
+model_meteo <- function(id,
+                        lon_obs,
+                        lat_obs,
+                        elevation,
+                        datetime_utc,
+                        meteo_df,
+                        meta_df,
+                        n_station_thresh=5
+                        ){
 
-# TODO: some of the scripting in model_meteo can be broken down further
-# into reusable, more generic functions
+  # Assign the constant lapse rate of -0.005 K/m from Girotto et al. (2014)
+  t_lapse_const = -0.005
+  td_lapse_const = -0.002
 
-# Output a data frame
-# With a unique id for joining?
-model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
-                        meteo_df, meta_df,
-                        n_station_thresh=5){
+  # TODO: some of the scripting in model_meteo can be broken down further
+  # - into reusable, more generic functions
+  # - Output a data frame
+  # - With a unique id for joining?
 
   # Join the metadata to the meteo data
   df <- dplyr::left_join(meteo_df, meta_df,
@@ -23,6 +49,7 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
 
   # We need distance between obs and stations
   df <- df %>%
+    dplyr::rowwise() %>%
     dplyr::mutate(dist = geosphere::distHaversine(c(lon_obs, lat_obs), c(lon, lat)))
 
   # We need elevation for obs and stations
@@ -125,8 +152,9 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
 
   # Compute temp_dew when rh and temp_air exist
   df <- df %>%
-    dplyr::mutate(temp_dew = dplyr::case_when(!is.na(temp_dew) ~ temp_dew,   # Use observed TDEW when it exists
-                                              TRUE ~ humidity::dewpoint(temp_air, rh)))
+    dplyr::mutate(temp_dew =ifelse(!is.na(temp_dew), temp_dew, humidity::dewpoint(temp_air, rh)))
+    # dplyr::mutate(temp_dew = dplyr::case_when(!is.na(temp_dew) ~ temp_dew,   # Use observed TDEW when it exists
+    #                                           TRUE ~ humidity::dewpoint(temp_air, rh)))
 
   # Filter to just data with valid dew point temperature obs
   df_tmp <- df %>%
@@ -135,7 +163,7 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
   # Model dew point temp if valid.ids >= threshold
   if(length(df_tmp$id) >= n_station_thresh){
     # Compute lapse rate from all stations using linear regression
-    lapse_fit <- lm(temp_dew ~ elev, df_tmp)
+    lapse_fit <- stats::lm(temp_dew ~ elev, df_tmp)
     lapse = lapse_fit$coefficients[2] %>% as.numeric()
     lapse_r2 = summary(lapse_fit)$r.squared
     lapse_pval = summary(lapse_fit)$coefficients[2,4]
@@ -237,6 +265,6 @@ model_meteo <- function(id, lon_obs, lat_obs, elevation, datetime_utc,
     )
 
   # Return the data frame
-  modeled_met
+  return(modeled_met)
 
 }

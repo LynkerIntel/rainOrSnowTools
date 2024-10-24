@@ -7,7 +7,9 @@
 #' @export
 #'
 #' @examples
-#' tair_c <- f_to_c(temp_F = 32);
+#' \dontrun{
+#' tair_c <- f_to_c(temp_F = 32)
+#' }
 f_to_c <- function(temp_F){
   (temp_F - 32) * (5/9)
   }
@@ -20,7 +22,9 @@ f_to_c <- function(temp_F){
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' ppt_mm <- in_to_mm(ppt_in = 0.5)
+#' }
 in_to_mm <- function(ppt_in){
   ppt_in * 25.4
   }

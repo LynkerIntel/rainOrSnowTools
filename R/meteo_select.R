@@ -1,9 +1,22 @@
-# Function to pare down meteorological data to those closest in time
+# # Function to pare down meteorological data to those closest in time
 
-# Get the pipe
-`%>%` <- dplyr::`%>%` # add dplyr pipe
+# Declare global variables to pass R-CMD-check
+utils::globalVariables(
+  c("id", "datetime", "value", "name", "time_gap", ".", "REPORT_TYPE", "STATION")
+)
 
+# # Get the pipe
+# `%>%` <- dplyr::`%>%` # add dplyr pipe
+#
 
+#' Function to pare down meteorological data to those closest in time
+#'
+#' @param df data.frame
+#' @param datetime_obs Date or character
+#'
+#' @return data.frame
+#' @importFrom dplyr filter mutate group_by summarise `%>%`
+#' @importFrom tidyr pivot_longer pivot_wider
 select_meteo <- function(df, datetime_obs){
 
   # Identify the column names
@@ -12,8 +25,18 @@ select_meteo <- function(df, datetime_obs){
   # Check for column names in df
   if(("temp_air" %in% cols | "temp_wet" %in% cols | "temp_dew" %in% cols |
       "rh" %in% cols) == FALSE) {
-    stop("missing a valid column (temp_air, temp_wet, temp_dew, or rh")
+    warning("missing a valid column (temp_air, temp_wet, temp_dew, or rh")
   }
+
+  # Additional function to assure all columns are included in final DF
+  add_cols <- function(df, cols) {
+    add <- cols[!cols %in% names(df)]
+    if(length(add) != 0) df[add] <- NA
+    return(df)
+  }
+
+  # Define columns that should be included
+  all_cols <- c("temp_air", "temp_wet", "temp_dew", "rh")
 
   # Make the data longer
   # filter the na values
@@ -31,7 +54,8 @@ select_meteo <- function(df, datetime_obs){
     dplyr::group_by(id, name) %>%
     dplyr::summarise(value = mean(value),
                      time_gap = mean(time_gap)) %>%
-    tidyr::pivot_wider(names_from = name, values_from = value)
+    tidyr::pivot_wider(names_from = name, values_from = value) %>%
+    add_cols(., all_cols)
 
   # Return the data frame
   df
