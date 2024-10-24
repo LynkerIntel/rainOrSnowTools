@@ -56,12 +56,16 @@ access_meteo <- function(
     dist_thresh_m=100000
     ) {
 
-    # # EXAMPLE CODE:
-    # met_network = "HADS"
+    # # # EXAMPLE CODE:
+    # networks         = met_networks
+    # datetime_utc_obs = datetime
+    # lon_obs          = lon_obs
+    # lat_obs          = lat_obs
+    # deg_filter       = degree_filter
+    # time_thresh_s=3600
+    # dist_thresh_m=100000
+    # # met_network = "HADS"
     # datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
-    # lon = -105
-    # lat = 40
-    # degree_filter = 1
     # meteo <- access_meteo(networks = met_network,
     #                       datetime_utc_obs = datetime,
     #                       lon_obs = lon,
@@ -79,7 +83,7 @@ access_meteo <- function(
     }
 
     # Error handling if time thresh too long or short
-    if(time_thresh_s > 86400 | time_thresh_s < 600) {
+    if (time_thresh_s > 86400 | time_thresh_s < 600) {
       stop("time_thresh_s must be between 600 s and 86400 s")
     }
 
@@ -91,12 +95,12 @@ access_meteo <- function(
     met_all <- data.frame()
 
     # If ALL, add all networks
-    if("ALL" %in% networks){
+    if ("ALL" %in% networks) {
       networks = c("HADS", "LCD", "WCC")
     }
 
     # Access HADS data
-    if("HADS" %in% networks){
+    if ("HADS" %in% networks) {
       # Error handling when it comes to no stations reported in the timezones
       tryCatch({
       stations <- station_select(network = "HADS", lon_obs, lat_obs,
@@ -132,6 +136,23 @@ access_meteo <- function(
       }, error = function(e){})
     }
 
+    # met_all  %>% names()
+
+    # if no stations are found, return an empty data frame with column names
+    if (nrow(met_all) < 1) {
+        # provide empty data frame with column names
+        met_all <- data.frame(
+          id = character(0),
+          datetime = as.POSIXct(character(0), tz = "UTC"),
+          temp_air = numeric(0),
+          rh = numeric(0),
+          temp_dew = numeric(0),
+          temp_wet = numeric(0),
+          ppt = numeric(0)
+        )
+
+    }
+
     # Return the met_all data frame
     return(met_all)
 
@@ -153,20 +174,25 @@ access_meteo <- function(
 station_select <- function(network, lon_obs, lat_obs,
                            deg_filter, dist_thresh_m){
   # EXAMPLE CODE:
-  # # lon = -105
-  # # lat = 40
+  # network = "HADS"
+  # lat_obs
+  # deg_filter
+  # dist_thresh_m = dist_thresh_m
   # # station_select(network = "HADS", lon, lat, deg_filter=2, dist_thresh_m=100000)
 
   # Station metadata provided in sysdata.R
   # hads_meta = HADS metadata
   # lcd_meta = LCD metadata
   # wcc_meta = WCC metadata
-
+  # hads_meta  %>% names()
   # Select stations from the HADS dataset
-  if(network == "HADS"){
-    stations_tmp <- hads_meta %>%
-      dplyr::filter(lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,
-             lat >= lat_obs - deg_filter & lat <= lat_obs + deg_filter) %>%
+  if (network == "HADS") {
+    stations_tmp <- 
+      hads_meta %>%
+      dplyr::filter(
+        lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,
+        lat >= lat_obs - deg_filter & lat <= lat_obs + deg_filter
+        ) %>%
       dplyr::rowwise() %>%
       dplyr::mutate(dist = geosphere::distHaversine(c(lon_obs, lat_obs), c(lon, lat))) %>%
       dplyr::ungroup() %>%
@@ -196,7 +222,7 @@ station_select <- function(network, lon_obs, lat_obs,
   }
 
   # Return the stations dataset
-  stations_tmp
+  return(stations_tmp)
 }
 
 #' Download meteorological data from HADS

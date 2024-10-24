@@ -1,6 +1,6 @@
 Package: rainOrSnowTools
 Title: Data Access, QC, and Processing for Mountain Rain or Snow
-Version: 0.31
+Version: 0.32
 Authors@R: 
     person("Jennings", "Keith", , "kjennings@lynker.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4660-1472"))
