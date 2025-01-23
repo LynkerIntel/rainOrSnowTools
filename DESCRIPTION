@@ -1,27 +1,40 @@
 Package: rainOrSnowTools
 Title: Data Access, QC, and Processing for Mountain Rain or Snow
-Version: 0.1
+Version: 0.4
 Authors@R: 
     person("Jennings", "Keith", , "kjennings@lynker.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4660-1472"))
 Description: This package does several things to support analysis for the Mountain Rain or Snow citizen science project. 1) It accesses meteorological data from several networks. 2) It models meteorological data for each rain-snow-mixed observation. 3) It quality controls the citizen science data. 4) It will probably do more things, but 1-4 are most important.
-License: `use_mit_license()`
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
-LazyData: True
+RoxygenNote: 7.3.2
+LazyData: true
 Imports: 
-  tidyverse,
   tidyselect,
   geosphere,
   lutz,
   terra,
-  humidity
+  humidity,
+  sf,
+  dplyr,
+  lubridate,
+  pacman,
+  plyr,
+  tidyr,
+  climateR,
+  readr,
+  glue,
+  xml2,
+  httr
 Remotes:
-  SnowHydrology/humidity
+  SnowHydrology/humidity,
+  mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb
 Depends: 
-    R (>= 2.10)
+    R(>= 3.5.0)
 Suggests: 
     knitr,
     rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Config/testthat/edition: 3

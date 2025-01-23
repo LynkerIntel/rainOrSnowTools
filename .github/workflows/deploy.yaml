@@ -1,0 +1,162 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Print AWS Profiles
+        run: aws configure list-profiles
+      - name: Setup Static Buckets
+        shell: bash
+        env:
+          AWS_ACCOUNT_NUMBER: ${{ secrets.AWS_ACCOUNT_NUMBER }}
+          OUTPUT_S3_BUCKET: ${{ secrets.OUTPUT_S3_BUCKET }}
+          TFSTATE_S3_BUCKET: ${{ secrets.TFSTATE_S3_BUCKET }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          RUNNING_ON_GITHUB_ACTIONS: "true"
+        run: |
+          source sh/create_static_buckets.sh "$AWS_ACCOUNT_NUMBER" "$OUTPUT_S3_BUCKET" "$TFSTATE_S3_BUCKET" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
+
+      - name: Create ECR Repo
+        shell: bash
+        env:
+          AWS_ACCOUNT_NUMBER: ${{ secrets.AWS_ACCOUNT_NUMBER }}
+          ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          RUNNING_ON_GITHUB_ACTIONS: "true"
+        run: |
+          source sh/create_ecr_repo.sh "$AWS_ACCOUNT_NUMBER" "$ECR_REPO_NAME" "$AWS_REGION" "$RUNNING_ON_GITHUB_ACTIONS"
+
+      - name: Package Lambdas
+        shell: bash
+        env:
+          RUNNING_ON_GITHUB_ACTIONS: "true"
+        run: |
+          source sh/package_lambdas.sh ${GITHUB_WORKSPACE} "$RUNNING_ON_GITHUB_ACTIONS"
+
+      - name: Export Environment Variables
+        shell: bash
+        env:
+          RUNNING_ON_GITHUB_ACTIONS: "true"
+        run: |
+          source sh/export_env_vars.sh ${{ github.sha }} "$RUNNING_ON_GITHUB_ACTIONS"
+
+      - name: Print Exported Environment Variables
+        run: |
+          echo "Exported Environment Variables:"
+          printenv | grep TF_VAR
+
+      - name: Print Environment Variables in $GITHUB_ENV
+        run: |
+          echo "Environment Variables in \$GITHUB_ENV:"
+          cat $GITHUB_ENV
+
+      # Log in to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+
+      # Build, tag, and push new Docker image to Amazon ECR (Lambda function that runs add_climate_data.R)
+      # - This is the build step that will propagate any updates/changes to rainOrSnowTools R package)
+      # - Updates to the rainOrSnowTools R package will be pushed to the ECR repository and
+      # - any code changes in add_climate_data.R will be reflected in the mros_add_climate_data Lambda function that
+      # - adds climate data to the MROS Airtable data
+      #   - name: Build, tag, and push image to Amazon ECR
+      #     id: build-image
+      #     working-directory: ./lambda_containers/add_climate_data
+      #     env:
+      #       ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #       ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+      #       IMAGE_TAG: ${{ github.sha }}
+      #     run: |
+      #       # Build a docker container and
+      #       # push it to ECR so that it can
+      #       # be deployed to ECS.
+      #       docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG .
+      #       docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+      #       echo "image=$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG" >> $GITHUB_OUTPUT\
+      - name: Build, tag, and push image to Amazon ECR with cache
+        id: build-image-with-cache
+        uses: whoan/docker-build-with-cache-action@v5
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          context: ./lambda_containers/add_climate_data
+          # private registry
+          registry: ${{ steps.login-ecr.outputs.registry }}
+          image_name: ${{ secrets.ECR_REPO_NAME }}
+          image_tag: ${{ github.sha }}
+
+      # Initialize terraform and configure S3 backend
+      - name: Terraform Init
+        working-directory: ./infra
+        env:
+          TFSTATE_S3_BUCKET: ${{ secrets.TFSTATE_S3_BUCKET }}
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: terraform init -backend-config="bucket=${TFSTATE_S3_BUCKET}" -backend-config="profile=${AWS_PROFILE}" -backend-config="region=${AWS_REGION}"
+
+      # Create terraform plan
+      - name: Terraform Plan
+        working-directory: ./infra
+        id: plan
+        env:
+          airtable_api_token: ${{ secrets.TF_VAR_airtable_api_token }}
+          airtable_base_id: ${{ secrets.TF_VAR_airtable_base_id }}
+          airtable_secret_prefix: ${{ secrets.TF_VAR_airtable_secret_prefix }}
+          airtable_table_id: ${{ secrets.TF_VAR_airtable_table_id }}
+          aws_account_number: ${{ secrets.TF_VAR_aws_account_number }}
+          aws_profile: ${{ secrets.TF_VAR_aws_profile }}
+          aws_region: ${{ secrets.TF_VAR_aws_region }}
+          mros_ecr_repo_name: ${{ secrets.ECR_REPO_NAME }}
+          nasa_data_password_env_var: ${{ secrets.TF_VAR_nasa_data_password_env_var }}
+          nasa_data_user_env_var: ${{ secrets.TF_VAR_nasa_data_user_env_var }}
+          tfstate_s3_object_key: ${{ secrets.TF_VAR_tfstate_s3_object_key }}
+        run: |
+          terraform plan \
+            -var "airtable_api_token=${airtable_api_token}" \
+            -var "airtable_base_id=${airtable_base_id}" \
+            -var "airtable_secret_prefix=${airtable_secret_prefix}" \
+            -var "airtable_table_id=${airtable_table_id}" \
+            -var "aws_account_number=${aws_account_number}" \
+            -var "aws_profile=${aws_profile}" \
+            -var "aws_region=${aws_region}" \
+            -var "mros_ecr_repo_name=${mros_ecr_repo_name}" \
+            -var "nasa_data_password_env_var=${nasa_data_password_env_var}" \
+            -var "nasa_data_user_env_var=${nasa_data_user_env_var}" \
+            -var "tfstate_s3_object_key=${tfstate_s3_object_key}" \
+            -out=${{ github.sha }}.plan
+        continue-on-error: true
+
+      - name: Terraform Apply
+        working-directory: ./infra
+        id: apply
+        run: terraform apply -auto-approve ${{ github.sha }}.plan

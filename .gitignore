@@ -1,3 +1,81 @@
 .Rproj.user
 inst/doc
 TEST_TMP.R
+
+.Rhistory
+.RData
+.Ruserdata
+**/.DS_Store
+
+# terraform folder ignore
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+.terraform.lock.hcl
+.terraform/
+tfplan
+
+# # Ignore all .tf files
+*.tfvars
+**/.terraform/
+
+# # Except for main.tf: !main.tf
+
+# # main.tf *.tf
+# variables.tf
+
+# # infra/main.tf
+infra/variables.tf
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars
+infra/.terraform.lock.hcl
+infra/tfplan
+
+# infra/.terraform/
+
+# infra/
+# Ignore all files in the 'infra' directory
+infra/*
+!infra/main.tf
+!infra/add_met_data.R
+
+!s3.tf
+!sqs.tf
+!dynamodb.tf
+!s3_events.tf
+!sqs.tf
+!iam.tf
+!lambda.tf
+!ecr.tf
+!cloudwatch.tf
+!eventbridge.tf
+!secrets_manager.tf
+!sns.tf
+!variables_template.tf
+R/scrap.R
+
+.netrc
+.dodsrc
+.urs_cookies
+
+# # ignore all hidden files/directories starting with "."
+# .*
+# !/.gitignore
+
+.env
+
+deploy/
+
+# Ignore this empty csv file that gets generated when sh/build_static_resources.sh is run and this empty is created to be uploaded to the MROS output S3 bucket as a skeleton file
+tmp_empty_output.csv
+sh/test_pkging.sh
+sh/test_empty_csv.sh
+
+dev.conf
+lambdas/mros_csv_to_parquet/
+lambdas/mros_csv_to_parquet/*
+runners/
+runners/*
+runners/send_to_sqs.py
+
