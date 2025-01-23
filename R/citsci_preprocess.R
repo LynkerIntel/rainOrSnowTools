@@ -31,7 +31,8 @@ utils::globalVariables(
 #' lat = 40
 #' get_tz(lon, lat)
 #' }
-get_tz <- function(lon_obs, lat_obs){
+get_tz <- function(lon_obs, lat_obs) {
+
   # Make the timezone table
   tz_table <- make_tz_table()
 
@@ -62,9 +63,18 @@ make_tz_table <- function(){
   # Add support for more
 
   # Build out table for Pacific, Mountain, Central, and Eastern Standard Times
-  lutz::tz_list() %>%
+  tz_table <-
+    lutz::tz_list() %>%
     dplyr::filter(zone %in% c("PST", "MST", "CST", "EST")) %>%
-    dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
+    dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * -1)))
+
+  # check if table is valid
+  if (nrow(tz_table) == 0) {
+    stop("No valid time zones found in tz_list().")
+  }
+
+  return(tz_table)
+
 }
 
 #' Get elevation based on lat/lon
@@ -274,26 +284,9 @@ construct_gpm_product <- function(date_of_interest, product_version = NULL) {
   # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
   # Grab the right IMERG version based on date
   # IF the user defines the wrong thing, make the default for them
-  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.06"
-  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
-    product_version <- "GPM_3IMERGHHL.06"
-  } else {
-    product_version <- product_version
-  }
+  product_version <- get_valid_product_version_for_date(product_version, dateTime)
 
-  versions = list(
-    "GPM_3IMERGHHL.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06", "3B-HHR-L.MS.MRG.3IMERG"),
-    "GPM_3IMERGHHE.06" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06", "3B-HHR-E.MS.MRG.3IMERG"),
-    "GPM_3IMERGHHL.07" = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07", "3B-HHR-L.MS.MRG.3IMERG"),
-    "GPM_3IMERGHH.07"  = c("https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07", "3B-HHR.MS.MRG.3IMERG")
-  )
+  versions <- rainOrSnowTools::product_versions
 
   # throw an error if the product_version is not in the versions list
   if(!product_version %in% names(versions)) {
@@ -361,29 +354,12 @@ construct_gpm_base_url <- function(date_of_interest, product_version = NULL) {
   # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
   # Grab the right IMERG version based on date
   # IF the user defines the wrong thing, make the default for them
-  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.06"
-  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
-    product_version <- "GPM_3IMERGHHL.06"
-  } else {
-    product_version <- product_version
-  }
+  product_version <- get_valid_product_version_for_date(product_version, dateTime)
 
   # Define URL structure
 
   # list of available GPM IMERG product versions
-  versions = list(
-    "GPM_3IMERGHHL.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
-    "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
-    "GPM_3IMERGHHL.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07",
-    "GPM_3IMERGHH.07"  = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
-  )
+  versions <- rainOrSnowTools::product_versions
 
   # throw an error if the product_version is not in the versions list
   if(!product_version %in% names(versions)) {
@@ -425,6 +401,50 @@ get_closest_url <- function(urls, match_string) {
   # Return the closest URL
   return(urls[min_index])
 }
+
+
+
+#' Get the most optimal (or correct) product version for a given date
+#'
+#' @param product_version character product version
+#' @param dateTime date character
+#'
+#' @return character
+get_valid_product_version_for_date <- function(product_version, dateTime) {
+
+  # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
+  # Grab the right IMERG version based on date
+  # IF the user defines the wrong thing, make the default for them
+  if(
+    missing(product_version) & as.Date(dateTime) >= '2024-06-01'
+    ) {
+    product_version <- "GPM_3IMERGHHL.07"
+  } else if(
+    missing(product_version) & as.Date(dateTime) < '2024-06-01'
+    ) {
+    product_version <- "GPM_3IMERGHHL.06"
+  } else if (
+    product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'
+    ) {
+    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
+    product_version <- "GPM_3IMERGHHL.07"
+
+  } else if (
+    product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'
+    ){
+
+    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
+
+    product_version <- "GPM_3IMERGHHL.06"
+
+  } else {
+    product_version <- product_version
+  }
+
+  return(product_version)
+
+}
+
 
 #' Download GPM IMERG data
 #' Get GPM IMERG PLP data for a specified Lat/lon and date timestamp
@@ -491,28 +511,10 @@ get_imerg <- function(
   # Since 2024-06-01, IMERG v7 is the dominant HHL data feed
   # Grab the right IMERG version based on date
   # IF the user defines the wrong thing, make the default for them
-  if(missing(product_version) & as.Date(dateTime) >= '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if(missing(product_version) & as.Date(dateTime) < '2024-06-01') {
-    product_version <- "GPM_3IMERGHHL.06"
-  } else if (product_version == "GPM_3IMERGHHL.06" & as.Date(dateTime) >= '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv6 after 2024-06-01, defaulting to using IMERGv7")
-    product_version <- "GPM_3IMERGHHL.07"
-  } else if (product_version == "GPM_3IMERGHHL.07" & as.Date(dateTime) < '2024-06-01'){
-    message("rainOrSnowTools does not support IMERGv7 before 2024-06-01, defaulting to using IMERGv6")
-    product_version <- "GPM_3IMERGHHL.06"
-  } else {
-    product_version <- product_version
-  }
-
+  product_version <- get_valid_product_version_for_date(product_version, dateTime)
 
   # list of avaliable GPM IMERG product versions
-  versions = list(
-      "GPM_3IMERGHHL.06"= "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.06",
-      "GPM_3IMERGHHE.06" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHE.06",
-      "GPM_3IMERGHHL.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHHL.07",
-      "GPM_3IMERGHH.07" = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
-      )
+  versions <- rainOrSnowTools::product_versions
 
   # throw an error if the product_version is not in the versions list
   if(!product_version %in% names(versions)) {
