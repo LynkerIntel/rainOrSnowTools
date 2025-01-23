@@ -39,16 +39,13 @@ The goal of the `rainOrSnowTools` R package is to support analysis for the [**Mo
 
 ---
 
-You can install the development version of `rainOrSnowTools` from [GitHub](https://github.com/SnowHydrology/rainOrSnowTools/tree/r_packaging/) with:
+You can install the development version of `rainOrSnowTools` with:
 
 ```r
 # install.packages("devtools")
 # Install location is here for now...
-devtools::install_github("SnowHydrology/rainOrSnowTools",
-                         ref = "cicd_pipeline")
-
-# ...but eventually it will be here:
-devtools::install_github("SnowHydrology/rainOrSnowTools")
+devtools::install_github("LynkerIntel/rainOrSnowTools",
+                         ref = "main")
 ```
 
 ## Loading Example
