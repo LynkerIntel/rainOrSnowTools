@@ -35,6 +35,38 @@ qaqc_obs = function(data = data){
 
 }
 
+#' QAQC comments column
+#'
+#' @param data Dataframe of observation data
+#'
+#' @return Dataframe with a flag on comments 1 = pass; 0 = flagged
+#' @importFrom dplyr mutate grepl `%>%`
+#' @examples
+#' \dontrun{
+#' data = qaqc_comments(data)
+#' }
+qaqc_comments = function(data = data){
+  
+  # keywords to filter on
+  keywords <- c(
+    'hail', 'test',
+    'wrong', 'dupe', 'duplicate', 'delete',
+    'mistake', 'error', 'discard'
+  )
+  
+  data %>%
+    dplyr::mutate(
+      comment_flag = ifelse(
+        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) & 
+          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) & 
+          !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
+        0,  # output 0 if comment should be flagged - has keywords
+        1   # output 1 if no = PASS!
+      )
+    )
+  
+}
+
 #' QAQC processed data
 #'
 #' @param data Dataframe of processed observation data
@@ -58,7 +90,7 @@ qaqc_obs = function(data = data){
 #' max_closest_station = 3e4,
 #' min_n_station = 5,
 #' pval_max = 0.05
-#' data_qaqc2 = qaqc_processed(data = data,
+#' data_qaqc = qaqc_processed(data = data,
 #'                            snow_max_tair = snow_max_tair,
 #'                            rain_max_tair = rain_max_tair,
 #'                            rh_min = rh_min,
@@ -211,6 +243,13 @@ add_qaqc_flags = function(df,
   nstation_thresh = min_n_station
   pval_thresh = pval_max
 
+  # Add keywords to filter on
+  keywords <- c(
+    'hail', 'test',
+    'wrong', 'dupe', 'duplicate', 'delete',
+    'mistake', 'error', 'discard'
+  )
+
   qaqc <-
     df %>%
     dplyr::mutate(
@@ -284,6 +323,16 @@ add_qaqc_flags = function(df,
         state == "character(0)" | state == "invalid_location"   ~ "NoData",
         TRUE                                                    ~ "Pass"
         )
+    ) %>%
+    dplyr::mutate(
+      # Checks comment flag (0 = if comment should be flagged, 1 = pass)
+      comment_flag = ifelse(
+        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) & 
+          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) & 
+          !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
+        0,
+        1  
+      )
     )
 
 #   # Note data that have 'NoMet' as part of flag
