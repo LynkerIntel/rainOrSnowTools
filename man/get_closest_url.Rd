@@ -19,3 +19,11 @@ character of the closest URL to the "match_string"
 Get the closest URL to the "match_string" string
 Uses the Levenshtein distance to find the closest URL to the "match_string", match string is the "product name" string determined by the construct_gpm_product() function
 }
+\seealso{
+Other imerg: 
+\code{\link{construct_gpm_base_url}()},
+\code{\link{construct_gpm_product}()},
+\code{\link{get_final_urls}()},
+\code{\link{get_imerg}()}
+}
+\concept{imerg}

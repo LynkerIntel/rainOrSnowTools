@@ -18,3 +18,11 @@ character GPM IMERG product name for the given date
 \description{
 Construct the product name of GPM IMERG data for a given date in YYYY-MM-DDTHH:MM:SS.000Z format UTC time
 }
+\seealso{
+Other imerg: 
+\code{\link{construct_gpm_base_url}()},
+\code{\link{get_closest_url}()},
+\code{\link{get_final_urls}()},
+\code{\link{get_imerg}()}
+}
+\concept{imerg}

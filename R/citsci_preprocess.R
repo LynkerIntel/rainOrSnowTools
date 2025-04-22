@@ -93,6 +93,7 @@ get_elev <- function(lon_obs, lat_obs){
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105
@@ -131,6 +132,7 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105
@@ -169,6 +171,7 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 #' @return State
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
+#' @export
 #' @examples
 #' \dontrun{
 #' lon = -105

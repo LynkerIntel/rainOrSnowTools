@@ -2,8 +2,7 @@
 % Please edit documentation in R/citsci_preprocess.R
 \name{get_imerg}
 \alias{get_imerg}
-\title{Download GPM IMERG data
-Get GPM IMERG PLP data for a specified Lat/lon and date timestamp}
+\title{Get GPM IMERG PLP data for a specified lat/lon and datetime}
 \usage{
 get_imerg(
   datetime_utc = NULL,
@@ -29,8 +28,7 @@ Available versions are "GPM_3IMERGHHL.06", "GPM_3IMERGHHE.06", "GPM_3IMERGHHL.07
 a dataframe of GPM data for each observation
 }
 \description{
-Download GPM IMERG data
-Get GPM IMERG PLP data for a specified Lat/lon and date timestamp
+Get GPM IMERG PLP data for a specified lat/lon and datetime
 }
 \examples{
 \dontrun{
@@ -40,3 +38,11 @@ lat = 40
 gpm <- get_imerg(datetime_utc, lon_obs = lon, lat_obs = lat)
 }
 }
+\seealso{
+Other imerg: 
+\code{\link{construct_gpm_base_url}()},
+\code{\link{construct_gpm_product}()},
+\code{\link{get_closest_url}()},
+\code{\link{get_final_urls}()}
+}
+\concept{imerg}

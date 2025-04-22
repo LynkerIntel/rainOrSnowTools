@@ -40,31 +40,31 @@ qaqc_obs = function(data = data){
 #' @param data Dataframe of observation data
 #'
 #' @return Dataframe with a flag on comments 1 = pass; 0 = flagged
-#' @importFrom dplyr mutate grepl `%>%`
+#' @importFrom dplyr mutate `%>%`
 #' @examples
 #' \dontrun{
 #' data = qaqc_comments(data)
 #' }
 qaqc_comments = function(data = data){
-  
+
   # keywords to filter on
   keywords <- c(
     'hail', 'test',
     'wrong', 'dupe', 'duplicate', 'delete',
     'mistake', 'error', 'discard'
   )
-  
+
   data %>%
     dplyr::mutate(
       comment_flag = ifelse(
-        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) & 
-          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) & 
+        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) &
+          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) &
           !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
         0,  # output 0 if comment should be flagged - has keywords
         1   # output 1 if no = PASS!
       )
     )
-  
+
 }
 
 #' QAQC processed data
@@ -327,11 +327,11 @@ add_qaqc_flags = function(df,
     dplyr::mutate(
       # Checks comment flag (0 = if comment should be flagged, 1 = pass)
       comment_flag = ifelse(
-        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) & 
-          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) & 
+        grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) &
+          !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) &
           !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
         0,
-        1  
+        1
       )
     )
 
