@@ -27,17 +27,17 @@ The goal of the `rainOrSnowTools` R package is to support analysis for the [**Mo
 
 ### `rainOrSnowTools` provides:
 
----
+------------------------------------------------------------------------
 
 1.  Access to meteorological data from the [HADS](https://hads.ncep.noaa.gov/), [LCD](https://www.ncei.noaa.gov/products/land-based-station/local-climatological-data), and [WCC](https://www.nrcs.usda.gov/wps/portal/wcc/home/) networks.
 2.  Modeled meteorological data (air/dew point/wet bulb temperature and relative humidity) for an observation point.
 3.  [GPM IMERG probability of liquid precipitation](https://gpm.nasa.gov/data/imerg) (pLP) data for an observation point.
 4.  Geographical data (elevation, state, and ecoregion 3/4) for an observation point.
-5.  QA/QC of processed observation data.
+5.  QC of processed observation data.
 
----
+------------------------------------------------------------------------
 
-:point_right: **The processed data are available on our [public-facing dashboard](https://rainorsnowmaps.com/)** :point_left:
+:cloud_with_snow::cloud_with_rain::point_right: **The processed data are available on our [public-facing dashboard](https://rainorsnowmaps.com/)** :point_left::cloud_with_rain::cloud_with_snow:
 
 You can learn more about how to use the data on the dashboard's [User Guide tab](https://rainorsnowmaps.com/obs).
 
@@ -45,7 +45,7 @@ You can learn more about how to use the data on the dashboard's [User Guide tab]
 
 You can install `rainOrSnowTools` with:
 
-```r
+``` r
 # install.packages("devtools")
 devtools::install_github("LynkerIntel/rainOrSnowTools")
 ```
@@ -56,14 +56,11 @@ Load in the `rainOrSnowTools` library:
 library(rainOrSnowTools)
 ```
 
-<br>
-
 ## Package Functions
 
 Each observation is geotagged with a datetime, location (latitude, longitude) and phase observation.
 
-In this example, we will use the following sample:
-`datetime: 2025-04-10 12:30:00 UTC`,`lat = 40`,`lon = -105`, `phase = "Snow"`
+In this example, we will use the following sample: `datetime: 2025-04-10 12:30:00 UTC`,`lat = 40`,`lon = -105`, `phase = "Snow"`
 
 ```{r example load, eval = TRUE, echo = FALSE}
 
@@ -76,16 +73,16 @@ phase = 'Snow'
 
 #### Tagging an observation with ancillary data:
 
-##### Geography-related:
+#### Geography-related:
 
-*Only need to provide a lat/lon*
+*Need to provide a lat/lon*
 
-| **Function**           | **Description**                                             |
-| ---------------------- | ----------------------------------------------------------- |
-| `get_elev`             | Elevation in meters, derived from the USGS 3DEP 10m product |
-| `get_eco_level3`       | EPA Ecoregion Level 3                                       |
-| `get_eco_level4`       | EPA Ecoregion Level 4                                       |
-| `get_state`            | U.S. State                                                  |
+| **Function**     | **Description**                                             |
+|-----------------------|-------------------------------------------------|
+| `get_elev`       | Elevation in meters, derived from the USGS 3DEP 10m product |
+| `get_eco_level3` | EPA Ecoregion Level 3                                       |
+| `get_eco_level4` | EPA Ecoregion Level 4                                       |
+| `get_state`      | U.S. State                                                  |
 
 ```{r example1, eval = TRUE, echo = TRUE}
 # Elevation data in meters:
@@ -94,19 +91,19 @@ elev <- rainOrSnowTools::get_elev(lon_obs = lon,
 # [1] 1590.199
 ```
 
-##### Meteorological-related:
+#### Meteorological-related:
 
 *Need to provide datetime and lat/lon*
 
-| **Function**            | **Description**                                                                |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `get_imerg`             | GPM IMERG Probability of Liquid Precipitation value (closer to 0 = likely snow, closer to 100 = likely rain) |
-| `model_meteo`           | This final function uses data collected from helper functions to model met variables for an observation point. Will only provide modeled data for points with >= 5 station data. Helper functions = `access_meteo`, `qc_meteo`, `select_meteo`, `gather_meta` |
+| **Function**  | **Description**                                                                                                                                                                                                                                                |
+|----------------------|--------------------------------------------------|
+| `get_imerg`   | GPM IMERG Probability of Liquid Precipitation value (closer to 0 = likely snow, closer to 100 = likely rain)                                                                                                                                                   |
+| `model_meteo` | This final function uses data collected from helper functions to model met variables for an observation point. Will only provide modeled data for points with \>= 5 station data. Helper functions = `access_meteo`, `qc_meteo`, `select_meteo`, `gather_meta` |
 
-* `access_meteo` = Access data (+/- 1 hour) from the met network of choice (`HADS`, `LCD`, `WCC`, or `ALL`). Required variables include `datetime`, `lat`, `lon`, `deg_filter` (search radius)
-* `qc_meteo` = QC the met data collected using standard thresholds
-* `select_meteo` = Final selection of the met data from the network(s) of choice, filtering data to grab the closest in time
-* `gather_meta` = Gathers the metadata associated for each station from `select_meteo`
+-   `access_meteo` = Access data (+/- 1 hour) from the met network of choice (`HADS`, `LCD`, `WCC`, or `ALL`). Required variables include `datetime`, `lat`, `lon`, `deg_filter` (search radius)
+-   `qc_meteo` = QC the met data collected using standard thresholds
+-   `select_meteo` = Final selection of the met data from the network(s) of choice, filtering data to grab the closest in time
+-   `gather_meta` = Gathers the metadata associated for each station from `select_meteo`
 
 ```{r example2, eval = FALSE, echo = TRUE}
 # Get GPM IMERG probability of liquid precipitation:
@@ -118,12 +115,13 @@ plp <- rainOrSnowTools::get_imerg(datetime_utc    = datetime,
 # [1] 13
 # This values agrees with the Snow phase report
 ```
+
 *Note that the GPM IMERG algorithm has deprecated the version 6 as of late 2024, [see here](https://gpm.nasa.gov/resources/documents/imerg-v07-release-notes)*
 
----
+------------------------------------------------------------------------
 
+##### Example workflow:
 
-###### Example workflow: 
 Get modeled meteorological variables, harnessing data from the HADS, LCD, and WCC met networks.
 
 ```{r example3, eval = TRUE, echo = TRUE}
@@ -170,11 +168,11 @@ met_vars <- rainOrSnowTools::model_meteo(id           = "example",
                                          meta_df      = metadata)
 ```
 
-```{r metout, eval = TRUE, echo = FALSE}
-# Output of 37 variables
+```{r metout, eval = TRUE, echo = TRUE}
+# Output of 37 variables, does not include the QC flags
+# Temperature units = ºC and RH unit = %
 dplyr::tibble(met_vars)
 ```
-
 
 ```{r, eval = FALSE, echo = FALSE}
 # Render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.

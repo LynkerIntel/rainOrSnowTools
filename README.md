@@ -34,8 +34,10 @@ science project**.
 
 ------------------------------------------------------------------------
 
-:point_right: **The processed data are available on our [public-facing
-dashboard](https://rainorsnowmaps.com/)** :point_left:
+:cloud_with_snow::cloud_with_rain::point_right: **The processed data are
+available on our [public-facing
+dashboard](https://rainorsnowmaps.com/)**
+:point_left::cloud_with_rain::cloud_with_snow:
 
 You can learn more about how to use the data on the dashboard’s [User
 Guide tab](https://rainorsnowmaps.com/obs).
@@ -55,9 +57,7 @@ Load in the `rainOrSnowTools` library:
 library(rainOrSnowTools)
 ```
 
-<br>
-
-### Package Functions
+## Package Functions
 
 Each observation is geotagged with a datetime, location (latitude,
 longitude) and phase observation.
@@ -68,9 +68,9 @@ In this example, we will use the following sample:
 
 #### Tagging an observation with ancillary data:
 
-##### Geography-related:
+#### Geography-related:
 
-*Only need to provide a lat/lon*
+*Need to provide a lat/lon*
 
 | **Function**     | **Description**                                             |
 |------------------|-------------------------------------------------------------|
@@ -86,7 +86,7 @@ elev <- rainOrSnowTools::get_elev(lon_obs = lon,
 # [1] 1590.199
 ```
 
-##### Meteorological-related:
+#### Meteorological-related:
 
 *Need to provide datetime and lat/lon*
 
@@ -121,7 +121,7 @@ here](https://gpm.nasa.gov/resources/documents/imerg-v07-release-notes)*
 
 ------------------------------------------------------------------------
 
-###### Example workflow:
+##### Example workflow:
 
 Get modeled meteorological variables, harnessing data from the HADS,
 LCD, and WCC met networks.
@@ -170,14 +170,19 @@ met_vars <- rainOrSnowTools::model_meteo(id           = "example",
                                          meta_df      = metadata)
 ```
 
-    #> # A tibble: 1 × 37
-    #>   id      temp_air_idw_lapse_const temp_air_idw_lapse_var temp_air_nearest_sit…¹
-    #>   <chr>                      <dbl>                  <dbl>                  <dbl>
-    #> 1 example                     1.25                   1.02                 -0.686
-    #> # ℹ abbreviated name: ¹​temp_air_nearest_site_const
-    #> # ℹ 33 more variables: temp_air_nearest_site_var <dbl>, temp_air_avg_obs <dbl>,
-    #> #   temp_air_min_obs <dbl>, temp_air_max_obs <dbl>, temp_air_lapse_var <dbl>,
-    #> #   temp_air_lapse_var_r2 <dbl>, temp_air_lapse_var_pval <dbl>,
-    #> #   temp_air_n_stations <int>, temp_air_avg_time_gap <dbl>,
-    #> #   temp_air_avg_dist <dbl>, temp_air_nearest_id <chr>,
-    #> #   temp_air_nearest_elev <dbl>, temp_air_nearest_dist <dbl>, …
+``` r
+# Output of 37 variables, does not include the QC flags
+# Temperature units = ºC and RH unit = %
+dplyr::tibble(met_vars)
+#> # A tibble: 1 × 37
+#>   id      temp_air_idw_lapse_const temp_air_idw_lapse_var temp_air_nearest_sit…¹
+#>   <chr>                      <dbl>                  <dbl>                  <dbl>
+#> 1 example                     1.25                   1.02                 -0.686
+#> # ℹ abbreviated name: ¹​temp_air_nearest_site_const
+#> # ℹ 33 more variables: temp_air_nearest_site_var <dbl>, temp_air_avg_obs <dbl>,
+#> #   temp_air_min_obs <dbl>, temp_air_max_obs <dbl>, temp_air_lapse_var <dbl>,
+#> #   temp_air_lapse_var_r2 <dbl>, temp_air_lapse_var_pval <dbl>,
+#> #   temp_air_n_stations <int>, temp_air_avg_time_gap <dbl>,
+#> #   temp_air_avg_dist <dbl>, temp_air_nearest_id <chr>,
+#> #   temp_air_nearest_elev <dbl>, temp_air_nearest_dist <dbl>, …
+```
