@@ -15,9 +15,17 @@ The goal of the `rainOrSnowTools` R package is to support analysis for
 the [**Mountain Rain or Snow**](https://www.rainorsnow.org/) **citizen
 science project**.
 
-### `rainOrSnowTools` provides:
+:cloud_with_snow::cloud_with_rain::point_right: **The processed data are
+available on our [public-facing
+dashboard](https://rainorsnowmaps.com/)**
+:point_left::cloud_with_rain::cloud_with_snow:
+
+You can learn more about how to use the data on the dashboard’s [User
+Guide tab](https://rainorsnowmaps.com/obs).
 
 ------------------------------------------------------------------------
+
+### `rainOrSnowTools` provides:
 
 1.  Access to meteorological data from the
     [HADS](https://hads.ncep.noaa.gov/),
@@ -26,21 +34,13 @@ science project**.
 2.  Modeled meteorological data (air/dew point/wet bulb temperature and
     relative humidity) for an observation point.
 3.  [GPM IMERG probability of liquid
-    precipitation](https://gpm.nasa.gov/data/imerg) (pLP) data for an
+    precipitation](https://gpm.nasa.gov/data/imerg) (PLP) data for an
     observation point.
-4.  Geographical data (elevation, state, and ecoregion 3/4) for an
+4.  Geographical data (elevation, state, and Ecoregion 3/4) for an
     observation point.
-5.  QA/QC of processed observation data.
+5.  QC of processed observation data.
 
 ------------------------------------------------------------------------
-
-:cloud_with_snow::cloud_with_rain::point_right: **The processed data are
-available on our [public-facing
-dashboard](https://rainorsnowmaps.com/)**
-:point_left::cloud_with_rain::cloud_with_snow:
-
-You can learn more about how to use the data on the dashboard’s [User
-Guide tab](https://rainorsnowmaps.com/obs).
 
 ## Installation and Loading
 
@@ -86,7 +86,7 @@ elev <- rainOrSnowTools::get_elev(lon_obs = lon,
 # [1] 1590.199
 ```
 
-#### Meteorological-related:
+#### Meteorology-related:
 
 *Need to provide datetime and lat/lon*
 
@@ -109,7 +109,7 @@ elev <- rainOrSnowTools::get_elev(lon_obs = lon,
 plp <- rainOrSnowTools::get_imerg(datetime_utc    = datetime,
                                   lon_obs         = lon,
                                   lat_obs         = lat,
-                                  product_version = 'GPM_3IMERGHHL.07')
+                                  product_version = 'GPM_3IMERGHHL.07') # this is the default version
 
 # [1] 13
 # This values agrees with the Snow phase report
@@ -128,8 +128,8 @@ LCD, and WCC met networks.
 
 ``` r
 # Define the static vars
-met_networks = "ALL"
-degree_filter = 1
+met_networks = "ALL" # Call the HADS, LCD, and WCC stations
+degree_filter = 1 # 1º radius
 
 meteo <- rainOrSnowTools::access_meteo(networks         = met_networks,
                                        datetime_utc_obs = datetime,
@@ -137,7 +137,7 @@ meteo <- rainOrSnowTools::access_meteo(networks         = met_networks,
                                        lat_obs          = lat,
                                        deg_filter       = degree_filter)
 
-# Output of 387 observations of 7 variables
+# Output: 387 observations of 7 variables
 # head(meteo)
 #      id            datetime temp_air rh temp_dew temp_wet ppt
 # 1 AENC2 2025-04-10 11:56:00 1.111111 57       NA       NA  NA
@@ -159,8 +159,22 @@ stations_to_gather <- unique(meteo_qc$id)
 
 # Get metadata for each station ID
 metadata <- rainOrSnowTools::gather_meta(stations_to_gather)
+```
 
-# Get modeled meteorological variables, harnessing data from the HADS, LCD, and WCC met networks
+``` r
+# `metadata` can get the number of data points from each network
+
+#>      hads_counts lcd_counts wcc_counts
+#>              45         10         27
+
+# `meteo_subset` can get the number of data points for each met variable
+
+#>     ppt    rh temp_air temp_dew temp_wet
+#>       4    40       81       12       10
+```
+
+``` r
+# Finally, get modeled meteorological variables
 met_vars <- rainOrSnowTools::model_meteo(id           = "example",
                                          lon_obs      = lon,
                                          lat_obs      = lat,
@@ -172,6 +186,7 @@ met_vars <- rainOrSnowTools::model_meteo(id           = "example",
 
 ``` r
 # Output of 37 variables, does not include the QC flags
+
 # Temperature units = ºC and RH unit = %
 dplyr::tibble(met_vars)
 #> # A tibble: 1 × 37
