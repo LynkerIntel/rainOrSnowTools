@@ -60,8 +60,8 @@ qaqc_comments = function(data = data){
         grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) &
           !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) &
           !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
-        0,  # output 0 if comment should be flagged - has keywords
-        1   # output 1 if no = PASS!
+        "Flag",
+        "Pass"
       )
     )
 
@@ -330,8 +330,8 @@ add_qaqc_flags = function(df,
         grepl(paste(keywords, collapse = "|"), comment, ignore.case = TRUE) &
           !grepl("\\blightest\\b|\\blatest\\b", comment, ignore.case = TRUE) &
           !grepl("Obs identified as part of duplicate", comment, ignore.case = TRUE),
-        0,
-        1
+        "Flag",
+        "Pass"
       )
     )
 
