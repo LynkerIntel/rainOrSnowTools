@@ -12,26 +12,6 @@ utils::globalVariables(
   )
 )
 
-# # Declare global variables to pass R-CMD-check
-# utils::globalVariables(
-#               c(
-#               ".", "DATE", "datetime", "dateTime", "datetime_lst",
-#               "datetime_utc_obs", "dist",  "elev",
-#               "HourlyDewPointTemperature", "HourlyDryBulbTemperature", "HourlyPrecipitation",
-#               "HourlyRelativeHumidity", "HourlyWetBulbTemperature",
-#               "id", "last_col", "lat",
-#               "LATITUDE", "lon", "LONGITUDE", "minTime",
-#               "name", "nasa_time", "origin_time",
-#               "ppt", "ppt2", "REPORT_TYPE", "rh", "rh2",
-#               "rounded_time", "STATE_NAME", "station", "STATION",
-#               "tair", "tair2", "tdew", "tdew2",
-#               "temp_air", "temp_dew", "temp_wet",
-#               "time_gap", "timezone_lst", "twet2",
-#               "US_L3NAME", "US_L4NAME", "utc_offset_h",
-#               "utc_valid", "value", "weight_raw", "zone"
-#               )
-#             )
-
 # `%>%` <- dplyr::`%>%`
 
 #' Download and preprocess meteorological data from three station networks
@@ -187,7 +167,7 @@ station_select <- function(network, lon_obs, lat_obs,
   # hads_meta  %>% names()
   # Select stations from the HADS dataset
   if (network == "HADS") {
-    stations_tmp <- 
+    stations_tmp <-
       hads_meta %>%
       dplyr::filter(
         lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,

@@ -6,7 +6,7 @@
 This function reads the catalog.xml file from the hyrax GPM IMERG catalog.xml URL and
 extracts the "dap" service files, and returns them as a character vector}
 \usage{
-get_final_urls(url, verbose = TRUE)
+get_final_urls(url, verbose = FALSE)
 }
 \arguments{
 \item{url}{character string URL to the catalog.xml file}
@@ -21,3 +21,11 @@ Get the resource URLs from NASA GPM XML Catalog
 This function reads the catalog.xml file from the hyrax GPM IMERG catalog.xml URL and
 extracts the "dap" service files, and returns them as a character vector
 }
+\seealso{
+Other imerg: 
+\code{\link{construct_gpm_base_url}()},
+\code{\link{construct_gpm_product}()},
+\code{\link{get_closest_url}()},
+\code{\link{get_imerg}()}
+}
+\concept{imerg}

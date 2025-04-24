@@ -18,3 +18,11 @@ character GPM IMERG base URL for the given date
 \description{
 Construct the base URL for GPM IMERG data for a given date timestamp
 }
+\seealso{
+Other imerg: 
+\code{\link{construct_gpm_product}()},
+\code{\link{get_closest_url}()},
+\code{\link{get_final_urls}()},
+\code{\link{get_imerg}()}
+}
+\concept{imerg}

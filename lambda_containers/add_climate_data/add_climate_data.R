@@ -13,18 +13,12 @@
 # - Currently NASA GPM IMERG appears to be only avaliable after a 5 day delay, meaning that
 # the most recent data is NOT avaliable and this function should only be run to retrieve data from 5 days ago or further back in time
 
-# # # install with the below code
-# devtools::install_github("SnowHydrology/rainOrSnowTools",
-#                        ref = "cicd_pipeline")
-
 # -----------------------------------------
 # --- ENRICH MRoS AIRTABLE OBSERVATION ----
 # -----------------------------------------
 
 library(lambdr)
 library(dplyr)
-# library(sf)
-# library(rainOrSnowTools)
 
 # Environment variables
 NASA_DATA_USER = Sys.getenv("NASA_DATA_USER")
@@ -225,6 +219,7 @@ add_climate_data <- function(Records = NULL) {
                 pval_temp_dew_flag = character(),
                 phase_flag = character(),
                 CONUS = character(),
+                comment_flag = character(),
                 met1_id = character(),
                 met1_temp_air_idw_lapse_const = numeric(),
                 met1_temp_air_idw_lapse_var = numeric(),
@@ -332,8 +327,7 @@ add_climate_data <- function(Records = NULL) {
     # static inputs
     met_networks        = "ALL"
     degree_filter       = 1
-    gpm_product_version = "GPM_3IMERGHHL.06"   # TODO: This is the product we've been using since this pipeline began around Febraury 2024
-    # gpm_product_version = "GPM_3IMERGHHE.06" # TODO: Potential new product version to use, still has same 5 day delay 
+    gpm_product_version = "GPM_3IMERGHHL.07"
 
     # extract observation data from JSON event
     lon_obs   = as.numeric(data$longitude)

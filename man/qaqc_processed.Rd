@@ -48,7 +48,7 @@ max_avgdist_station = 2e5,
 max_closest_station = 3e4,
 min_n_station = 5,
 pval_max = 0.05
-data_qaqc2 = qaqc_processed(data = data,
+data_qaqc = qaqc_processed(data = data,
                            snow_max_tair = snow_max_tair,
                            rain_max_tair = rain_max_tair,
                            rh_min = rh_min,
