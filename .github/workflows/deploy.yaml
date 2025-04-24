@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
@@ -117,7 +119,6 @@ jobs:
 
       # Initialize terraform and configure S3 backend
       - name: Terraform Init
-      - uses: hashicorp/setup-terraform@v3
 
         working-directory: ./infra
         env:
