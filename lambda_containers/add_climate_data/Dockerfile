@@ -40,7 +40,7 @@ RUN installGithub.r mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611
 # this forces rainOrSnowTools to be installed from github on every build
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
-RUN installGithub.r LynkerIntel/rainOrSnowTools@cicd_pipeline
+RUN installGithub.r LynkerIntel/rainOrSnowTools@main
 
 RUN mkdir /lambda
 COPY add_climate_data.R /lambda
