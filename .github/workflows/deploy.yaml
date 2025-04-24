@@ -117,7 +117,7 @@ jobs:
 
       # Initialize terraform and configure S3 backend
       - name: Terraform Init
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
         working-directory: ./infra
         env:
