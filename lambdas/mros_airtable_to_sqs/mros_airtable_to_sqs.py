@@ -10,36 +10,20 @@ import requests
 import json
 import time
 import hashlib
-# import uuid
 
 # pandas and json_normalize for flattening JSON data
 import pandas as pd
 from pandas import json_normalize
 
-# import awswrangler as wr
-
-
-
 # AWS SDK for Python (Boto3) and S3fs for S3 file system support
 import boto3
 import s3fs
-
-# import the environment variables from the config.py file
-# import lambdas.mros_airtable_to_sqs.config
-# from config import Config
 
 # environemnt variables
 BASE_ID = os.environ.get('BASE_ID')
 TABLE_ID = os.environ.get('TABLE_ID')
 AIRTABLE_TOKEN = os.environ.get('AIRTABLE_TOKEN')
-# S3_BUCKET = os.environ.get('S3_BUCKET')
 SQS_QUEUE_URL = os.environ.get('SQS_QUEUE_URL')
-
-# DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE')
-# DATE = os.environ.get('DATE')
-
-# # DynamoDB client
-# dynamodb = boto3.client('dynamodb')
 
 # SQS client
 sqs = boto3.client('sqs')
@@ -85,9 +69,6 @@ def fetch_airtable_data(date, base_id, table_id, airtable_token):
     while True:
         # Construct the Airtable API endpoint URL with the offset if available
         url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
-        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
-        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7Bdate_submitted_utc%7D='{date}'"
-        # url = f"https://api.airtable.com/v0/{base_id}/{table_id}/?filterByFormula=%7BSubmitted%20Date%7D='{date}'"
 
         if offset:
             print(f"Adding offset to url...")
@@ -112,9 +93,6 @@ def fetch_airtable_data(date, base_id, table_id, airtable_token):
 
             # Extend fetched records list to the all_records list
             all_records.extend(records)
-
-            # # Append fetched records to the all_records list
-            # all_records.append(records)
 
             # Get the offset for the next request
             offset = response_data.get("offset")
@@ -170,41 +148,18 @@ def records_to_dataframe(records_list):
                 'fields.time_submitted_utc' : 'submitted_time',
                 'fields.date_submitted_utc' : 'submitted_date',
                 'fields.comment' : 'comment',
-                'fields.datetime_received_pacific' : 'time'
+                'fields.datetime_received_pacific' : 'time' # this col is actually the datetime in UTC
             }
 
             # Rename columns using the lambda function
             df.rename(columns=name_mapping, inplace=True)
 
-            # df.iloc[0]
-
-            # # make all column names lowercase
-            # df.columns = df.columns.str.lower()
-
-            # # remove the 'fields' prefix from the column names, and replace any spaces or special characters with underscores
-            # clean_cols_names = lambda x: x.split('.', 1)[-1].replace(' ', '_').replace('[^a-zA-Z0-9_]', '')
-
-            # # Rename columns using the lambda function
-            # df.rename(columns=clean_cols_names, inplace=True)
-
             # required columns in output dataframe
             req_columns = ['id', 'createdtime', 'name', 'latitude', 'user', 'longitude',
                            'submitted_time', 'local_time', 'submitted_date', 'local_date', 'comment', 'time']
 
-            # # template dataframe with the required columns
-            # tmp_df = pd.DataFrame(columns=req_columns)
-            
-            # # df.columns
-
-            # # Merge the DataFrames, ensuring that all desired columns are present
-            # df = pd.merge(tmp_df, df, how='outer')
-
             # Reorder the columns
             df = df[req_columns]
-            # df.iloc[0]
-
-            # # Replace special characters with underscores in date variable
-            # clean_date = re.sub(r'[\W_]+', '_', date)
             
             # Convert the date column to a datetime object
             df["timestamp"] = pd.to_datetime(df.time)
@@ -212,16 +167,12 @@ def records_to_dataframe(records_list):
             # Convert the datetime object to an epoch timestamp
             df['timestamp'] = df['timestamp'].apply(lambda x: x.timestamp())
 
-            # # Add a uuid column for each row
-            # df['uuid'] = df.apply(lambda x: uuid.uuid4().hex, axis=1)
-
             # create a duplicate_id column which is the concatenation of the user and time columns (replacing special characters in "time" with underscores)
             df['duplicate_id'] = df['user'] + "_" + df['time'].apply(lambda x: re.sub(r'[\W_]+', '_', x))
 
             # Group by 'duplicate_id' and add a 'duplicate_count' column
             df['duplicate_count'] = df.groupby('duplicate_id').cumcount() + 1
             
-            # return df.to_dict(orient='records')
             return df
 
 # function to create a hash value of a Python dictionary
@@ -259,45 +210,8 @@ def mros_airtable_to_sqs(event, context):
     curr_time = event['time']
 
     # curr_time = "2023-11-21T00:00:00Z"
-    # curr_time = "2024-01-25T00:00:00Z"
-    # curr_time = "2024-01-28T00:00:00Z"
-    # curr_time = "2024-10-10T00:00:00Z"
-
-    # 2018-09-19 17:47:12
+    
     print(f"curr_time: {curr_time}")
-
-    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (BELOW) ########
-    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (BELOW) ########
-
-    # # Parse the input string
-    # parsed_date = datetime.strptime(curr_time, "%Y-%m-%dT%H:%M:%SZ")
-    # print(f"parsed_date: {parsed_date}")
-    
-    # # Get date 1 day before the current date
-    # date_one_days_ago = parsed_date - timedelta(days=1)
-    # print(f"1 days ago date: {date_one_days_ago}")
-
-    # # Get date 2 day before the current date
-    # date_two_days_ago = parsed_date - timedelta(days=2)
-    # print(f"2 days ago date: {date_two_days_ago}")
-
-    # # Format the date as "MM/DD/YY"
-    # DATE = parsed_date.strftime("%m/%d/%y")
-
-    # # Coerce 1 and 2 days dates to format for querying airtable 
-    # DATE_1_DAY_AGO = date_one_days_ago.strftime("%m/%d/%y")
-    # DATE_2_DAY_AGO = date_two_days_ago.strftime("%m/%d/%y")
-
-    # print(f"- DATE: {DATE}")
-    # print(f"- DATE_1_DAY_AGO: {DATE_1_DAY_AGO}")
-    # print(f"- DATE_2_DAY_AGO: {DATE_2_DAY_AGO}")
-    
-    # # Make a list of dates 
-    # DATE_LIST = [DATE_1_DAY_AGO, DATE_2_DAY_AGO]
-    # # DATE_LIST = ['01/24/24', '01/23/24', '0010/3212/34134']
-
-    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
-    # ###### OLD METHOD OF GETTING DATE_LIST for 2 days ago (ABOVE) ########
 
     # New method of getting DATE_LIST for 7 days ago (or any number of days with 'n' argument)
     DATE_LIST = get_dates_before(curr_time, 7)
@@ -327,11 +241,6 @@ def mros_airtable_to_sqs(event, context):
         else:
             print(f"No records found for date '{i}', Skipping key '{i}'...")
             airtable_data[i] = None
-
-    # [records_to_dataframe(airtable_data[i]) for i in airtable_data if airtable_data[i]]
-    # airtable_data.keys()
-    # len(airtable_data[DATE_LIST[0]])
-    # len(airtable_data[DATE_LIST[1]])
 
     # Loop through each key in the dictionary 
     for date_key in airtable_data:
@@ -379,11 +288,8 @@ def mros_airtable_to_sqs(event, context):
                 # add the hash to the message body
                 message_body['record_hash'] = message_hash
 
-                # print(f"message_body: {message_body}")
-
                 # try to send the message to SQS
                 try:
-                    # print(f"- Sending message {i} to SQS queue")
                     # Send the message to SQS
                     sqs.send_message(
                         QueueUrl    = SQS_QUEUE_URL,
