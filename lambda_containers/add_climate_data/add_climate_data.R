@@ -297,10 +297,8 @@ add_climate_data <- function(Records = NULL) {
     # extract observation data from JSON event
     lon_obs   = as.numeric(data$longitude)
     lat_obs   = as.numeric(data$latitude)
-    # datetime  = as.POSIXct(as.character(data$time), tz = "UTC") # THIS IS THE PROBLEM - RETURNS ONLY DATE!!! NOT A REAL DATETIME!
-    # updated datetime
     datetime  = strptime(as.character(data$time), format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
-    timestamp = as.character(data$time)
+    # timestamp = as.character(data$time)
     id        = as.character(data$id)
 
     # # get current date for logging
@@ -317,8 +315,7 @@ add_climate_data <- function(Records = NULL) {
     message("========= Message variables ==========")
     message("- lon_obs: ", lon_obs)
     message("- lat_obs: ", lat_obs)
-    message("- datetime: ", datetime) # datetime and timestamp are the same...
-    # message("- timestamp: ", timestamp)
+    message("- datetime: ", datetime)
     message("- id: ", id)
     message("- observation_date: ", observation_date)
     message("- current_date: ", current_date)
