@@ -297,7 +297,7 @@ add_climate_data <- function(Records = NULL) {
     # extract observation data from JSON event
     lon_obs   = as.numeric(data$longitude)
     lat_obs   = as.numeric(data$latitude)
-    datetime  = strptime(as.character(data$time), format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+    datetime  = as.POSIXct(as.character(data$time), format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
     # timestamp = as.character(data$time)
     id        = as.character(data$id)
 
