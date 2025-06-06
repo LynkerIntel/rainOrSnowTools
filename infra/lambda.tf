@@ -35,7 +35,7 @@ resource "aws_lambda_function" "airtable_lambda_function" {
   timeout         = 900 # 15 minutes (max time possible to allow lambda to run)
 
   # memory in MB
-  memory_size     = 200
+  memory_size     = 400
 
   # Only allow for a maximum of 2 Lambdas to be run concurrently
   reserved_concurrent_executions = 2
@@ -48,7 +48,7 @@ resource "aws_lambda_function" "airtable_lambda_function" {
     # aws_dynamodb_table.mros_dynamodb_table,
     aws_sqs_queue.mros_sqs_queue,
   ]
-  
+
   tags = {
     name              = local.name_tag
     resource_category = "lambda"
@@ -88,8 +88,8 @@ resource "aws_lambda_function" "staging_lambda_function" {
   source_code_hash = var.mros_stage_to_prod_lambda_zip_file_name
   function_name    = var.mros_stage_to_prod_lambda_function_name
   handler          = "mros_stage_to_prod.mros_stage_to_prod.mros_stage_to_prod"
-  
-  # Lambda role (with permissions for SQS)   
+
+  # Lambda role (with permissions for SQS)
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
   #   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.11"
@@ -119,7 +119,7 @@ resource "aws_lambda_function" "staging_lambda_function" {
   timeout         = 300
 
   # memory in MB
-  memory_size     = 256
+  memory_size     = 512
 
   # Only allow for a maximum of 8 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
@@ -187,11 +187,11 @@ resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
   image_uri        = "${var.mros_ecr_repo_url}:${var.mros_ecr_image_tag}"
 
 #   image_uri = data.aws_ecr_image.repo_image.image_uri
-  
+
   # image_uri        = "${data.aws_ecr_repository.r_ecr_repository.repository_url}:latest"
   # image_uri        = data.aws_ecr_repository.r_ecr_repository.repository_url
   package_type     = "Image"
-  memory_size      = 600
+  memory_size      = 1200
   # memory_size      = 3009
   timeout          = 900     # timeout in seconds (use max amount of time = 15 minutes)
 
@@ -201,7 +201,7 @@ resource "aws_lambda_function" "mros_add_climate_data_lambda_function" {
   role             = aws_iam_role.sqs_consumer_lambda_role.arn
   architectures    = ["x86_64"]
   # architectures    = ["arm64"]
-  
+
   # force a new resource when the image is updated /changes
   source_code_hash = trimprefix(data.aws_ecr_image.repo_image.id, "sha256:")
 
@@ -267,7 +267,7 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
 
   # # Pandas lambda layer
   layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:6"]
-  
+
   # # Pandas lambda layer
   # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:4"]
   # # layers = ["arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python39:14"]
@@ -276,11 +276,11 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
   timeout         = 900
 
   # memory in MB
-  memory_size     = 1700
+  memory_size     = 3400
 
   # Only allow for a maximum of 1 Lambdas to be run concurrently
   reserved_concurrent_executions = 1
-  
+
   # Attach the Lambda function to the CloudWatch Logs group
   environment {
     variables = {
@@ -298,7 +298,7 @@ resource "aws_lambda_function" "mros_append_daily_data_lambda_function" {
     aws_cloudwatch_log_group.prod_to_output_lambda_log_group,
     aws_s3_bucket.prod_s3_bucket,
   ]
-  
+
   tags = {
     name              = local.name_tag
     resource_category = "lambda"
@@ -367,11 +367,11 @@ resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
   timeout         = 750
 
   # memory in MB
-  memory_size     = 325
+  memory_size     = 650
 
   # Only allow for a maximum of 5 Lambdas to be run concurrently
   reserved_concurrent_executions = 5
-  
+
   # Attach the Lambda function to the CloudWatch Logs group
   environment {
     variables = {
@@ -388,7 +388,7 @@ resource "aws_lambda_function" "mros_insert_into_dynamodb_lambda_function" {
     aws_cloudwatch_log_group.mros_insert_into_dynamodb_lambda_log_group,
     aws_dynamodb_table.mros_dynamodb_table,
   ]
-  
+
   tags = {
     name              = local.name_tag
     resource_category = "lambda"
