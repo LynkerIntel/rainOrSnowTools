@@ -76,44 +76,7 @@ add_climate_data <- function(Records = NULL) {
     # Extract message body
     msg_body = Records[[3]]
 
-    # msg_body = '{
-    #         "id": "xxxxd",
-    #         "timestamp": "1706147159.0",
-    #         "createdtime": "2024-10-18T01:45:59.000Z",
-    #         "name": "Rain",
-    #         "latitude": "39.5",
-    #         "user": "user_xxxxd",
-    #         "longitude": "-120.5",
-    #         "submitted_time": "01:45:58",
-    #         "local_time": "17:45:58",
-    #         "submitted_date": "10/18/24",
-    #         "local_date": "10/18/24",
-    #         "comment": "nan",
-    #         "time": "2024-10-18T01:45:59.000Z",
-    #         "duplicate_id": "user_xxxxd_2024_01_25T01_45_59_000Z",
-    #         "duplicate_count": "1"
-    #     }'
-
-    # msg_body = '{
-    #         "id": "recDha4xyWvaYNzKY",
-    #         "timestamp": "1729185670.0",
-    #         "createdtime": "2024-10-17T17:21:10.000Z",
-    #         "name": "Mix",
-    #         "latitude": "10.9378839",
-    #         "user": "R7nE4cC0qkLRRFv",
-    #         "longitude": "76.7403479",
-    #         "submitted_time": "17:21:08",
-    #         "local_time": "22:51:08",
-    #         "submitted_date": "10/17/24",
-    #         "local_date": "10/17/24",
-    #         "comment": "nan",
-    #         "time": "2024-10-17T17:21:10.000Z",
-    #         "duplicate_id": "R7nE4cC0qkLRRFv_2024_10_17T17_21_10_000Z",
-    #         "duplicate_count": "1",
-    #         "record_hash": "d2d2988f0aafdf80dac320246ced838daa725d2e5cef9d48888ef1398d8583f5"
-    # }'
-
-    # ############  ############
+    ############  ############
 
         empty_processed_df <- data.frame(
                 # id = character(),
@@ -129,6 +92,7 @@ add_climate_data <- function(Records = NULL) {
                 # local_date = character(),
                 # comment = character(),
                 # time = character(),
+                # device_type = character(),
                 # duplicate_id = character(),
                 # duplicate_count = numeric(),
                 temp_air_idw_lapse_const = numeric(),
