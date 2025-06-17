@@ -128,14 +128,19 @@ def fetch_airtable_data(date, base_id, table_id, airtable_token):
     return all_records
 
 def records_to_dataframe(records_list):
-        # records_list = airtable_data.get(DATE_LIST[0])
-        # Check if records_list exist
+
+        # Check if records_list exisits
         if records_list:
 
             # pandas JSON normalize the records data into a pandas dataframe
             df = json_normalize(records_list)
+             
+            # if these fields don't exisit... add in the field
+            for col in ['fields.comment', 'fields.DeviceType']:
+              if col not in df.columns:
+                df[col] = None
             
-            # df.columns
+            # create mapping for the columns
             name_mapping = {
                 'id' : 'id',
                 'createdTime' : 'createdtime',
@@ -148,15 +153,16 @@ def records_to_dataframe(records_list):
                 'fields.time_submitted_utc' : 'submitted_time',
                 'fields.date_submitted_utc' : 'submitted_date',
                 'fields.comment' : 'comment',
-                'fields.datetime_received_pacific' : 'time' # this col is actually the datetime in UTC
+                'fields.datetime_received_pacific' : 'time', # this col is actually the datetime in UTC
+                'fields.DeviceType' : 'device_type'
             }
 
-            # Rename columns using the lambda function
+            # rename columns using the lambda function
             df.rename(columns=name_mapping, inplace=True)
 
             # required columns in output dataframe
             req_columns = ['id', 'createdtime', 'name', 'latitude', 'user', 'longitude',
-                           'submitted_time', 'local_time', 'submitted_date', 'local_date', 'comment', 'time']
+                           'submitted_time', 'local_time', 'submitted_date', 'local_date', 'comment', 'time', 'device_type']
 
             # Reorder the columns
             df = df[req_columns]
@@ -209,17 +215,19 @@ def mros_airtable_to_sqs(event, context):
 
     curr_time = event['time']
 
-    # curr_time = "2023-11-21T00:00:00Z"
+    # curr_time = "2025-06-15T00:00:00Z"
     
     print(f"curr_time: {curr_time}")
 
     # New method of getting DATE_LIST for 7 days ago (or any number of days with 'n' argument)
-    DATE_LIST = get_dates_before(curr_time, 7)
+  # DATE_LIST = get_dates_before(curr_time, 7)
+    DATE_LIST = get_dates_before(curr_time, 11)
 
     # temporarily set DATE_LIST to the last two dates in the list ( 6 and 7 days ago )
     # Theorizing that GPM PLP data has some sort of 5 day lag on when the data is 
     # properly uploaded and ready to be accessed
-    DATE_LIST = DATE_LIST[-2:]
+    # DATE_LIST = DATE_LIST[-2:]
+    DATE_LIST = DATE_LIST[-6:]
 
     print(f"- DATE_LIST: {json.dumps(DATE_LIST)}")
 
@@ -257,9 +265,6 @@ def mros_airtable_to_sqs(event, context):
             # Loop through the dataframe and send each record to SQS
             print(f"Adding {len(df)} records to SQS queue")
             for i in range(0, len(df)):
-            # for i in range(0, 10):
-                
-                # print(f"Adding record {i} to SQS queue")
 
                 # Construct the message body
                 message_body = {
@@ -276,10 +281,10 @@ def mros_airtable_to_sqs(event, context):
                     'local_date': str(df["local_date"].iloc[i]),
                     'comment': str(df["comment"].iloc[i]),
                     'time': str(df["time"].iloc[i]),
+                    'device_type': str(df["device_type"].iloc[i]),
                     # 'uuid': str(df["uuid"].iloc[i]),
                     'duplicate_id': str(df["duplicate_id"].iloc[i]),
                     'duplicate_count': str(df["duplicate_count"].iloc[i])
-                    # Add other fields as needed
                 }
                 
                 # create a hash of the message body
