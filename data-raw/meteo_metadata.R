@@ -3,6 +3,12 @@
 # Get the pipe
 `%>%` <- dplyr::`%>%` # add dplyr pipe
 
+# Make a timezone table
+# LCD and WCC are always reported in local standard time, no need to get daylight conversions
+tz_table <- lutz::tz_list() %>%
+  dplyr::filter(zone %in% c("PST", "MST", "CST", "EST", "AKST")) %>%
+  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
+
 ################################################################################
 # Script for processing HADS DCP metadata
 ################################################################################
@@ -35,6 +41,7 @@ for(i in 1:length(states)){
                                   read.csv(tmp_url))
 
   } # end networks loop
+
   # Download and bind var info by state
   tmp_url = paste0(url_var_01, states[i],
                    url_var_02)
@@ -56,12 +63,6 @@ hads_meta <- hads_meta %>%
   dplyr::filter(stid %in% hads_var_meta$nwsli) %>%
   dplyr::filter(!(stid %in% stations_remove))
 
-# Make a timezone table
-# TODO: this assumes CONUS and standard time only
-tz_table <- lutz::tz_list() %>%
-  dplyr::filter(zone %in% c("PST", "MST", "CST", "EST")) %>%
-  dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * (-1))))
-
 # Add timezone info
 # Needed for local time to UTC conversions
 hads_meta <- hads_meta %>%
@@ -82,20 +83,25 @@ hads_meta <- dplyr::left_join(hads_meta,
 
 # First access the metadata from NOAA
 # https://www.ncei.noaa.gov/maps/lcd/
-# go to mapping tool, use polygon selector
-# drag over area of interest
-# and then click "Download Station List"
-lcd_meta <- read.csv("data-raw/lcd_station_metadata_conus.csv")
+# Grab the metadata via REST endpoint
+# https://www.ncei.noaa.gov/metadata/geoportal/rest/metadata/item/gov.noaa.ncdc:C00684/html
+lcd_meta <- read.csv("data-raw/lcd_station_metadata.csv")
 
 # Format date and filter to current stations only
 lcd_meta <- lcd_meta %>%
+  # Not sure what the 'LOC_' cols are for?
+  dplyr::select(-c(LOC_BEGIN_DATE, LOC_END_DATE)) %>%
   dplyr::mutate(short_id = stringr::str_sub(STATION_ID, 6, 10),
-                END_DATE = as.Date(END_DATE)) %>%
-  dplyr::filter(END_DATE > as.Date("2023-06-12"))
+                # Note that the DATA_END_DATE date is based on when the metadata was accessed - 2025-05-06
+                dplyr::mutate(dplyr::across(DATA_BEGIN_DATE:DATA_END_DATE, ~ as.POSIXct(. / 1000, origin = "1970-01-01", tz = "UTC"))),
+                # To capture stations that may have seasonal data reporting
+                ACTIVE = dplyr::case_when(as.Date(DATA_END_DATE) > as.Date("2024-01-01") ~ 1,
+                                          TRUE ~ 0)) %>%
+  dplyr::filter(ACTIVE == 1)
 
 # URL for finding station codes
 baseURL = "https://www.ncei.noaa.gov/data/local-climatological-data/access/"
-year = 2023
+year = 2025
 
 # Build URL
 URL = paste0(baseURL, year)
@@ -121,12 +127,13 @@ for(j in 1:length(lcd_meta$short_id)){
 
   # Skip or download
   print(paste("Station id =", lcd_meta[j, "short_id"]))
+
   if(length(matches) == 0){
     print("No match found, going to next station")
     # Extract info for station and data
     tmp.info <- data.frame(short_id = lcd_meta[j, "short_id"],
                            id = NA,
-                           name = lcd_meta[j, "STATION"],
+                           name = lcd_meta[j, "STATION_ID"],
                            n_matches = length(matches),
                            link = NA)
     info <- dplyr::bind_rows(info, tmp.info)
@@ -139,7 +146,7 @@ for(j in 1:length(lcd_meta$short_id)){
       # Extract info for station and data
       tmp.info <- data.frame(short_id = lcd_meta[j, "short_id"],
                              id = substr(links_full[matches[k]], 1, 11),
-                             name = lcd_meta[j, "STATION"],
+                             name = lcd_meta[j, "STATION_ID"],
                              n_matches = length(matches),
                              link = met.link)
       info <- dplyr::bind_rows(info, tmp.info)
@@ -150,7 +157,7 @@ for(j in 1:length(lcd_meta$short_id)){
 # Join the data
 lcd_meta <- dplyr::left_join(lcd_meta,
                              info,
-                             by = c("short_id", "STATION" = "name"))
+                             by = c("short_id", "STATION_ID" = "name"))
 
 # Add timezone info
 # Needed for local time to UTC conversions
@@ -172,13 +179,16 @@ lcd_meta <- dplyr::left_join(lcd_meta,
 
 # You can access current station info at
 # https://wcc.sc.egov.usda.gov/nwcc/inventory
-# But it's a GUI, so I've downloaded it already
+# Grabbed Air T metadata because dbl checked that these stations also report:
+# Dew Point Temperature,Relative Humidity,Precipitation Accumulation
 wcc_meta <- read.csv("data-raw/nwcc_inventory.csv")
 
 # Add a timezone column
 wcc_meta <- wcc_meta %>%
   dplyr::mutate(timezone_lst = paste0("Etc/GMT+", gmt_offset),
+                # elevation provided are in feet
                 elev_m = elev*0.3048)
+
 ################################################################################
 # Collate the metadata into a single dataframe
 ################################################################################
@@ -191,11 +201,11 @@ all_meta <-
                     timezone_lst) %>%
       dplyr::mutate(network = "hads"),
     lcd_meta %>%
-      dplyr::select(name = STATION,
+      dplyr::select(name = STATION_ID,
                     id,
                     lat = LATITUDE,
                     lon = LONGITUDE,
-                    elev = ELEVATION_.M.,
+                    elev = ELEVATION,
                     timezone_lst) %>%
       dplyr::mutate(network = "lcd"),
     wcc_meta %>%
