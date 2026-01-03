@@ -696,7 +696,7 @@ add_climate_data <- function(Records = NULL) {
           dplyr::mutate(
             dplyr::across(
               dplyr::where(is.character),
-              ~ ifelse(is.na(.), "invalid", .)
+              ~ ifelse(is.na(.), paste0("invalid"), .)
             )
           )
 
