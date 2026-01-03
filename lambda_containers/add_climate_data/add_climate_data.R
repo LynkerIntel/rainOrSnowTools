@@ -199,50 +199,50 @@ add_climate_data <- function(Records = NULL) {
                 met1_temp_dew_raw = numeric(),
                 met1_rh_raw = numeric(),
                 met1_temp_wet_raw = numeric(),
-                met2_id = character(),
-                met2_temp_air_idw_lapse_const = numeric(),
-                met2_temp_air_idw_lapse_var = numeric(),
-                met2_temp_air_nearest_site_const = numeric(),
-                met2_temp_air_nearest_site_var = numeric(),
-                met2_temp_air_avg_obs = numeric(),
-                met2_temp_air_min_obs = numeric(),
-                met2_temp_air_max_obs = numeric(),
-                met2_temp_air_lapse_var = numeric(),
-                met2_temp_air_lapse_var_r2 = numeric(),
-                met2_temp_air_lapse_var_pval = numeric(),
-                met2_temp_air_n_stations = numeric(),
-                met2_temp_air_avg_time_gap = numeric(),
-                met2_temp_air_avg_dist = numeric(),
-                met2_temp_air_nearest_id = character(),
-                met2_temp_air_nearest_elev = numeric(),
-                met2_temp_air_nearest_dist = numeric(),
-                met2_temp_air_nearest = numeric(),
-                met2_temp_dew_idw_lapse_const = numeric(),
-                met2_temp_dew_idw_lapse_var = numeric(),
-                met2_temp_dew_nearest_site_const = numeric(),
-                met2_temp_dew_nearest_site_var = numeric(),
-                met2_temp_dew_avg_obs = numeric(),
-                met2_temp_dew_min_obs = numeric(),
-                met2_temp_dew_max_obs = numeric(),
-                met2_temp_dew_lapse_var = numeric(),
-                met2_temp_dew_lapse_var_r2 = numeric(),
-                met2_temp_dew_lapse_var_pval = numeric(),
-                met2_temp_dew_n_stations = numeric(),
-                met2_temp_dew_avg_time_gap = numeric(),
-                met2_temp_dew_avg_dist = numeric(),
-                met2_temp_dew_nearest_id = character(),
-                met2_temp_dew_nearest_elev = numeric(),
-                met2_temp_dew_nearest_dist = numeric(),
-                met2_temp_dew_nearest = numeric(),
-                met2_rh = numeric(),
-                met2_temp_wet = numeric(),
-                met2_hads_counts = numeric(),
-                met2_lcd_counts = numeric(),
-                met2_wcc_counts = numeric(),
-                met2_id_raw = character(),
-                met2_datetime_raw = character(),
-                met2_temp_air_raw = numeric(),
-                met2_rh_raw = numeric()
+                # met2_id = character(),
+                # met2_temp_air_idw_lapse_const = numeric(),
+                # met2_temp_air_idw_lapse_var = numeric(),
+                # met2_temp_air_nearest_site_const = numeric(),
+                # met2_temp_air_nearest_site_var = numeric(),
+                # met2_temp_air_avg_obs = numeric(),
+                # met2_temp_air_min_obs = numeric(),
+                # met2_temp_air_max_obs = numeric(),
+                # met2_temp_air_lapse_var = numeric(),
+                # met2_temp_air_lapse_var_r2 = numeric(),
+                # met2_temp_air_lapse_var_pval = numeric(),
+                # met2_temp_air_n_stations = numeric(),
+                # met2_temp_air_avg_time_gap = numeric(),
+                # met2_temp_air_avg_dist = numeric(),
+                # met2_temp_air_nearest_id = character(),
+                # met2_temp_air_nearest_elev = numeric(),
+                # met2_temp_air_nearest_dist = numeric(),
+                # met2_temp_air_nearest = numeric(),
+                # met2_temp_dew_idw_lapse_const = numeric(),
+                # met2_temp_dew_idw_lapse_var = numeric(),
+                # met2_temp_dew_nearest_site_const = numeric(),
+                # met2_temp_dew_nearest_site_var = numeric(),
+                # met2_temp_dew_avg_obs = numeric(),
+                # met2_temp_dew_min_obs = numeric(),
+                # met2_temp_dew_max_obs = numeric(),
+                # met2_temp_dew_lapse_var = numeric(),
+                # met2_temp_dew_lapse_var_r2 = numeric(),
+                # met2_temp_dew_lapse_var_pval = numeric(),
+                # met2_temp_dew_n_stations = numeric(),
+                # met2_temp_dew_avg_time_gap = numeric(),
+                # met2_temp_dew_avg_dist = numeric(),
+                # met2_temp_dew_nearest_id = character(),
+                # met2_temp_dew_nearest_elev = numeric(),
+                # met2_temp_dew_nearest_dist = numeric(),
+                # met2_temp_dew_nearest = numeric(),
+                # met2_rh = numeric(),
+                # met2_temp_wet = numeric(),
+                # met2_hads_counts = numeric(),
+                # met2_lcd_counts = numeric(),
+                # met2_wcc_counts = numeric(),
+                # met2_id_raw = character(),
+                # met2_datetime_raw = character(),
+                # met2_temp_air_raw = numeric(),
+                # met2_rh_raw = numeric()
                 )
 
     empty_processed_df[1,] <- NA  # This will set all numeric columns to NA and character columns to ""
@@ -634,16 +634,10 @@ add_climate_data <- function(Records = NULL) {
 
 
         # Turned validate_met_data 2 off 2026-01-02 to reduce processing costs
-        # So, return NA to make sure the df doesn't break
-        validated_met2 <- as.data.frame(
-          setNames(
-            as.list(rep(NA, length(names(validated_met)))),
-            paste0("met2_", names(validated_met))
-          )
-        )
 
-        ###### BIND THE 2 validations into a single dataframe #######
-        validated_meteo = cbind(validated_met, validated_met2)
+        ###### BIND validations into a single dataframe #######
+        # validated_meteo = cbind(validated_met, validated_met2)
+        validated_meteo = cbind(validated_met)
 
         ##### ADD THE VALIDATED METEO DATA TO THE PROCESSED DATAFRAME #####
         processed = cbind(processed, validated_meteo)
