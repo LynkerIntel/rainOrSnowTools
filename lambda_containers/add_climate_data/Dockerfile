@@ -40,7 +40,14 @@ RUN installGithub.r mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611
 # this forces rainOrSnowTools to be installed from github on every build
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
-RUN installGithub.r LynkerIntel/rainOrSnowTools@main
+# RUN installGithub.r LynkerIntel/rainOrSnowTools@main
+
+# Accept a GitHub token as a build argument
+ARG GITHUB_PAT
+ENV GITHUB_PAT=${GITHUB_PAT}
+
+# Install the package from GitHub
+RUN R -e "if(!requireNamespace('remotes')) install.packages('remotes'); remotes::install_github('LynkerIntel/rainOrSnowTools@main')"
 
 RUN mkdir /lambda
 COPY add_climate_data.R /lambda
