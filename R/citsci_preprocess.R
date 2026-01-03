@@ -30,8 +30,8 @@ get_tz <- function(lon_obs, lat_obs) {
   # Get the standard timezone of the obs
   tmp_tz <- data.frame(
     tz_name = lutz::tz_lookup_coords(lat = lat_obs,
-                                   lon = lon_obs,
-                                   method = "accurate"))
+                                     lon = lon_obs,
+                                     method = "accurate"))
 
   # Join the tz_table
   tmp_tz = dplyr::left_join(tmp_tz, tz_table,
@@ -50,13 +50,13 @@ get_tz <- function(lon_obs, lat_obs) {
 #' @export
 make_tz_table <- function(){
 
-  # TODO: only support 4 time zones currently
+  # TODO: only support 5 time zones currently
   # Add support for more
 
-  # Build out table for Pacific, Mountain, Central, and Eastern Standard Times
+  # Build out table for time zones
   tz_table <-
     lutz::tz_list() %>%
-    dplyr::filter(zone %in% c("PST", "MST", "CST", "EST")) %>%
+    dplyr::filter(zone %in% c("PST", "MST", "CST", "EST", "AKST")) %>%
     dplyr::mutate(timezone_lst = paste0("Etc/GMT+", (utc_offset_h * -1)))
 
   # check if table is valid
@@ -71,6 +71,7 @@ make_tz_table <- function(){
 #' Get elevation based on lat/lon
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#'
 #' @return Elevation based on location
 #' @importFrom lutz tz_list
 #' @importFrom terra rast extract
@@ -87,10 +88,10 @@ get_elev <- function(lon_obs, lat_obs){
 }
 
 #' Geolocate location to assign ecoregion 3 association
-#'
-#' @return Ecoregion level 3
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#'
+#' @return Ecoregion level 3
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @export
@@ -127,9 +128,10 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 
 #' Geolocate location to assign ecoregion 4 association
 #'
-#' @return Ecoregion level 4
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#'
+#' @return Ecoregion level 4
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
 #' @export
@@ -168,6 +170,8 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 #' Geolocate location to assign state association
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @param max_snap_km Buffer for obs to clip to the nearest State boundary
+#'
 #' @return State
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
 #' @importFrom dplyr select `%>%`
@@ -178,31 +182,66 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 #' lat = 40
 #' state <- get_state(lon, lat)
 #' }
-get_state <- function(lon_obs, lat_obs){
+get_state <- function(lon_obs, lat_obs, max_snap_km = 10){
 
   # get ecoregions_states data from R/sysdata.rda
   ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
 
   # sf dataframe of locations
-  locs = sf::st_as_sf(
-              data.frame(lon_obs, lat_obs),
-              coords = c("lon_obs", "lat_obs"),
-              crs = 4326
-              )
+  locs <- sf::st_as_sf(
+    data.frame(lon_obs, lat_obs),
+    coords = c("lon_obs", "lat_obs"),
+    crs = 4326
+  )
 
   suppressMessages(suppressWarnings({
 
+    # Disable s2 for planar operations
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, ecoregions_states) %>%
-      dplyr::select("State" = STATE_NAME) %>%
-      sf::st_drop_geometry() %>%
-      as.character()
+    # Try exact containment first
+    state <- sf::st_join(locs, ecoregions_states, join = sf::st_within)$STATE_NAME
 
+    # Identify points that are not contained
+    missing_idx <- which(is.na(state))
+    if (length(missing_idx) > 0) {
+
+      # Extract only coastal states
+      coastal_states <- c(
+        "Maine","New Hampshire","Massachusetts","Rhode Island",
+        "Connecticut","New York","New Jersey","Delaware",
+        "Maryland","Virginia","North Carolina","South Carolina",
+        "Georgia","Florida","Alabama","Mississippi",
+        "Louisiana","Texas","California","Oregon","Washington",
+        "Alaska","Hawaii"
+      )
+      coastal_sf <- ecoregions_states %>%
+        dplyr::filter(STATE_NAME %in% coastal_states) %>%
+        sf::st_union()  # combine into single multipolygon
+
+      # Project for accurate distance
+      projected_crs <- 3857
+      locs_proj <- sf::st_transform(locs[missing_idx, ], projected_crs)
+      coast_proj <- sf::st_transform(coastal_sf, projected_crs)
+
+      # Distance to coast (km)
+      dist_to_coast <- as.numeric(sf::st_distance(locs_proj, coast_proj)) / 1000
+
+      # Only snap if within threshold
+      snap_idx <- missing_idx[dist_to_coast <= max_snap_km]
+      if (length(snap_idx) > 0) {
+        nearest <- sf::st_nearest_feature(locs[snap_idx, ], ecoregions_states)
+        state[snap_idx] <- ecoregions_states$STATE_NAME[nearest]
+      }
+
+      # Points further than max_snap_km remain NA
+    }
 
   }))
 
+  return(as.character(state))
 }
+
 
 #' Get the resource URLs from NASA GPM XML Catalog
 #' This function reads the catalog.xml file from the hyrax GPM IMERG catalog.xml URL and

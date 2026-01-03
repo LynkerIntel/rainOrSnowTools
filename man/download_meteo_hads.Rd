@@ -11,7 +11,7 @@ download_meteo_hads(datetime_utc_start, datetime_utc_end, stations)
 
 \item{datetime_utc_end}{End of search window as POSIX-formatted UTC datetime}
 
-\item{stations}{dataframe of station metadata (from station_select)}
+\item{stations}{Dataframe of station metadata (from station_select)}
 }
 \value{
 dataframe of meteorological data

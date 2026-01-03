@@ -2,21 +2,18 @@
 % Please edit documentation in R/metadata_gather.R
 \name{gather_meta}
 \alias{gather_meta}
-\title{Function to gather metadata from meta_all using a vector of station ids}
+\title{Function to gather metadata from a list of stations}
 \usage{
-gather_meta(stations)
+gather_meta(stations, network)
 }
 \arguments{
-\item{stations}{Vector of station ids}
+\item{stations}{Vector of station ids (HADS, LCD, WCC) or the station data itself for MADIS}
+
+\item{network}{The station's network ("HADS", "LCD", "WCC", "MADIS")}
 }
 \value{
-A dataframe of metadata filter to the station ids in 'stations'
+A dataframe of filtered station metadata
 }
 \description{
-Function to gather metadata from meta_all using a vector of station ids
-}
-\examples{
-stations = c('RRMI4', 'INLO2', 'JVDU1', '72526604751',
-           'RDKC2', 'TABC1', 'LSUA2', 'BAFO3', 'SOAC1', 'BNTC1')
-gather_meta(stations)
+Function to gather metadata from a list of stations
 }

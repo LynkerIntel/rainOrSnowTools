@@ -9,7 +9,7 @@ access_meteo(
   datetime_utc_obs,
   lon_obs,
   lat_obs,
-  deg_filter = 2,
+  deg_filter,
   time_thresh_s = 3600,
   dist_thresh_m = 1e+05
 )
