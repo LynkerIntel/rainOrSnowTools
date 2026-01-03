@@ -7,7 +7,7 @@
 station_select(network, lon_obs, lat_obs, deg_filter, dist_thresh_m)
 }
 \arguments{
-\item{network}{network to gather stations from (HADS, LCD, or WCC)}
+\item{network}{network to gather stations from (for only HADS, LCD, or WCC)}
 
 \item{lon_obs}{Longitude in decimal degrees}
 

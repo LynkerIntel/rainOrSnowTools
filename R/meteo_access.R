@@ -3,16 +3,19 @@
 
 # Declare global variables to pass R-CMD-check
 utils::globalVariables(
-  c(".", "DATE", "datetime", "dateTime", "datetime_lst", "datetime_utc_obs", "dist", "timezone_lst",
-    "elev", "HourlyDewPointTemperature", "HourlyDryBulbTemperature", "HourlyPrecipitation",
-    "HourlyRelativeHumidity", "HourlyWetBulbTemperature", "id", "last_col", "lat", "LATITUDE",
-    "lon", "LONGITUDE", "minTime", "name", "nasa_time", "origin_time", "ppt", "ppt2",
-    "REPORT_TYPE", "rh", "rh2", "rounded_time", "STATE_NAME", "station", "STATION", "tair",
-    "tair2", "tdew", "tdew2", "temp_air", "temp_dew", "temp_wet", "time_gap", "twet2", "utc_valid"
+  c(".", "DATE", "datetime", "dateTime", "datetime_lst", "datetime_utc_obs",
+    "dist", "timezone_lst", "elev", "HourlyDewPointTemperature",
+    "HourlyDryBulbTemperature", "HourlyPrecipitation",
+    "HourlyRelativeHumidity", "HourlyWetBulbTemperature", "id", "last_col", "lat",
+    "LATITUDE", "lon", "LONGITUDE", "minTime", "name", "nasa_time", "origin_time",
+    "ppt", "ppt2", "REPORT_TYPE", "rh", "rh2", "rounded_time", "STATE_NAME",
+    "station", "STATION", "tair", "tair2", "tdew", "tdew2", "temp_air", "temp_dew",
+    "temp_wet", "time_gap", "twet2", "utc_valid",
+    "PVDR", "SUBPVDR", "station_name", "stid", "STATION_ID",
+    "ELEVATION", "site_name", "station.id", "elev_m",
+    "STAID", "LAT", "LON", "ELEV", "OBDATE", "OBTIME"
   )
 )
-
-# `%>%` <- dplyr::`%>%`
 
 #' Download and preprocess meteorological data from three station networks
 #'
@@ -25,41 +28,22 @@ utils::globalVariables(
 #' @param dist_thresh_m Distance (in meters) that a station must be within to be considered
 #'
 #' @return a dataframe of meteorological data
+#'
 #' @export
 access_meteo <- function(
     networks,
     datetime_utc_obs,
     lon_obs,
     lat_obs,
-    deg_filter=2,
+    deg_filter,
     time_thresh_s=3600,
     dist_thresh_m=100000
     ) {
 
-    # # # EXAMPLE CODE:
-    # networks         = met_networks
-    # datetime_utc_obs = datetime
-    # lon_obs          = lon_obs
-    # lat_obs          = lat_obs
-    # deg_filter       = degree_filter
-    # time_thresh_s=3600
-    # dist_thresh_m=100000
-    # # met_network = "HADS"
-    # datetime = as.POSIXct("2023-01-01 16:00:00", tz = "UTC")
-    # meteo <- access_meteo(networks = met_network,
-    #                       datetime_utc_obs = datetime,
-    #                       lon_obs = lon,
-    #                       lat_obs = lat,
-    #                       deg_filter = degree_filter)
-
-    # TODOadd function argument that lets user set what variables they want
-    # e.g. vars="TA"
-    # access_meteo returns a specific set of vars per network
-
     # Error handling if network not valid
     if(("ALL" %in% networks | "HADS" %in% networks | "LCD" %in% networks |
-        "WCC" %in% networks) == FALSE) {
-      stop("networks must be ALL, HADS, LCD, or WCC")
+        "WCC" %in% networks | "MADIS" %in% networks) == FALSE) {
+      stop("networks must be ALL, HADS, LCD, WCC, or MADIS")
     }
 
     # Error handling if time thresh too long or short
@@ -71,12 +55,13 @@ access_meteo <- function(
     datetime_utc_start = datetime_utc_obs - time_thresh_s
     datetime_utc_end = datetime_utc_obs + time_thresh_s
 
-    # Create an empty df to store met data
+    # Create an empty df to store data
     met_all <- data.frame()
+    metadata_all <- data.frame()
 
     # If ALL, add all networks
     if ("ALL" %in% networks) {
-      networks = c("HADS", "LCD", "WCC")
+      networks = c("HADS", "LCD", "WCC", "MADIS")
     }
 
     # Access HADS data
@@ -87,7 +72,14 @@ access_meteo <- function(
                                  deg_filter, dist_thresh_m)
       tmp_met <- download_meteo_hads(datetime_utc_start, datetime_utc_end, stations)
       tmp_met <- preprocess_meteo(network = "HADS", tmp_met)
+
+      # Gather station metadata
+      stations <- gather_meta(stations, network = "HADS")
+
+      # Save the data to separate dfs
       met_all <- dplyr::bind_rows(met_all, tmp_met)
+      metadata_all <- dplyr::bind_rows(metadata_all, stations)
+
       }, error = function(e){})
     }
 
@@ -99,11 +91,17 @@ access_meteo <- function(
                                  deg_filter, dist_thresh_m)
       tmp_met <- download_meteo_lcd(datetime_utc_start, datetime_utc_end, stations)
       tmp_met <- preprocess_meteo(network = "LCD", tmp_met)
+
+      # Gather station metadata
+      stations <- gather_meta(stations, network = "LCD")
+
+      # Save the data to separate dfs
       met_all <- dplyr::bind_rows(met_all, tmp_met)
+      metadata_all <- dplyr::bind_rows(metadata_all, stations)
+
     }, error = function(e){})
     }
 
-    # Access WCC data
     # Access WCC data
     if("WCC" %in% networks){
       # Error handling when it comes to no stations reported in the timezones
@@ -112,11 +110,42 @@ access_meteo <- function(
                                    deg_filter, dist_thresh_m)
         tmp_met <- download_meteo_wcc(datetime_utc_start, datetime_utc_end, stations)
         tmp_met <- preprocess_meteo(network = "WCC", tmp_met)
+
+        # Gather station metadata
+        stations <- gather_meta(stations, network = "WCC")
+
+        # Save the data to separate dfs
         met_all <- dplyr::bind_rows(met_all, tmp_met)
+        metadata_all <- dplyr::bind_rows(metadata_all, stations)
+
       }, error = function(e){})
     }
 
-    # met_all  %>% names()
+    # Access MADIS data
+    if("MADIS" %in% networks){
+      tryCatch({
+        # This returns a list of stations and observations:
+        tmp_met_all <- download_meteo_madis(lon_obs, lat_obs, deg_filter, datetime_utc_obs)
+
+        # Grab the station data
+        stations <- tmp_met_all$stations
+        # Grab the observation data
+        tmp_met <- tmp_met_all$observations
+        tmp_met <- preprocess_meteo(network = "MADIS", tmp_met)
+
+        # Gather station metadata
+        stations <- stations %>%
+          # Then remove dupe stations
+          dplyr::filter(!PVDR %in% c("RAWS", "HADS"),
+                        !SUBPVDR %in% c("SNOTEL", "SCAN")) %>%
+          gather_meta(., network = "MADIS")
+
+        # Save the data to separate dfs
+        met_all <- dplyr::bind_rows(met_all, tmp_met)
+        metadata_all <- dplyr::bind_rows(metadata_all, stations)
+
+      }, error = function(e){})
+    }
 
     # if no stations are found, return an empty data frame with column names
     if (nrow(met_all) < 1) {
@@ -133,15 +162,32 @@ access_meteo <- function(
 
     }
 
-    # Return the met_all data frame
-    return(met_all)
+    if (nrow(metadata_all) < 1) {
+      # provide empty data frame with column names
+      metadata_all <- data.frame(
+        name = character(0),
+        id = character(0),
+        lat = numeric(0),
+        lon = numeric(0),
+        elev = numeric(0),
+        timezone_lst = character(0),
+        network = character(0)
+      )
 
-  }
+    }
+
+  # Return the met_all data frame
+  return(list(
+    met = met_all,
+    metadata = metadata_all
+  ))
+
+}
 
 
 #' Gather the metadata for meteorological stations
 #'
-#' @param network network to gather stations from (HADS, LCD, or WCC)
+#' @param network network to gather stations from (for only HADS, LCD, or WCC)
 #' @param lon_obs Longitude in decimal degrees
 #' @param lat_obs Latitude in decimal degrees
 #' @param deg_filter Number of degrees surrounding the point location to which the station search should be limited
@@ -150,6 +196,7 @@ access_meteo <- function(
 #' @return Dataframe of station metadata
 #' @importFrom dplyr filter rowwise mutate ungroup `%>%`
 #' @importFrom geosphere distHaversine
+#'
 #' @export
 station_select <- function(network, lon_obs, lat_obs,
                            deg_filter, dist_thresh_m){
@@ -164,7 +211,7 @@ station_select <- function(network, lon_obs, lat_obs,
   # hads_meta = HADS metadata
   # lcd_meta = LCD metadata
   # wcc_meta = WCC metadata
-  # hads_meta  %>% names()
+
   # Select stations from the HADS dataset
   if (network == "HADS") {
     stations_tmp <-
@@ -182,10 +229,10 @@ station_select <- function(network, lon_obs, lat_obs,
   # Select stations from the LCD dataset
   if(network == "LCD"){
     stations_tmp <- lcd_meta %>%
-      dplyr::filter(LONGITUDE >= lon_obs - deg_filter & LONGITUDE <= lon_obs + deg_filter,
-                    LATITUDE >= lat_obs - deg_filter & LATITUDE <= lat_obs + deg_filter) %>%
+      dplyr::filter(lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,
+                    lat >= lat_obs - deg_filter & lat <= lat_obs + deg_filter) %>%
       dplyr::rowwise() %>%
-      dplyr::mutate(dist = geosphere::distHaversine(c(lon_obs, lat_obs), c(LONGITUDE, LATITUDE))) %>%
+      dplyr::mutate(dist = geosphere::distHaversine(c(lon_obs, lat_obs), c(lon, lat))) %>%
       dplyr::ungroup() %>%
       dplyr::filter(dist <= dist_thresh_m)
   }
@@ -209,20 +256,15 @@ station_select <- function(network, lon_obs, lat_obs,
 #'
 #' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
 #' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
-#' @param stations dataframe of station metadata (from station_select)
+#' @param stations Dataframe of station metadata (from station_select)
+#'
 #' @return dataframe of meteorological data
 #' @importFrom dplyr filter rowwise mutate ungroup bind_rows `%>%`
 #' @importFrom lubridate year month day minute hour
 #' @importFrom readr read_csv cols
+#'
 #' @export
 download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
-   #  ## EXAMPLE CODE:
-   #  lon = -105
-   #  lat = 40
-   #  datetime_start = as.POSIXct("2023-01-01 15:00:00", tz = "UTC")
-   #  datetime_end = as.POSIXct("2023-01-01 17:00:00", tz = "UTC")
-   #  hads_stations <- station_select(network = "HADS", lon, lat, deg_filter=2, dist_thresh_m=100000)
-   #  download_meteo_hads(datetime_start, datetime_end, hads_stations)
 
   # Specify chunks to download
   # HADS can only serve from 1 calendar year at a time
@@ -275,11 +317,6 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
   hads_url16_str = "&day2="
   hads_url18_str = "&hour2="
   hads_url20_str = "&minute2="
-
-  # Reset the timeout option so download can finish (default is 60 seconds)
-  # getOption('timeout')
-  # [1] 60
-  # options(timeout = 1000) # this will reset to default when session terminated
 
   # Empty df to store data
   met <- data.frame()
@@ -340,14 +377,18 @@ download_meteo_hads <- function(datetime_utc_start, datetime_utc_end, stations){
 #'
 #' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
 #' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
-#' @param stations dataframe of station metadata (from station_select)
+#' @param stations Dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
 #' @importFrom dplyr slice pull mutate between select `%>%`
 #' @importFrom lubridate with_tz year
 #' @importFrom utils read.csv
+#'
 #' @export
 download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
+
+  #### ****** NOTE THAT LCD DATA ONLY WORKS BEFORE 2025-08-27 ****** ####
+
   # # EXAMPLE CODE:
   #
   # lon = -105
@@ -415,7 +456,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
       datetime_lst_start2 = lubridate::with_tz(datetime_utc_start2,
                                                tzone = tmp_tz)
       datetime_lst_end2 = lubridate::with_tz(datetime_utc_end2,
-                                               tzone = tmp_tz)
+                                             tzone = tmp_tz)
 
       if (lubridate::year(datetime_lst_end2) == lubridate::year(datetime_lst_start2)){
 
@@ -435,8 +476,8 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
       # Download data
       tmp_df <- utils::read.csv(url_lcd2) %>%
         dplyr::mutate(datetime_lst = as.POSIXct(DATE,
-                                  format = "%Y-%m-%dT%H:%M:%S",
-                                  tz = tmp_tz)) %>%
+                                                format = "%Y-%m-%dT%H:%M:%S",
+                                                tz = tmp_tz)) %>%
         # Filter the data to the original dates
         dplyr::filter(dplyr::between(datetime_lst, datetime_lst_start, datetime_lst_end)) %>%
         dplyr::select(-c(datetime_lst))
@@ -468,7 +509,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #'
 #' @param datetime_utc_start Start of search window as POSIX-formatted UTC datetime
 #' @param datetime_utc_end  End of search window as POSIX-formatted UTC datetime
-#' @param stations dataframe of station metadata (from station_select)
+#' @param stations Dataframe of station metadata (from station_select)
 #'
 #' @return dataframe of meteorological data
 #' @importFrom dplyr case_when mutate slice pull bind_rows `%>%`
@@ -476,6 +517,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @importFrom plyr ldply
 #' @importFrom tidyr pivot_longer pivot_wider separate
 #' @importFrom utils read.delim
+#'
 #' @export
 download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 
@@ -629,14 +671,91 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 
 }
 
+#' Download meteorological data from MADIS
+#'
+#' @param lon_obs Start of search window as POSIX-formatted UTC datetime
+#' @param lat_obs  End of search window as POSIX-formatted UTC datetime
+#' @param deg_filter Search radius in degrees
+#' @param datetime_utc_obs dataframe of station metadata (from station_select)
+#'
+#' @return List of meteorological data and station metadata
+#' @importFrom dplyr slice pull mutate between select `%>%` distinct
+#' @importFrom utils read.csv
+#' @importFrom httr GET user_agent content
+#' @importFrom stringr str_match str_trim
+#'
+#' @export
+download_meteo_madis <- function(lon_obs, lat_obs, deg_filter, datetime_utc_obs){
+
+  # Specify the met vars of interest
+  vars = c("LON", "LAT", "ELEV", "T", "TD", "TWB", "RH")
+
+  # Format the time to YYYYMMDD_HHMM
+  time = format(datetime_utc_obs, "%Y%m%d_%H%M")
+
+  bbox = madis_bbox_string(lat_obs, lon_obs, deg_filter)
+
+  # Build URL
+  # Base URL to the public surface met page
+  madis_url01_str = "https://madis-data.ncep.noaa.gov/madisPublic1/cgi-bin/madisXmlPublicDir?rdr="
+  madis_url02_obs = paste0("&time=", time)
+  # Grab +/1 1 hr
+  madis_url03_period = "&minbck=-59&minfwd=59"
+  madis_url04_str = "&recwin=4&timefilter=0&dfltrsel=1"
+  madis_url05_bbox = bbox
+  # Using standard for all calls (all stations, all providers, and varsel = 1)
+  madis_url06_str = "&stanam=&stasel=0&pvdrsel=0&varsel=1"
+  # Quality Control Selection: Only collecting observations passing all quality control checks
+  madis_url07_str = "&qctype=0&qcsel=99"
+  # Output Selection: Output as option 5 (CSV with header) and report missing values as -99999.000000
+  madis_url08_str = "&xml=5&csvmiss=0"
+  # Variable Selection
+  madis_url09_vars = paste0("&nvars=", vars, collapse = "")
+
+  url_madis = paste0(madis_url01_str, madis_url02_obs, madis_url03_period, madis_url04_str,
+                     madis_url05_bbox, madis_url06_str, madis_url07_str, madis_url08_str, madis_url09_vars)
+
+  # Download data
+  res <- httr::GET(url_madis, httr::user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"))
+  txt <- httr::content(res, "text", encoding = "iso-8859-1")
+
+  # This grabs all within the <PRE> and </PRE> html format
+  pre_text <- stringr::str_match(txt, "(?s)<PRE>(.*?)</PRE>")[,2]
+  pre_text <- stringr::str_trim(pre_text)
+
+  met <- utils::read.csv(text = pre_text, header = TRUE, stringsAsFactors = FALSE)
+  # Remove the QC and empty cols
+  met <- met[, !grepl("^(D|X)", names(met))]
+
+  # Final clean up of the data
+  char_cols <- sapply(met, is.character)
+  met[char_cols] <- lapply(met[char_cols], trimws)
+  met[met == -99999] <- NA
+
+  # Separate the metadata
+  station_meta <- met %>%
+    dplyr::select("STAID", "LAT", "LON", "ELEV", "PVDR", "SUBPVDR")  %>%
+    dplyr::distinct()
+
+  obs_data <- met
+
+  # Return the data
+  return(list(
+    observations = obs_data,
+    stations     = station_meta
+  ))
+
+}
+
 #' Preprocess met data (add datetime, put in common format)
 #'
-#' @param network network of data to process (HADS, LCD, or WCC)
-#' @param tmp_met dataframe of meteorological data (from download_meteo_*)
+#' @param network Network of data to process (HADS, LCD, or WCC)
+#' @param tmp_met Dataframe of meteorological data (from download_meteo_*)
 #'
-#' @return processed dataframe of met data
+#' @return Processed dataframe of met data
 #' @importFrom dplyr select filter mutate across case_when `%>%`
 #' @importFrom lubridate with_tz hours days seconds date
+#'
 #' @export
 preprocess_meteo <- function(network, tmp_met){
 
@@ -732,10 +851,57 @@ preprocess_meteo <- function(network, tmp_met){
 
   }
 
+  if(network == "MADIS"){
+
+    # Identify columns and new names
+    lookup <- c(temp_air = "T", temp_dew = "TD", rh = "RH", temp_wet = "TWB")
+
+    # Remove any PVDR %in% c("RAWS", "HADS") and SUBPVDR %in% ("SNOTEL", "SCAN") to remove dupe obs
+    # Down-select columns and rename
+    tmp_met <- tmp_met %>%
+      dplyr::filter(!PVDR %in% c("RAWS", "HADS"),
+                    !SUBPVDR %in% c("SNOTEL", "SCAN")) %>%
+      dplyr::mutate(datetime = as.POSIXct(paste(OBDATE, OBTIME), format = "%m/%d/%Y %H:%M", tz = "UTC")) %>%
+      dplyr::select(id = STAID, datetime,
+                    tidyselect::any_of(lookup))
+
+    # Filter to rows only with valid measurements
+    tmp_met <- tmp_met %>%
+      dplyr::filter(!is.na(temp_air))
+
+    # Convert temp from Kelvins to F
+    tmp_met <- tmp_met %>%
+      dplyr::mutate(dplyr::across(dplyr::contains('temp_'), ~ k_to_c(.)))
+  }
+
   # Convert all station ids to character
   tmp_met <- tmp_met %>%
     dplyr::mutate(id = as.character(id))
 
   # Return the data
   tmp_met
+}
+
+#' Create bounding box using lat/lon for MADIS data retrieval
+#'
+#' @param lon Start of search window as POSIX-formatted UTC datetime
+#' @param lat  End of search window as POSIX-formatted UTC datetime
+#' @param deg_filter Search radius in degrees
+#' @param digits Number of digits used to format URL string
+#'
+#' @return MADIS URL-ready string for selecting station data
+madis_bbox_string <- function(lat, lon, deg_filter, digits = 6) {
+  bbox <- list(
+    latll = lat - deg_filter,
+    lonll = lon - deg_filter,
+    latur = lat + deg_filter,
+    lonur = lon + deg_filter
+  )
+
+  paste0(
+    "&latll=", sprintf(paste0("%.", digits, "f"), bbox$latll),
+    "&lonll=", sprintf(paste0("%.", digits, "f"), bbox$lonll),
+    "&latur=", sprintf(paste0("%.", digits, "f"), bbox$latur),
+    "&lonur=", sprintf(paste0("%.", digits, "f"), bbox$lonur)
+  )
 }

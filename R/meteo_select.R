@@ -58,5 +58,5 @@ select_meteo <- function(df, datetime_obs){
     add_cols(., all_cols)
 
   # Return the data frame
-  df
+  return(df)
 }

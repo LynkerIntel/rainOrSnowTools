@@ -26,7 +26,8 @@ Imports:
   readr,
   glue,
   xml2,
-  httr
+  httr,
+  stringr
 Remotes:
   SnowHydrology/humidity,
   mikejohnson51/climateR@81a644319bf4566ac507e80f7aa8b1538c611deb

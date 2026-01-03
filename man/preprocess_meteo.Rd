@@ -7,12 +7,12 @@
 preprocess_meteo(network, tmp_met)
 }
 \arguments{
-\item{network}{network of data to process (HADS, LCD, or WCC)}
+\item{network}{Network of data to process (HADS, LCD, or WCC)}
 
-\item{tmp_met}{dataframe of meteorological data (from download_meteo_*)}
+\item{tmp_met}{Dataframe of meteorological data (from download_meteo_*)}
 }
 \value{
-processed dataframe of met data
+Processed dataframe of met data
 }
 \description{
 Preprocess met data (add datetime, put in common format)

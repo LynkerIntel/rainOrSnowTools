@@ -134,6 +134,7 @@ add_climate_data <- function(Records = NULL) {
                 hads_counts = numeric(),
                 lcd_counts = numeric(),
                 wcc_counts = numeric(),
+                madis_counts = numeric(),
                 plp = numeric(),
                 elevation = numeric(),
                 eco_level3 = character(),
@@ -306,7 +307,6 @@ add_climate_data <- function(Records = NULL) {
 
     message("Getting GPM PLP data...")
 
-    message("Logging that package has been updated on 06/25/2024 @ 2:45 PM PST...")
     # STEP 5: GET GPM PLP
     plp <- tryCatch({
                 rainOrSnowTools::get_imerg(
@@ -332,11 +332,11 @@ add_climate_data <- function(Records = NULL) {
 
     message("---> FINAL plp: ", plp)
 
-    message("Trying to get meteo data from rainOrSnowTools::access_meteo()")
+    message("Getting meteo data using rainOrSnowTools::access_meteo()")
 
     # STEP 6: get meteo data
-    # get_met_stations + get_met_data
-    meteo <- rainOrSnowTools::access_meteo(
+    meteo <-
+      rainOrSnowTools::access_meteo(
         networks         = met_networks,
         datetime_utc_obs = datetime,
         lon_obs          = lon_obs,
@@ -344,25 +344,23 @@ add_climate_data <- function(Records = NULL) {
         deg_filter       = degree_filter
         )
 
-    if (nrow(meteo) > 0) {
+    if (nrow(meteo$met) > 0) {
         message("Meteo data retrieved successfully")
 
-        # message("--> meteo data: ", meteo)
-        message("QCing and processing meteo data...")
+        met <- meteo$met
 
         # STEP 7: Process and QA/QC meteo data
-        # process_met_data
         # quality control meteo data
-        meteo_qc <- rainOrSnowTools::qc_meteo(meteo)
+        meteo_qc <- rainOrSnowTools::qc_meteo(met)
 
-        # subset meteo data to date ...?
+        # subset meteo data to date
         meteo_subset <- rainOrSnowTools:::select_meteo(meteo_qc, datetime)
 
-        # get unique station IDs from "meteo_qc" dataframe
-        stations_to_gather <- unique(meteo_qc$id)
+        message("QCing and processing meteo data...")
 
-        # get metadata for each station ID
-        metadata <- rainOrSnowTools::gather_meta(stations_to_gather)
+        # get metadata
+        metadata <- meteo$metadata %>%
+          dplyr::filter(id %in% meteo_subset$id)
 
         # taily up number of statons in each network...? and then put into matrix
         station_counts <- cbind(
@@ -380,10 +378,14 @@ add_climate_data <- function(Records = NULL) {
                 metadata %>%
                 dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
                 dplyr::tally() %>%
-                as.numeric()
+                as.numeric(),
+            "madis_counts" =
+              metadata %>%
+              dplyr::filter(network == "madis") %>%
+              dplyr::tally() %>%
+              as.numeric()
             )
 
-        message("station_counts: ", station_counts)
         message("Modeling meteo data...")
 
         # STEP 8: Model meteo data and store with station counts
@@ -401,7 +403,7 @@ add_climate_data <- function(Records = NULL) {
                         ),
                         station_counts
                         )
-        # processed  %>% names()
+
         message("Adding plp, elevation, eco level 3, eco level 4, and state data to output data...")
 
         # Add placeholder for PLP data
@@ -451,14 +453,14 @@ add_climate_data <- function(Records = NULL) {
         ####################### Validation code #####################
         #############################################################
 
-        ## validate_met_data 1 ## ----
+        ## Validate_met_data 1 ## ----
         # Now validate station data
         # Randomly select one station from meteo
 
         # get a random station, its ID and metadata
         random_station = meteo_qc[sample(nrow(meteo_qc), 1), ]
         random_id = as.character(random_station["id"])
-        random_metadata = rainOrSnowTools::gather_meta(random_id)
+        random_metadata = metadata[metadata$id == random_id, ]
 
         # get the lon, lat, elev, and datetime of the random station
         st_lon = as.numeric(random_metadata[1, "lon"])
@@ -467,7 +469,8 @@ add_climate_data <- function(Records = NULL) {
         st_datetime = as.POSIXct(as.character(random_station[1, "datetime"]), tz = "UTC")
 
         # Use these information to re-gather the meteo/etc
-        st_meteo <- rainOrSnowTools::access_meteo(
+        st_meteo <-
+          rainOrSnowTools::access_meteo(
             networks = met_networks,
             datetime_utc_obs = st_datetime,
             lon_obs = st_lon,
@@ -476,38 +479,43 @@ add_climate_data <- function(Records = NULL) {
         )
 
         # Take out the closest station data
-        st_meteo <-
-            st_meteo %>%
-            dplyr::filter(id != random_id)
+        st_met <- st_meteo$met %>%
+          dplyr::filter(id != random_id)
 
         # QC the random stations meteo data
-        random_meteo_qc <- rainOrSnowTools::qc_meteo(st_meteo)
+        r_meteo_qc <- rainOrSnowTools::qc_meteo(st_met)
 
-        # stash the meteo dataframe to feed into "model_meteo" in a few steps
-        random_meteo_df <- rainOrSnowTools:::select_meteo(random_meteo_qc, st_datetime)
+        # subset randomly seleted meteo data to date
+        r_meteo_df <- rainOrSnowTools:::select_meteo(r_meteo_qc, st_datetime)
 
-        # get the IDs of stations to gather
-        st_stations_to_gather <- unique(random_meteo_qc$id)
+        # message("QCing and processing meteo data...")
 
-        # gather the meta data for the stations (minus the random station)
-        st_metadata_minus_random <- rainOrSnowTools::gather_meta(st_stations_to_gather)
+        # get metadata
+        st_metadata_minus_random <- st_meteo$metadata %>%
+          dplyr::filter(id %in% r_meteo_df$id)
 
-        random_station_counts = cbind(
-            "hads_counts" =
-                st_metadata_minus_random %>%
-                dplyr::filter(network == "hads") %>%
-                dplyr::tally() %>%
-                as.numeric(),
-            "lcd_counts" =
-                st_metadata_minus_random %>%
-                dplyr::filter(network == "lcd") %>%
-                dplyr::tally() %>%
-                as.numeric(),
-            "wcc_counts" =
-                st_metadata_minus_random %>%
-                dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
-                dplyr::tally() %>%
-                as.numeric()
+        # tally up number of stations in each network...
+        r_station_counts <- cbind(
+          "hads_counts" =
+            st_metadata_minus_random %>%
+            dplyr::filter(network == "hads") %>%
+            dplyr::tally() %>%
+            as.numeric(),
+          "lcd_counts" =
+            st_metadata_minus_random %>%
+            dplyr::filter(network == "lcd") %>%
+            dplyr::tally() %>%
+            as.numeric(),
+          "wcc_counts" =
+            st_metadata_minus_random %>%
+            dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
+            dplyr::tally() %>%
+            as.numeric(),
+          "madis_counts" =
+            st_metadata_minus_random %>%
+            dplyr::filter(network == "madis") %>%
+            dplyr::tally() %>%
+            as.numeric()
         )
 
         # validate the meteo data
@@ -518,110 +526,121 @@ add_climate_data <- function(Records = NULL) {
                             lat_obs      = st_lat,
                             elevation    = st_elev,
                             datetime_utc = st_datetime,
-                            meteo_df     = random_meteo_df,
+                            meteo_df     = r_meteo_df,
                             meta_df      = st_metadata_minus_random
                         ),
-                        random_station_counts,
+                        r_station_counts,
                         random_station %>%
                         dplyr::rename_with(~paste0(.x, "_raw"), everything())
                         )
 
         names(validated_met) = paste0("met1_", names(validated_met))
 
-        ## validate_met_data 2 ## #########
+        ## Validate_met_data 2 ## #########
+        #
+        # # Stations with humidity vars, if none,
+        # valid_data = tryCatch({
+        #         meteo_qc %>%
+        #         filter(!dplyr::if_any(c(temp_air, rh, temp_dew), is.na))
+        #     }, error = function(e) {
+        #         meteo_qc %>%
+        #         filter(!dplyr::if_any(c(temp_air, rh), is.na))
+        #     }, error = function(e){
+        #         meteo_qc %>%
+        #         filter(!dplyr::if_any(temp_air, is.na))
+        #     })
+        #
+        # valid_data = if (nrow(valid_data) == 0){
+        #     meteo_qc %>%
+        #     filter(!dplyr::if_any(c(temp_air, rh), is.na))
+        #     } else {
+        #     valid_data = valid_data
+        #     }
+        #
+        # # get a random SECOND station, its ID and metadata
+        # random_station2 = meteo_qc[sample(nrow(valid_data), 1), ]
+        # random_id2 = as.character(random_station2["id"])
+        # random_metadata2 = rainOrSnowTools::gather_meta(random_id2)
+        #
+        # # get the lon, lat, elev, and datetime of the random station
+        # st_lon2 = as.numeric(random_metadata2[1, "lon"])
+        # st_lat2 = as.numeric(random_metadata2[1, "lat"])
+        # st_elev2 = as.numeric(random_metadata2[1, "elev"])
+        # st_datetime2 = as.POSIXct(as.character(random_station2[1, "datetime"]), tz = "UTC")
+        #
+        # # Use these information to re-gather the meteo/etc
+        # st_meteo2 <- rainOrSnowTools::access_meteo(
+        #     networks = met_networks,
+        #     datetime_utc_obs = st_datetime2,
+        #     lon_obs = st_lon2,
+        #     lat_obs = st_lat2,
+        #     deg_filter = degree_filter
+        # )
+        #
+        # # Take out the closest station data
+        # st_meteo2 <-
+        #     st_meteo2 %>%
+        #     dplyr::filter(id != random_id2)
+        #
+        # # QC the random stations meteo data
+        # random_meteo_qc2 <- rainOrSnowTools::qc_meteo(st_meteo2)
+        #
+        # # stash the meteo dataframe to feed into "model_meteo" in a few steps
+        # random_meteo_df2 <- rainOrSnowTools:::select_meteo(random_meteo_qc2, st_datetime2)
+        #
+        # # get the IDs of stations to gather
+        # st_stations_to_gather2 <- unique(random_meteo_qc2$id)
+        #
+        # # gather the meta data for the stations (minus the random station)
+        # st_metadata_minus_random2 <- rainOrSnowTools::gather_meta(st_stations_to_gather2)
+        #
+        # random_station_counts2 = cbind(
+        #     "hads_counts" =
+        #         st_metadata_minus_random2 %>%
+        #         dplyr::filter(network == "hads") %>%
+        #         dplyr::tally() %>%
+        #         as.numeric(),
+        #     "lcd_counts" =
+        #         st_metadata_minus_random2 %>%
+        #         dplyr::filter(network == "lcd") %>%
+        #         dplyr::tally() %>%
+        #         as.numeric(),
+        #     "wcc_counts" =
+        #         st_metadata_minus_random2 %>%
+        #         dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
+        #         dplyr::tally() %>%
+        #         as.numeric()
+        #         )
+        #
+        # # validate the meteo data for the second station
+        # validated_met2 = cbind(
+        #                 rainOrSnowTools::model_meteo(
+        #                     id           = random_id2,
+        #                     lon_obs      = st_lon2,
+        #                     lat_obs      = st_lat2,
+        #                     elevation    = st_elev2,
+        #                     datetime_utc = st_datetime2,
+        #                     meteo_df     = random_meteo_df2,
+        #                     meta_df      = st_metadata_minus_random2
+        #                 ),
+        #                 random_station_counts2,
+        #                 random_station2 %>%
+        #                 dplyr::rename_with(~paste0(.x, "_raw"), everything())
+        #                 )
+        #
+        # names(validated_met2) = paste0("met2_", names(validated_met2))
+        #
+        #
 
-        # Stations with humidity vars, if none,
-        valid_data = tryCatch({
-                meteo_qc %>%
-                filter(!dplyr::if_any(c(temp_air, rh, temp_dew), is.na))
-            }, error = function(e) {
-                meteo_qc %>%
-                filter(!dplyr::if_any(c(temp_air, rh), is.na))
-            }, error = function(e){
-                meteo_qc %>%
-                filter(!dplyr::if_any(temp_air, is.na))
-            })
 
-        valid_data = if (nrow(valid_data) == 0){
-            meteo_qc %>%
-            filter(!dplyr::if_any(c(temp_air, rh), is.na))
-            } else {
-            valid_data = valid_data
-            }
-
-        # get a random SECOND station, its ID and metadata
-        random_station2 = meteo_qc[sample(nrow(valid_data), 1), ]
-        random_id2 = as.character(random_station2["id"])
-        random_metadata2 = rainOrSnowTools::gather_meta(random_id2)
-
-        # get the lon, lat, elev, and datetime of the random station
-        st_lon2 = as.numeric(random_metadata2[1, "lon"])
-        st_lat2 = as.numeric(random_metadata2[1, "lat"])
-        st_elev2 = as.numeric(random_metadata2[1, "elev"])
-        st_datetime2 = as.POSIXct(as.character(random_station2[1, "datetime"]), tz = "UTC")
-
-        # Use these information to re-gather the meteo/etc
-        st_meteo2 <- rainOrSnowTools::access_meteo(
-            networks = met_networks,
-            datetime_utc_obs = st_datetime2,
-            lon_obs = st_lon2,
-            lat_obs = st_lat2,
-            deg_filter = degree_filter
+        # Turned validate_met_data 2 off 2026-01-02 to reduce processing costs
+        # So, return NA to make sure the df doesn't break
+        validated_met2 <- as.data.frame(
+          setNames(
+            as.list(rep(NA, length(names(validated_met)))),
+            paste0("met2_", names(validated_met))
+          )
         )
-
-        # Take out the closest station data
-        st_meteo2 <-
-            st_meteo2 %>%
-            dplyr::filter(id != random_id2)
-
-        # QC the random stations meteo data
-        random_meteo_qc2 <- rainOrSnowTools::qc_meteo(st_meteo2)
-
-        # stash the meteo dataframe to feed into "model_meteo" in a few steps
-        random_meteo_df2 <- rainOrSnowTools:::select_meteo(random_meteo_qc2, st_datetime2)
-
-        # get the IDs of stations to gather
-        st_stations_to_gather2 <- unique(random_meteo_qc2$id)
-
-        # gather the meta data for the stations (minus the random station)
-        st_metadata_minus_random2 <- rainOrSnowTools::gather_meta(st_stations_to_gather2)
-
-        random_station_counts2 = cbind(
-            "hads_counts" =
-                st_metadata_minus_random2 %>%
-                dplyr::filter(network == "hads") %>%
-                dplyr::tally() %>%
-                as.numeric(),
-            "lcd_counts" =
-                st_metadata_minus_random2 %>%
-                dplyr::filter(network == "lcd") %>%
-                dplyr::tally() %>%
-                as.numeric(),
-            "wcc_counts" =
-                st_metadata_minus_random2 %>%
-                dplyr::filter(network %in% c("snotel", "scan", "snotelt")) %>%
-                dplyr::tally() %>%
-                as.numeric()
-                )
-
-        # validate the meteo data for the second station
-        validated_met2 = cbind(
-                        rainOrSnowTools::model_meteo(
-                            id           = random_id2,
-                            lon_obs      = st_lon2,
-                            lat_obs      = st_lat2,
-                            elevation    = st_elev2,
-                            datetime_utc = st_datetime2,
-                            meteo_df     = random_meteo_df2,
-                            meta_df      = st_metadata_minus_random2
-                        ),
-                        random_station_counts2,
-                        random_station2 %>%
-                        dplyr::rename_with(~paste0(.x, "_raw"), everything())
-                        )
-
-        names(validated_met2) = paste0("met2_", names(validated_met2))
-
 
         ###### BIND THE 2 validations into a single dataframe #######
         validated_meteo = cbind(validated_met, validated_met2)

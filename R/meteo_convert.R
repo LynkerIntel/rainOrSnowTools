@@ -12,7 +12,22 @@
 #' }
 f_to_c <- function(temp_F){
   (temp_F - 32) * (5/9)
-  }
+}
+
+#' Function to convert temperature in Kelvins to Celsius
+#'
+#' @param temp_K The temperature in degrees Kelvins
+#'
+#' @return The temperature in degrees Celsius
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' tair_c <- k_to_c(temp_K = 280)
+#' }
+k_to_c <- function(temp_K){
+  temp_K - 273.15
+}
 
 #' Function to convert inches to millimeters
 #'

@@ -133,9 +133,10 @@ def mros_append_daily_data(event, context):
     
     print(f"Number of rows in input_df: {len(input_df)} (BEFORE removing duplicate record_hash values)")
 
-    # Remove rows of the "input_df" that have a "duplicate_count_id" that is already in the "output_df"
+    # Remove rows of the "input_df" that have a "duplicate_count" that is already in the "output_df"
     # This is to prevent duplicate rows from being added to the output file
-    input_df = input_df[-input_df["record_hash"].isin(output_df["record_hash"])]
+    input_df = input_df[-input_df["duplicate_id"].isin(output_df["duplicate_id"])]
+    input_df = input_df[~input_df["record_hash"].isna() & ~input_df["record_hash"].isin(output_df["record_hash"])]
 
     print(f"Number of rows in input_df: {len(input_df)} (AFTER removing duplicate record_hash values)")
     print(f"Concatenating dataframes...")
