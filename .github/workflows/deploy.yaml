@@ -116,6 +116,8 @@ jobs:
           registry: ${{ steps.login-ecr.outputs.registry }}
           image_name: ${{ secrets.ECR_REPO_NAME }}
           image_tag: ${{ github.sha }}
+          build_args: | 
+            GITHUB_PAT=${{ secrets.GH_PAT }}
 
       # Initialize terraform and configure S3 backend
       - name: Terraform Init
