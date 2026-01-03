@@ -692,9 +692,13 @@ add_climate_data <- function(Records = NULL) {
             empty_processed_df %>%
             dplyr::relocate(names(data), .before = 1)
 
-        empty_processed_df <-
-            empty_processed_df %>%
-            dplyr::mutate(across(everything(), ~ifelse(is.na(.), paste0("invalid"), .)))
+        empty_processed_df <- empty_processed_df %>%
+          dplyr::mutate(
+            dplyr::across(
+              dplyr::where(is.character),
+              ~ ifelse(is.na(.), "invalid", .)
+            )
+          )
 
         output_json = jsonlite::toJSON(empty_processed_df, pretty = TRUE)
 
