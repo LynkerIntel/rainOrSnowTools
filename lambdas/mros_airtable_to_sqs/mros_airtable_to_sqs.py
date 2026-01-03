@@ -220,14 +220,12 @@ def mros_airtable_to_sqs(event, context):
     print(f"curr_time: {curr_time}")
 
     # New method of getting DATE_LIST for 7 days ago (or any number of days with 'n' argument)
-  # DATE_LIST = get_dates_before(curr_time, 7)
-    DATE_LIST = get_dates_before(curr_time, 36)
+    DATE_LIST = get_dates_before(curr_time, 7)
 
     # temporarily set DATE_LIST to the last two dates in the list ( 6 and 7 days ago )
     # Theorizing that GPM PLP data has some sort of 5 day lag on when the data is 
     # properly uploaded and ready to be accessed
-    # DATE_LIST = DATE_LIST[-2:]
-    DATE_LIST = DATE_LIST[-30:]
+    DATE_LIST = DATE_LIST[-2:]
 
     print(f"- DATE_LIST: {json.dumps(DATE_LIST)}")
 
