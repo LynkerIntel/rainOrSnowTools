@@ -141,7 +141,7 @@ def mros_append_daily_data(event, context):
     print(f"Number of rows in input_df: {len(input_df)} (AFTER removing duplicate record_hash values)")
     print(f"Concatenating dataframes...")
 
-    # Concatenate the input file to the output file\
+    # Concatenate the input file to the output file
     output_df = wr.pandas.concat([output_df, input_df], axis=0)
     # output_df = pd.concat([output_df, input_df], axis=0)
     
