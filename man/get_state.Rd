@@ -11,7 +11,7 @@ get_state(lon_obs, lat_obs, max_snap_km = 10)
 
 \item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
 
-\item{max_snap_km}{Buffer for obs to clip to the nearest State boundary}
+\item{max_snap_km}{Buffer for obs to clip to the nearest boundary.}
 }
 \value{
 State
