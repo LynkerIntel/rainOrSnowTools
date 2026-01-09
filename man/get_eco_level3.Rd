@@ -4,12 +4,14 @@
 \alias{get_eco_level3}
 \title{Geolocate location to assign ecoregion 3 association}
 \usage{
-get_eco_level3(lon_obs, lat_obs)
+get_eco_level3(lon_obs, lat_obs, max_snap_km = 10)
 }
 \arguments{
 \item{lon_obs}{numeric, Longitude in decimal degrees. Default is NULL.}
 
 \item{lat_obs}{numeric, Latitude in decimal degrees. Default is NULL.}
+
+\item{max_snap_km}{Buffer for obs to clip to the nearest boundary.}
 }
 \value{
 Ecoregion level 3

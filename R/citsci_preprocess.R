@@ -90,6 +90,7 @@ get_elev <- function(lon_obs, lat_obs){
 #' Geolocate location to assign ecoregion 3 association
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @param max_snap_km Buffer for obs to clip to the nearest boundary.
 #'
 #' @return Ecoregion level 3
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
@@ -101,7 +102,7 @@ get_elev <- function(lon_obs, lat_obs){
 #' lat = 40
 #' ecoregion3 <- get_eco_level3(lon, lat)
 #' }
-get_eco_level3 <- function(lon_obs, lat_obs){
+get_eco_level3 <- function(lon_obs, lat_obs, max_snap_km = 10){
 
   # get ecoregions_states data from R/sysdata.rda
   ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
@@ -115,14 +116,52 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 
  suppressMessages(suppressWarnings({
 
+
+   # Disable s2 for planar operations
    sf::sf_use_s2(FALSE)
 
-   sf::st_intersection(locs, ecoregions_states) %>%
-     dplyr::select("Ecoregion" = US_L3NAME) %>%
-     sf::st_drop_geometry() %>%
-     as.character()
+   # Try exact containment first
+   state <- sf::st_join(locs, ecoregions_states, join = sf::st_within)$STATE_NAME
+   ecol3 <- sf::st_join(locs, ecoregions_states, join = sf::st_within)$US_L3NAME
+
+   # Identify points that are not contained
+   missing_idx <- which(is.na(state))
+   if (length(missing_idx) > 0) {
+
+     # Extract only coastal states
+     coastal_states <- c(
+       "Maine","New Hampshire","Massachusetts","Rhode Island",
+       "Connecticut","New York","New Jersey","Delaware",
+       "Maryland","Virginia","North Carolina","South Carolina",
+       "Georgia","Florida","Alabama","Mississippi",
+       "Louisiana","Texas","California","Oregon","Washington",
+       "Alaska","Hawaii"
+     )
+     coastal_sf <- ecoregions_states %>%
+       dplyr::filter(STATE_NAME %in% coastal_states) %>%
+       sf::st_union()  # combine into single multipolygon
+
+     # Project for accurate distance
+     projected_crs <- 3857
+     locs_proj <- sf::st_transform(locs[missing_idx, ], projected_crs)
+     coast_proj <- sf::st_transform(coastal_sf, projected_crs)
+
+     # Distance to coast (km)
+     dist_to_coast <- as.numeric(sf::st_distance(locs_proj, coast_proj)) / 1000
+
+     # Only snap if within threshold
+     snap_idx <- missing_idx[dist_to_coast <= max_snap_km]
+     if (length(snap_idx) > 0) {
+       nearest <- sf::st_nearest_feature(locs[snap_idx, ], ecoregions_states)
+       ecol3[snap_idx] <- ecoregions_states$US_L3NAME[nearest]
+     }
+
+     # Points further than max_snap_km remain NA
+   }
 
  }))
+
+ return(as.character(ecol3))
 
 }
 
@@ -130,6 +169,7 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #'
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
+#' @param max_snap_km Buffer for obs to clip to the nearest boundary.
 #'
 #' @return Ecoregion level 4
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
@@ -141,7 +181,7 @@ get_eco_level3 <- function(lon_obs, lat_obs){
 #' lat = 40
 #' ecoregion4 <- get_eco_level4(lon, lat)
 #' }
-get_eco_level4 <- function(lon_obs, lat_obs) {
+get_eco_level4 <- function(lon_obs, lat_obs, max_snap_km = 10) {
 
   # get ecoregions_states data from R/sysdata.rda
   ecoregions_states <- get0("ecoregions_states", envir = asNamespace("rainOrSnowTools"))
@@ -155,22 +195,57 @@ get_eco_level4 <- function(lon_obs, lat_obs) {
 
   suppressMessages(suppressWarnings({
 
+    # Disable s2 for planar operations
     sf::sf_use_s2(FALSE)
 
-    sf::st_intersection(locs, ecoregions_states) %>%
-    # sf::st_intersection(locs, rainOrSnowTools::ecoregions_states) %>%
-      dplyr::select("Ecoregion" = US_L4NAME) %>%
-      sf::st_drop_geometry() %>%
-      as.character()
+    # Try exact containment first
+    state <- sf::st_join(locs, ecoregions_states, join = sf::st_within)$STATE_NAME
+    ecol4 <- sf::st_join(locs, ecoregions_states, join = sf::st_within)$US_L4NAME
+
+    # Identify points that are not contained
+    missing_idx <- which(is.na(state))
+    if (length(missing_idx) > 0) {
+
+      # Extract only coastal states
+      coastal_states <- c(
+        "Maine","New Hampshire","Massachusetts","Rhode Island",
+        "Connecticut","New York","New Jersey","Delaware",
+        "Maryland","Virginia","North Carolina","South Carolina",
+        "Georgia","Florida","Alabama","Mississippi",
+        "Louisiana","Texas","California","Oregon","Washington",
+        "Alaska","Hawaii"
+      )
+      coastal_sf <- ecoregions_states %>%
+        dplyr::filter(STATE_NAME %in% coastal_states) %>%
+        sf::st_union()  # combine into single multipolygon
+
+      # Project for accurate distance
+      projected_crs <- 3857
+      locs_proj <- sf::st_transform(locs[missing_idx, ], projected_crs)
+      coast_proj <- sf::st_transform(coastal_sf, projected_crs)
+
+      # Distance to coast (km)
+      dist_to_coast <- as.numeric(sf::st_distance(locs_proj, coast_proj)) / 1000
+
+      # Only snap if within threshold
+      snap_idx <- missing_idx[dist_to_coast <= max_snap_km]
+      if (length(snap_idx) > 0) {
+        nearest <- sf::st_nearest_feature(locs[snap_idx, ], ecoregions_states)
+        ecol4[snap_idx] <- ecoregions_states$US_L4NAME[nearest]
+      }
+
+      # Points further than max_snap_km remain NA
+    }
 
   }))
 
+  return(as.character(ecol4))
 }
 
 #' Geolocate location to assign state association
 #' @param lon_obs numeric, Longitude in decimal degrees. Default is NULL.
 #' @param lat_obs numeric, Latitude in decimal degrees. Default is NULL.
-#' @param max_snap_km Buffer for obs to clip to the nearest State boundary
+#' @param max_snap_km Buffer for obs to clip to the nearest boundary.
 #'
 #' @return State
 #' @importFrom sf st_as_sf sf_use_s2 st_intersection st_drop_geometry
