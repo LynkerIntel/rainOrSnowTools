@@ -17,10 +17,35 @@ utils::globalVariables(
   )
 )
 
+#' Determine available networks based on datetime
+#'
+#' @param datetime_utc_obs POSIX-formatted UTC datetime
+#' @param include_deprecated Logical, default FALSE. If TRUE, includes networks
+#'   that are deprecated but still functional for historical data.
+#'
+#' @return Character vector of available network names
+#' @keywords internal
+get_available_networks <- function(datetime_utc_obs, include_deprecated = FALSE) {
+
+  networks <- c("HADS", "WCC", "MADIS")
+
+  # LCD: Available before 2025-08-27, deprecated after
+  lcd_cutoff <- as.POSIXct("2025-08-27", tz = "UTC")
+  if (datetime_utc_obs < lcd_cutoff) {
+    networks <- c(networks, "LCD")
+  } else if (include_deprecated) {
+    # Still try LCD for historical data even if past cutoff
+    networks <- c(networks, "LCD")
+  }
+
+  return(networks)
+}
+
+
 #' Download and preprocess meteorological data from three station networks
 #'
 #' @param networks One of "ALL", "HADS", "LCD", or "WCC"
-#' @param datetime_utc_obs POSIX-formatted UTC datetime for which data should be gathered
+#' @param datetime_utc_obs POSIX-formatted UTC datetime
 #' @param lon_obs Longitude in decimal degrees
 #' @param lat_obs Latitude in decimal degrees
 #' @param deg_filter Number of degrees surrounding the point location to which the station search should be limited
@@ -59,9 +84,9 @@ access_meteo <- function(
     met_all <- data.frame()
     metadata_all <- data.frame()
 
-    # If ALL, add all networks
+    # If ALL, add networks based on datetime availability
     if ("ALL" %in% networks) {
-      networks = c("HADS", "LCD", "WCC", "MADIS")
+      networks <- get_available_networks(datetime_utc_obs, include_deprecated = FALSE)
     }
 
     # Access HADS data
