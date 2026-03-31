@@ -17,7 +17,7 @@ access_meteo(
 \arguments{
 \item{networks}{One of "ALL", "HADS", "LCD", or "WCC"}
 
-\item{datetime_utc_obs}{POSIX-formatted UTC datetime for which data should be gathered}
+\item{datetime_utc_obs}{POSIX-formatted UTC datetime}
 
 \item{lon_obs}{Longitude in decimal degrees}
 
