@@ -80,12 +80,13 @@ access_meteo <- function(
     datetime_utc_start = datetime_utc_obs - time_thresh_s
     datetime_utc_end = datetime_utc_obs + time_thresh_s
 
-    # Create an empty df to store data
-    met_all <- data.frame()
-    metadata_all <- data.frame()
+    # Store results in a list instead
+    met_list <- list()
+    metadata_list <- list()
+
 
     # If ALL, add networks based on datetime availability
-    if ("ALL" %in% networks) {
+    if ("ALL" %in% networks == TRUE) {
       networks <- get_available_networks(datetime_utc_obs, include_deprecated = FALSE)
     }
 
@@ -101,11 +102,11 @@ access_meteo <- function(
       # Gather station metadata
       stations <- gather_meta(stations, network = "HADS")
 
-      # Save the data to separate dfs
-      met_all <- dplyr::bind_rows(met_all, tmp_met)
-      metadata_all <- dplyr::bind_rows(metadata_all, stations)
+      # Store into the list
+      met_list[["HADS"]] <- tmp_met
+      metadata_list[["HADS"]] <- stations
 
-      }, error = function(e){})
+      }, error = function(e){ message("Error: ", e$message) })
     }
 
     # Access LCD data
@@ -120,9 +121,9 @@ access_meteo <- function(
       # Gather station metadata
       stations <- gather_meta(stations, network = "LCD")
 
-      # Save the data to separate dfs
-      met_all <- dplyr::bind_rows(met_all, tmp_met)
-      metadata_all <- dplyr::bind_rows(metadata_all, stations)
+      # Store into the list
+      met_list[["LCD"]] <- tmp_met
+      metadata_list[["LCD"]] <- stations
 
     }, error = function(e){})
     }
@@ -139,9 +140,9 @@ access_meteo <- function(
         # Gather station metadata
         stations <- gather_meta(stations, network = "WCC")
 
-        # Save the data to separate dfs
-        met_all <- dplyr::bind_rows(met_all, tmp_met)
-        metadata_all <- dplyr::bind_rows(metadata_all, stations)
+        # Store into the list
+        met_list[["WCC"]] <- tmp_met
+        metadata_list[["WCC"]] <- stations
 
       }, error = function(e){})
     }
@@ -165,12 +166,16 @@ access_meteo <- function(
                         !SUBPVDR %in% c("SNOTEL", "SCAN")) %>%
           gather_meta(., network = "MADIS")
 
-        # Save the data to separate dfs
-        met_all <- dplyr::bind_rows(met_all, tmp_met)
-        metadata_all <- dplyr::bind_rows(metadata_all, stations)
+        # Store into the list
+        met_list[["MADIS"]] <- tmp_met
+        metadata_list[["MADIS"]] <- stations
 
       }, error = function(e){})
     }
+
+    # Bind all list items into df!
+    met_all <- dplyr::bind_rows(met_list)
+    metadata_all <- dplyr::bind_rows(metadata_list)
 
     # if no stations are found, return an empty data frame with column names
     if (nrow(met_all) < 1) {
@@ -254,6 +259,8 @@ station_select <- function(network, lon_obs, lat_obs,
   # Select stations from the LCD dataset
   if(network == "LCD"){
     stations_tmp <- lcd_meta %>%
+      dplyr::rename(lon = LONGITUDE,
+                    lat = LATITUDE) %>%
       dplyr::filter(lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,
                     lat >= lat_obs - deg_filter & lat <= lat_obs + deg_filter) %>%
       dplyr::rowwise() %>%
@@ -276,6 +283,31 @@ station_select <- function(network, lon_obs, lat_obs,
   # Return the stations dataset
   return(stations_tmp)
 }
+
+#' Create bounding box using lat/lon for MADIS data retrieval
+#'
+#' @param lon Start of search window as POSIX-formatted UTC datetime
+#' @param lat  End of search window as POSIX-formatted UTC datetime
+#' @param deg_filter Search radius in degrees
+#' @param digits Number of digits used to format URL string
+#'
+#' @return MADIS URL-ready string for selecting station data
+madis_bbox_string <- function(lat, lon, deg_filter, digits = 6) {
+  bbox <- list(
+    latll = lat - deg_filter,
+    lonll = lon - deg_filter,
+    latur = lat + deg_filter,
+    lonur = lon + deg_filter
+  )
+
+  paste0(
+    "&latll=", sprintf(paste0("%.", digits, "f"), bbox$latll),
+    "&lonll=", sprintf(paste0("%.", digits, "f"), bbox$lonll),
+    "&latur=", sprintf(paste0("%.", digits, "f"), bbox$latur),
+    "&lonur=", sprintf(paste0("%.", digits, "f"), bbox$lonur)
+  )
+}
+
 
 #' Download meteorological data from HADS
 #'
@@ -662,11 +694,31 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
         # Create the col names and id them with the station ID
         # Ex) tair1100 (var + station ID)
         colvars = as.vector(t(as.matrix(sapply(cols, paste, id, sep = ""))))
+        var_map     <- c("Air Temperature" = "tair", "Relative Humidity" = "rh", "Dew Point" = "tdew")
+        station_map <- setNames(as.character(id), as.character(id))
 
         # Download data and apply col names
-        tmp <- utils::read.delim(url_wcc, header = T, comment.char = '#', sep = "\t") %>%
-          tidyr::separate(colnames(.)[1], c("date", colvars), sep = ",") %>%
-          # This takes the data into long form, separates the var name station ID
+        raw_lines <- readLines(url_wcc)
+        data_lines <- raw_lines[!startsWith(raw_lines, "#")]
+        header <- strsplit(data_lines[1], ",")[[1]]
+
+        parse_col <- function(h) {
+          stn <- regmatches(h, regexpr("(?<=\\()\\d+(?=\\))", h, perl = TRUE))
+          var <- var_map[names(var_map)[sapply(names(var_map), function(v) grepl(v, h, fixed = TRUE))]]
+          if (length(stn) && length(var)) paste0(var[1], stn) else h
+        }
+
+        new_names <- c("date", sapply(header[-1], parse_col, USE.NAMES = FALSE))
+
+        tmp <- read.csv(text = paste(data_lines, collapse = "\n"),
+                        header = TRUE, check.names = FALSE)
+        colnames(tmp) <- new_names
+
+        colvars = as.vector(t(as.matrix(sapply(cols, paste, id, sep = ""))))
+        missing_cols <- setdiff(colvars, colnames(tmp))
+        tmp[missing_cols] <- NA
+
+        tmp <- tmp %>%
           tidyr::pivot_longer(
             cols = !date,
             names_to = c("var", "station"),
@@ -713,7 +765,7 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
 download_meteo_madis <- function(lon_obs, lat_obs, deg_filter, datetime_utc_obs){
 
   # Specify the met vars of interest
-  vars = c("LON", "LAT", "ELEV", "T", "TD", "TWB", "RH")
+  vars = c("LON", "LAT", "ELEV", "T", "TD", "TWB", "RH", "PCP1H")
 
   # Format the time to YYYYMMDD_HHMM
   time = format(datetime_utc_obs, "%Y%m%d_%H%M")
@@ -798,7 +850,8 @@ preprocess_meteo <- function(network, tmp_met){
 
     # Identify columns and new names
     lookup <- c(temp_air = "TAIRGZ", temp_dew = "TDIRGZ", rh = "XRIRGZ",
-                temp_air = "TAIRGZZ", temp_dew = "TDIRGZZ", rh = "XRIRGZZ")
+                temp_air = "TAIRGZZ", temp_dew = "TDIRGZZ", rh = "XRIRGZZ",
+                ppt = "PPHRGZZ") # hourly precip
 
     # Down-select columns and rename
     tmp_met <- tmp_met %>%
@@ -879,7 +932,7 @@ preprocess_meteo <- function(network, tmp_met){
   if(network == "MADIS"){
 
     # Identify columns and new names
-    lookup <- c(temp_air = "T", temp_dew = "TD", rh = "RH", temp_wet = "TWB")
+    lookup <- c(temp_air = "T", temp_dew = "TD", rh = "RH", temp_wet = "TWB", ppt = "PCP1H")
 
     # Remove any PVDR %in% c("RAWS", "HADS") and SUBPVDR %in% ("SNOTEL", "SCAN") to remove dupe obs
     # Down-select columns and rename
@@ -907,26 +960,3 @@ preprocess_meteo <- function(network, tmp_met){
   tmp_met
 }
 
-#' Create bounding box using lat/lon for MADIS data retrieval
-#'
-#' @param lon Start of search window as POSIX-formatted UTC datetime
-#' @param lat  End of search window as POSIX-formatted UTC datetime
-#' @param deg_filter Search radius in degrees
-#' @param digits Number of digits used to format URL string
-#'
-#' @return MADIS URL-ready string for selecting station data
-madis_bbox_string <- function(lat, lon, deg_filter, digits = 6) {
-  bbox <- list(
-    latll = lat - deg_filter,
-    lonll = lon - deg_filter,
-    latur = lat + deg_filter,
-    lonur = lon + deg_filter
-  )
-
-  paste0(
-    "&latll=", sprintf(paste0("%.", digits, "f"), bbox$latll),
-    "&lonll=", sprintf(paste0("%.", digits, "f"), bbox$lonll),
-    "&latur=", sprintf(paste0("%.", digits, "f"), bbox$latur),
-    "&lonur=", sprintf(paste0("%.", digits, "f"), bbox$lonur)
-  )
-}
