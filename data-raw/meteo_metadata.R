@@ -99,14 +99,22 @@ hads_meta <- dplyr::left_join(hads_meta,
 # https://www.ncei.noaa.gov/metadata/geoportal/rest/metadata/item/gov.noaa.ncdc:C00684/html
 ###################################################
 
-# NOAA provides a station list
-lcd_lines <- readLines("https://www.ncei.noaa.gov/oa/local-climatological-data/v2/doc/lcdv2-station-list.txt")
+# # NOAA provides a station list (this is for v2)
+# lcd_lines <- readLines("https://www.ncei.noaa.gov/oa/local-climatological-data/v2/doc/lcdv2-station-list.txt")
+#
+# # Format the data
+# lcd_lines <- stringr::str_squish(lcd_lines)
+# lcd_meta <- as.data.frame(stringr::str_split_fixed(lcd_lines, " ", 5))
+#
+# colnames(lcd_meta) <- c("stid", "lat", "lon", "elev_m", "station_name")
 
-# Format the data
-lcd_lines <- stringr::str_squish(lcd_lines)
-lcd_meta <- as.data.frame(stringr::str_split_fixed(lcd_lines, " ", 5))
-
-colnames(lcd_meta) <- c("stid", "lat", "lon", "elev_m", "station_name")
+lcd_meta <- read.csv("data-raw/lcd_station_metadata.csv") %>%
+  dplyr::select(id = STATION_ID,
+                station_name = STATION_NAME,
+                 elev_m = ELEVATION,
+                 lon = LONGITUDE,
+                 lat = LATITUDE,
+                 state = STATE)
 
 # Add timezone info
 # Needed for local time to UTC conversions

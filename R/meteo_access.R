@@ -259,8 +259,6 @@ station_select <- function(network, lon_obs, lat_obs,
   # Select stations from the LCD dataset
   if(network == "LCD"){
     stations_tmp <- lcd_meta %>%
-      dplyr::rename(lon = LONGITUDE,
-                    lat = LATITUDE) %>%
       dplyr::filter(lon >= lon_obs - deg_filter & lon <= lon_obs + deg_filter,
                     lat >= lat_obs - deg_filter & lat <= lat_obs + deg_filter) %>%
       dplyr::rowwise() %>%
@@ -456,7 +454,6 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
   # download_meteo_lcd(datetime_start, datetime_end, lcd_stations)
 
   # Specify the vars
-  # TODO: let user select vars
   lcd_vars = "HourlyDewPointTemperature,HourlyDryBulbTemperature,HourlyPrecipitation,HourlyRelativeHumidity,HourlyWetBulbTemperature"
 
   # Figure out if there is more than 1 time zone to download
@@ -487,7 +484,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 
     # Build URLS
     lcd_url01_str = "https://www.ncei.noaa.gov/access/services/data/v1?dataset=local-climatological-data&stations="
-    lcd_url02_sta = paste(stations_by_tz[[i]]$id, collapse = ',')
+    lcd_url02_sta = paste(stations_by_tz[[i]]$`id`, collapse = ',')
     lcd_url03_str = "&startDate="
     lcd_url04_dat = format(datetime_lst_start, "%Y-%m-%dT%H:%M:%S")
     lcd_url05_str = "&endDate="
@@ -574,6 +571,7 @@ download_meteo_lcd <- function(datetime_utc_start, datetime_utc_end, stations){
 #' @importFrom plyr ldply
 #' @importFrom tidyr pivot_longer pivot_wider separate
 #' @importFrom utils read.delim
+#' @importFrom stats setNames
 #'
 #' @export
 download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
@@ -695,7 +693,7 @@ download_meteo_wcc <- function(datetime_utc_start, datetime_utc_end, stations){
         # Ex) tair1100 (var + station ID)
         colvars = as.vector(t(as.matrix(sapply(cols, paste, id, sep = ""))))
         var_map     <- c("Air Temperature" = "tair", "Relative Humidity" = "rh", "Dew Point" = "tdew")
-        station_map <- setNames(as.character(id), as.character(id))
+        station_map <- stats::setNames(as.character(id), as.character(id))
 
         # Download data and apply col names
         raw_lines <- readLines(url_wcc)

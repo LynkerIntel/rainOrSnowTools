@@ -12,7 +12,7 @@ gather_meta <- function(stations, network) {
 
   # Filter the metadata to only those in the station list
 
-  metdata_all <- data.frame()
+  metdata_list <- list()
 
   # Access HADS data
   if (network == "HADS") {
@@ -24,10 +24,12 @@ gather_meta <- function(stations, network) {
                       lat,
                       lon,
                       elev,
-                      timezone_lst) %>%
+                      timezone_lst,
+                      provider = iem_network) %>%
         dplyr::mutate(network = "hads")
 
-      metdata_all <- tmp_stations
+      metdata_list[["HADS"]] <- tmp_stations
+
     }, error = function(e) {})
   }
 
@@ -37,16 +39,18 @@ gather_meta <- function(stations, network) {
     tryCatch({
       tmp_stations <- stations %>%
         dplyr::select(
-          name = STATION_ID,
-          id,
-          lat = LATITUDE,
-          lon = LONGITUDE,
-          elev = ELEVATION,
+          name = station_name,
+          id = stid,
+          lat,
+          lon,
+          elev = elev_m,
           timezone_lst
         ) %>%
-        dplyr::mutate(network = "lcd")
+        dplyr::mutate(network = "lcd",
+                      provider = NA)
 
-      metdata_all <- tmp_stations
+      metdata_list[["LCD"]] <- tmp_stations
+
     }, error = function(e) {})
   }
 
@@ -61,9 +65,11 @@ gather_meta <- function(stations, network) {
                       elev = elev_m,
                       timezone_lst,
                       network) %>%
-        dplyr::mutate(id = as.character(id))
+        dplyr::mutate(id = as.character(id),
+                      provider = NA)
 
-      metdata_all <- tmp_stations
+      metdata_list[["WCC"]] <- tmp_stations
+
     }, error = function(e){})
   }
 
@@ -74,14 +80,19 @@ gather_meta <- function(stations, network) {
         dplyr::select(id = STAID,
                       lat = LAT,
                       lon = LON,
-                      elev = ELEV) %>%
+                      elev = ELEV,
+                      provider = PVDR) %>%
         dplyr::mutate(network = "madis",
                       name = NA,
-                      timezone_lst = NA)
+                      timezone_lst = NA
+                      )
 
-      metdata_all <- tmp_stations
+      metdata_list[["MADIS"]] <- tmp_stations
+
     }, error = function(e){})
   }
+
+  metdata_all <- dplyr::bind_rows(metdata_list)
 
   # if no stations are found, return an empty data frame with column names
   if (nrow(metdata_all) < 1) {
@@ -93,7 +104,8 @@ gather_meta <- function(stations, network) {
       lon = numeric(0),
       elev = numeric(0),
       timezone_lst = character(0),
-      network = character(0)
+      network = character(0),
+      provider = character(0)
     )
 
   }
